@@ -43,6 +43,12 @@ trait ScalaStan extends Implicits { stan =>
     upper: Option[StanValue[StanReal]] = None
   ): StanVector = StanVector(dim, lower, upper)
 
+  def rowVector(
+    dim: StanValue[StanInt],
+    lower: Option[StanValue[StanReal]] = None,
+    upper: Option[StanValue[StanReal]] = None
+  ): StanRowVector = StanRowVector(dim, lower, upper)
+
   def matrix(
     rows: StanValue[StanInt],
     cols: StanValue[StanInt],

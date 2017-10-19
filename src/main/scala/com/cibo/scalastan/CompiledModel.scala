@@ -83,7 +83,7 @@ object CompiledModel {
   }
 
   private def getNextOutputFileName: String = {
-    dataFileIndex += 1
+    outputFileIndex += 1
     s"output$dataFileIndex.csv"
   }
 }

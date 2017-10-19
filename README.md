@@ -236,7 +236,7 @@ Note that Scala is indexed from zero whereas Stan (and ScalaStan) is indexed fro
 It is also possible to assign data from a `DataSource`.  For example, given a file (`data.R`) with _R_ formatted
 data, we can assign `x` from the value named `X` in the R data file:
 ```scala
-val source = com.cibo.scalastan.data.RDataSource("data.R")
+val source = com.cibo.scalastan.data.RDataSource.fromFile("data.R")
 model.withData(source(x, "X"))
 ```
 

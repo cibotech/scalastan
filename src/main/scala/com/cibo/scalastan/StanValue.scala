@@ -2,18 +2,8 @@ package com.cibo.scalastan
 
 import scala.collection.mutable.ArrayBuffer
 
-sealed abstract class StanValue[T <: StanType] extends Implicits {
-  def foreach(f: StanValue[T] => Unit)(implicit ev: TemporaryValue[T], code: ArrayBuffer[StanValue[_]]): Unit = {
-    val temp = ev.create()
-    val decl = StanDeclaration[T, LocalDeclarationType](temp)
-    code += ForLoop(decl, this)
-    f(decl)
-    code += LeaveScope
-  }
-
-  def emit: String
-
-  val terminator: String = ";"
+// Base class for value types.
+abstract class StanValue[T <: StanType] extends StanNode with Implicits {
 
   def unary_-(): StanValue[T] = UnaryOperator("-", this)
 
@@ -81,41 +71,37 @@ sealed abstract class StanValue[T <: StanType] extends Implicits {
   def :/(right: StanValue[T]): StanValue[T]= BinaryOperator("./", this, right)
 
   def +=[B <: StanType](right: StanValue[B])(
-    implicit ev: AdditionAllowed[T, T, B], code: ArrayBuffer[StanValue[_]]
-  ): StanValue[T] = {
-    this := this + right
+    implicit ev: AdditionAllowed[T, T, B], code: ArrayBuffer[StanNode]
+  ): Unit = {
+    code += BinaryOperator("+=", this, right, parens = false)
   }
 
   def -=[B <: StanType](right: StanValue[B])(
-    implicit ev: AdditionAllowed[T, T, B], code: ArrayBuffer[StanValue[_]]
-  ): StanValue[T] = {
-    this := this - right
+    implicit ev: AdditionAllowed[T, T, B], code: ArrayBuffer[StanNode]
+  ): Unit = {
+    code += BinaryOperator("-=", this, right, parens = false)
   }
 
   def *=[B <: StanType](right: StanValue[B])(
-    implicit ev: MultiplicationAllowed[T, T, B], code: ArrayBuffer[StanValue[_]]
-  ): StanValue[T] = {
-    this := this * right
+    implicit ev: MultiplicationAllowed[T, T, B], code: ArrayBuffer[StanNode]
+  ): Unit = {
+    code += BinaryOperator("*=", this, right, parens = false)
   }
 
   def /=[B <: StanScalarType](right: StanValue[B])(
-    implicit code: ArrayBuffer[StanValue[_]]
-  ): StanValue[T] = {
-    this := this / right
+    implicit code: ArrayBuffer[StanNode]
+  ): Unit = {
+    code += BinaryOperator("/=", this, right, parens = false)
   }
 
-  def ~(dist: StanValue[T])(implicit code: ArrayBuffer[StanValue[_]]): StanValue[T] = {
-    val op = BinaryOperator[T, T, T]("~", this, dist, parens = false)
-    code += op
-    op
+  def ~(dist: StanDistribution[T])(implicit code: ArrayBuffer[StanNode]): Unit = {
+    code += SampleNode[T](this, dist)
   }
 
   def t[R <: StanType](implicit e: TranposeAllowed[T, R]): StanValue[R] = TransposeOperator(this)
 
-  def :=(right: StanValue[T])(implicit code: ArrayBuffer[StanValue[_]]): StanValue[T] = {
-    val op = BinaryOperator[T, T, T]("=", this, right, parens = false)
-    code += op
-    op
+  def :=(right: StanValue[T])(implicit code: ArrayBuffer[StanNode]): Unit = {
+    code += BinaryOperator[T, T, T]("=", this, right, parens = false)
   }
 
   def apply[N <: StanType](index: StanValue[StanInt])(implicit ev: N =:= T#NEXT_TYPE): StanValue[N] = {
@@ -128,38 +114,23 @@ sealed abstract class StanValue[T <: StanType] extends Implicits {
   )(implicit ev: N =:= T#NEXT_TYPE#NEXT_TYPE): StanValue[N] = {
     IndexOperator(this, index1, index2)
   }
-}
 
-abstract class EnterScope extends StanValue[StanInt] {
-  override val terminator: String = ""
-}
+  def apply[N <: StanType](
+    index1: StanValue[StanInt],
+    index2: StanValue[StanInt],
+    index3: StanValue[StanInt]
+  )(implicit ev: N =:= T#NEXT_TYPE#NEXT_TYPE#NEXT_TYPE): StanValue[N] = {
+    IndexOperator(this, index1, index2, index3)
+  }
 
-case class ForLoop[T <: StanType](
-  decl: StanDeclaration[T, LocalDeclarationType],
-  range: StanValue[T]
-) extends EnterScope {
-  def emit: String = s"for(${decl.emit} in ${range.emit}) {"
-}
-
-case class IfStatement[T <: StanType](
-  cond: StanValue[T]
-) extends EnterScope {
-  def emit: String = s"if(${cond.emit}) {"
-}
-
-case class ElseIfStatement[T <: StanType](
-  cond: StanValue[T]
-) extends EnterScope {
-  def emit: String = s"else if(${cond.emit}) {"
-}
-
-case object ElseStatement extends EnterScope {
-  def emit: String = s"else {"
-}
-
-case object LeaveScope extends StanValue[StanInt] {
-  def emit: String = "}"
-  override val terminator: String = ""
+  def apply[N <: StanType](
+    index1: StanValue[StanInt],
+    index2: StanValue[StanInt],
+    index3: StanValue[StanInt],
+    index4: StanValue[StanInt]
+  )(implicit ev: N =:= T#NEXT_TYPE#NEXT_TYPE#NEXT_TYPE#NEXT_TYPE): StanValue[N] = {
+    IndexOperator(this, index1, index2, index3, index4)
+  }
 }
 
 case class FunctionNode[T <: StanType](
@@ -172,10 +143,22 @@ case class FunctionNode[T <: StanType](
   }
 }
 
-case class ReturnNode[T <: StanType](
-  result: StanValue[T]
+case class LiteralNode[T <: StanType](
+  value: String
 ) extends StanValue[T] {
-  def emit: String = s"return ${result.emit}"
+  def emit: String = value
+}
+
+case class DistributionFunctionNode[T <: StanType](
+  name: String,
+  y: StanValue[T],
+  sep: String,
+  args: Seq[StanValue[_]]
+) extends StanValue[T] {
+  def emit: String = {
+    val argStr = args.map(_.emit).mkString(",")
+    s"$name(${y.emit} $sep $argStr)"
+  }
 }
 
 case class ImplicitConversion[FROM <: StanType, TO <: StanType](
@@ -214,38 +197,6 @@ case class IndexOperator[T <: StanType, N <: StanType](
 
 case class TransposeOperator[T <: StanType, R <: StanType](value: StanValue[T]) extends StanValue[R] {
   def emit: String = s"(${value.emit})'"
-}
-
-case class ValueRange(start: StanValue[StanInt], end: StanValue[StanInt]) extends StanValue[StanInt] {
-  def emit: String = s"${start.emit}:${end.emit}"
-}
-
-sealed trait DeclarationType
-final class DataDeclarationType extends DeclarationType
-final class ParameterDeclarationType extends DeclarationType
-final class LocalDeclarationType extends DeclarationType
-
-case class StanDeclaration[T <: StanType, D <: DeclarationType] private[scalastan] (
-  typeConstructor: T
-) extends StanValue[T] {
-  private val name: String = StanDeclaration.getName
-  def emit: String = name
-  def emitDeclaration: String = typeConstructor.emitDeclaration(name)
-}
-
-object StanDeclaration {
-  private var counter: Int = 0
-
-  private def getName: String = {
-    counter += 1
-    s"v$counter"
-  }
-}
-
-case class StanInlineDeclaration[T <: StanType](
-  decl: StanDeclaration[T, LocalDeclarationType]
-) extends StanValue[T] {
-  def emit: String = decl.emitDeclaration
 }
 
 case class StanConstant[T <: StanType](value: T#SCALA_TYPE) extends StanValue[T] {

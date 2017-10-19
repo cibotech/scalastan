@@ -79,7 +79,7 @@ trait ScalaStan extends Implicits { stan =>
 
   trait StanCode extends StanBuiltInFunctions with StanDistributions {
 
-    protected implicit val code: ArrayBuffer[StanValue[_]] = ArrayBuffer[StanValue[_]]()
+    protected implicit val code: ArrayBuffer[StanNode] = ArrayBuffer[StanNode]()
 
     def local[T <: StanType](typeConstructor: T): StanDeclaration[T, LocalDeclarationType] = {
       if (typeConstructor.lower.isDefined || typeConstructor.upper.isDefined) {
@@ -166,7 +166,7 @@ trait ScalaStan extends Implicits { stan =>
   trait Model extends StanCode {
 
     // Log probability function.
-    def target: StanValue[StanReal] = FunctionNode("target", Seq())
+    def target: StanValue[StanReal] = LiteralNode("target")
 
     private def emit(writer: PrintWriter): Unit = {
 

@@ -6,16 +6,28 @@ import com.cibo.scalastan.{DataDeclarationType, StanDeclaration, StanType}
 
 import scala.util.parsing.combinator.JavaTokenParsers
 
-case class RDataSource(fileName: String) extends DataSource {
+object RDataSource {
 
   private case class Value(name: String, dims: Vector[Int], values: Vector[Double])
+
+  private class RDataSource(values: Seq[Value]) extends DataSource {
+    def read[T <: StanType, R](
+      decl: StanDeclaration[T, DataDeclarationType],
+      name: String
+    )(implicit ev: R =:= T#SCALA_TYPE): R = {
+      values.find(_.name == name) match {
+        case Some(value) => decl.typeConstructor.parse(value.dims, value.values).asInstanceOf[R]
+        case None        => throw new IllegalArgumentException(s"$name not found")
+      }
+    }
+  }
 
   private val parser = new JavaTokenParsers {
     private def number: Parser[Double] = floatingPointNumber ^^ { s => s.toDouble }
 
     private def numberList: Parser[Vector[Double]] =
       (number ~ "," ~ numberList ^^ { case (n ~ "," ~ ns) => n +: ns }) |
-      (number ^^ { n => Vector(n) })
+        (number ^^ { n => Vector(n) })
 
     private def label: Parser[String] = (stringLiteral ^^ { s => s.tail.dropRight(1) }) | ident
 
@@ -46,23 +58,24 @@ case class RDataSource(fileName: String) extends DataSource {
 
     def parse(s: String): ParseResult[Seq[Value]] = parseAll(values, s)
 
-    def parseFile: ParseResult[Seq[Value]] = parseAll(values, new FileReader(fileName))
+    def parseFile(fileName: String): ParseResult[Seq[Value]] = parseAll(values, new FileReader(fileName))
   }
 
-  private lazy val values: Seq[Value] = parser.parseFile match {
-    case parser.Success(vs, _)  => vs
-    case parser.Error(msg, _)   => throw new IllegalArgumentException(s"error parsing $fileName: $msg")
-    case parser.Failure(msg, _) => throw new IllegalArgumentException(s"error parsing $fileName: $msg")
-  }
-
-  def read[T <: StanType, R](
-    decl: StanDeclaration[T, DataDeclarationType],
-    name: String
-  )(implicit ev: R =:= T#SCALA_TYPE): R = {
-    values.find(_.name == name) match {
-      case Some(value) => decl.typeConstructor.parse(value.dims, value.values).asInstanceOf[R]
-      case None        => throw new IllegalArgumentException(s"$name not found in $fileName")
+  def fromString(content: String): DataSource = {
+    val values = parser.parse(content) match {
+      case parser.Success(vs, _)  => vs
+      case parser.Error(msg, _)   => throw new IllegalArgumentException(s"error parsing string: $msg")
+      case parser.Failure(msg, _) => throw new IllegalArgumentException(s"error parsing string: $msg")
     }
+    new RDataSource(values)
   }
 
+  def fromFile(fileName: String): DataSource = {
+    val values = parser.parseFile(fileName) match {
+      case parser.Success(vs, _)  => vs
+      case parser.Error(msg, _)   => throw new IllegalArgumentException(s"error parsing $fileName: $msg")
+      case parser.Failure(msg, _) => throw new IllegalArgumentException(s"error parsing $fileName: $msg")
+    }
+    new RDataSource(values)
+  }
 }

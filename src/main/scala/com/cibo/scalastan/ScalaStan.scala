@@ -166,7 +166,7 @@ trait ScalaStan extends Implicits { stan =>
   trait Model extends StanCode {
 
     // Log probability function.
-    def target: StanValue[StanReal] = FunctionNode("target", Seq())
+    def target: StanValue[StanReal] = LiteralNode("target")
 
     private def emit(writer: PrintWriter): Unit = {
 

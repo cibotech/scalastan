@@ -73,25 +73,25 @@ abstract class StanValue[T <: StanType] extends StanNode with Implicits {
   def +=[B <: StanType](right: StanValue[B])(
     implicit ev: AdditionAllowed[T, T, B], code: ArrayBuffer[StanNode]
   ): Unit = {
-    this := this + right
+    code += BinaryOperator("+=", this, right, parens = false)
   }
 
   def -=[B <: StanType](right: StanValue[B])(
     implicit ev: AdditionAllowed[T, T, B], code: ArrayBuffer[StanNode]
   ): Unit = {
-    this := this - right
+    code += BinaryOperator("-=", this, right, parens = false)
   }
 
   def *=[B <: StanType](right: StanValue[B])(
     implicit ev: MultiplicationAllowed[T, T, B], code: ArrayBuffer[StanNode]
   ): Unit = {
-    this := this * right
+    code += BinaryOperator("*=", this, right, parens = false)
   }
 
   def /=[B <: StanScalarType](right: StanValue[B])(
     implicit code: ArrayBuffer[StanNode]
   ): Unit = {
-    this := this / right
+    code += BinaryOperator("/=", this, right, parens = false)
   }
 
   def ~(dist: StanDistribution[T])(implicit code: ArrayBuffer[StanNode]): Unit = {
@@ -141,6 +141,12 @@ case class FunctionNode[T <: StanType](
     val argStr = args.map(_.emit).mkString(",")
     s"$name($argStr)"
   }
+}
+
+case class LiteralNode[T <: StanType](
+  value: String
+) extends StanValue[T] {
+  def emit: String = value
 }
 
 case class DistributionFunctionNode[T <: StanType](

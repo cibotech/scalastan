@@ -14,21 +14,21 @@ class StanNodeSpec extends ScalaStanBaseSpec with ScalaStan with StanDistributio
       val model = new Model {
         y ~ continuous
       }
-      checkCode(model, "v# ~ normal(v#,v#)")
+      checkCode(model, "model { v# ~ normal(v#,v#) }")
     }
 
     it("generates lpdf syntax") {
       val model = new Model {
         target += continuous.lpdf(y)
       }
-      checkCode(model, "target() = (target()) + normal_lpdf(v# | v#,v#)")
+      checkCode(model, "model { target += normal_lpdf(v# | v#,v#) }")
     }
 
     it("generates cdf syntax") {
       val model = new Model {
         v2 := continuous.cdf(y)
       }
-      checkCode(model, "v# = normal_cdf(v# , v#,v#)")
+      checkCode(model, "model { v# = normal_cdf(v# , v#,v#) }")
     }
   }
 }

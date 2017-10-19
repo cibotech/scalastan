@@ -79,7 +79,7 @@ trait ScalaStan extends Implicits { stan =>
 
   trait StanCode extends StanBuiltInFunctions with StanDistributions {
 
-    protected implicit val code: ArrayBuffer[StanValue[_]] = ArrayBuffer[StanValue[_]]()
+    protected implicit val code: ArrayBuffer[StanNode] = ArrayBuffer[StanNode]()
 
     def local[T <: StanType](typeConstructor: T): StanDeclaration[T, LocalDeclarationType] = {
       if (typeConstructor.lower.isDefined || typeConstructor.upper.isDefined) {

@@ -104,7 +104,7 @@ case class StanInt private[scalastan] (
   upper: Option[StanValue[StanInt]] = None
 ) extends StanScalarType {
   type ELEMENT_TYPE = StanInt
-  type NEXT_TYPE = StanInt
+  type NEXT_TYPE = StanVoid
   type SCALA_TYPE = Int
   def typeName: String = s"int$emitBounds"
   def getData(data: Int): Seq[String] = Seq(data.toString)
@@ -166,7 +166,7 @@ case class StanReal private[scalastan] (
   upper: Option[StanValue[StanReal]] = None
 ) extends StanScalarType {
   type ELEMENT_TYPE = StanReal
-  type NEXT_TYPE = StanReal
+  type NEXT_TYPE = StanVoid
   type SCALA_TYPE = Double
   def typeName: String = s"real$emitBounds"
   def getData(data: Double): Seq[String] = Seq(data.toString)

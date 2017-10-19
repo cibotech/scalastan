@@ -1,6 +1,6 @@
 package com.cibo.scalastan.example
 
-import com.cibo.scalastan.ScalaStan
+import com.cibo.scalastan.{DataDeclarationType, ScalaStan, StanDeclaration, StanInt}
 import com.cibo.scalastan.data.RDataSource
 
 object Dogs extends App with ScalaStan {

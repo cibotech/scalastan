@@ -128,6 +128,23 @@ sealed abstract class StanValue[T <: StanType] extends Implicits {
   )(implicit ev: N =:= T#NEXT_TYPE#NEXT_TYPE): StanValue[N] = {
     IndexOperator(this, index1, index2)
   }
+
+  def apply[N <: StanType](
+    index1: StanValue[StanInt],
+    index2: StanValue[StanInt],
+    index3: StanValue[StanInt]
+  )(implicit ev: N =:= T#NEXT_TYPE#NEXT_TYPE#NEXT_TYPE): StanValue[N] = {
+    IndexOperator(this, index1, index2, index3)
+  }
+
+  def apply[N <: StanType](
+    index1: StanValue[StanInt],
+    index2: StanValue[StanInt],
+    index3: StanValue[StanInt],
+    index4: StanValue[StanInt]
+  )(implicit ev: N =:= T#NEXT_TYPE#NEXT_TYPE#NEXT_TYPE#NEXT_TYPE): StanValue[N] = {
+    IndexOperator(this, index1, index2, index3, index4)
+  }
 }
 
 abstract class EnterScope extends StanValue[StanInt] {

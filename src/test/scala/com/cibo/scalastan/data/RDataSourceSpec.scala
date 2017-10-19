@@ -29,6 +29,12 @@ class RDataSourceSpec extends FunSpec with Matchers {
       ds.read(decl, "what") shouldBe 2.5
     }
 
+    it("ignores comments") {
+      val ds = RDataSource.fromString("# this is a test\nx = 2.5")
+      val decl = StanDeclaration[StanReal, DataDeclarationType](StanReal())
+      ds.read(decl, "x") shouldBe 2.5
+    }
+
     it("parses vectors") {
       val ds = RDataSource.fromString("x <- c(1.5, 2)")
       val index = StanDeclaration[StanInt, DataDeclarationType](StanInt())

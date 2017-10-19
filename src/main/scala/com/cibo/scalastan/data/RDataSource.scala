@@ -23,6 +23,9 @@ object RDataSource {
   }
 
   private val parser = new JavaTokenParsers {
+
+    override protected val whiteSpace = """(\s|#.*)+""".r
+
     private def number: Parser[Double] = floatingPointNumber ^^ { s => s.toDouble }
 
     private def numberList: Parser[Vector[Double]] =

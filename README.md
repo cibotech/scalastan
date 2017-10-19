@@ -11,7 +11,7 @@ On macOS, these can be installed via [Homebrew](https://brew.sh):
 brew install cmdstan sbt
 ```
 
-Project structure
+Project Structure
 =================
  - `com.cibo.scalastan` contains the ScalaStan DSL (most importantly, the `ScalaStan` trait).
  - `com.cibo.scalastan.data` contains parsers for various data sources (R, for example).
@@ -50,6 +50,23 @@ object MyModel extends App with ScalaStan {
   println(s"m = ${results.best(m)}")
   println(s"b = ${results.best(b)}")
   println(s"sigma = ${results.best(sigma)}")
+}
+```
+
+For comparison, the equivalent Stan program (without the data setup/output) is:
+```stan
+data {
+  int<lower=0> n;
+  vector[n] x;
+  vector[n] y;
+}
+parameters {
+  real b;
+  real m;
+  real<lower = 0> sigma;
+}
+model {
+  y ~ normal(m * x + b, sigma);
 }
 ```
 
@@ -194,7 +211,7 @@ a DSL for implementing the function.  Inputs to the function are specified using
 which works much like the `local` function, but creates an input parameter instead of a local variable.
 The `output` function sets the return value and returns from the function.
 
-Here is an example to add `1` to all ements of an array:
+Here is an example to add `1` to all elements of an array:
 ```scala
 val myFunc = new Function(vector(n)) {
   val x = input(n)

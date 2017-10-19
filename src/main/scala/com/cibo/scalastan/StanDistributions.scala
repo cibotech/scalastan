@@ -5,45 +5,45 @@ protected trait StanDistributions {
   def Beta(
     alpha: StanValue[StanReal],
     beta: StanValue[StanReal]
-  ): StanDistribution[StanReal] = StanDistribution("beta", alpha, beta)
+  ): StanContinuousDistribution[StanReal] = StanContinuousDistribution("beta", alpha, beta)
 
   def BetaBinomial(
     n: StanValue[StanInt],
     alpha: StanValue[StanReal],
     beta: StanValue[StanReal]
-  ): StanDistribution[StanReal] = StanDistribution("beta_binomial", n, alpha, beta)
+  ): StanDiscreteDistributionWithCdf[StanReal] = StanDiscreteDistributionWithCdf("beta_binomial", n, alpha, beta)
 
-  def Bernoulli[T <: StanType](theta: StanValue[T]): StanDistribution[T] =
-    StanDistribution("bernoulli", theta)
+  def Bernoulli[T <: StanType](theta: StanValue[T]): StanDiscreteDistributionWithCdf[T] =
+    StanDiscreteDistributionWithCdf("bernoulli", theta)
 
-  def BernoulliLogit[T <: StanType](alpha: StanValue[T]): StanDistribution[T] =
-    StanDistribution("bernoulli_logit", alpha)
+  def BernoulliLogit[T <: StanType](alpha: StanValue[T]): StanDiscreteDistributionWithoutCdf[T] =
+    StanDiscreteDistributionWithoutCdf("bernoulli_logit", alpha)
 
-  def Binomial[T <: StanType](n: StanValue[StanInt], theta: StanValue[T]): StanDistribution[T] =
-    StanDistribution("binomial", n, theta)
+  def Binomial[T <: StanType](n: StanValue[StanInt], theta: StanValue[T]): StanDiscreteDistributionWithCdf[T] =
+    StanDiscreteDistributionWithCdf("binomial", n, theta)
 
-  def BinomialLogit[T <: StanType](n: StanValue[StanInt], alpha: StanValue[T]): StanDistribution[T] =
-    StanDistribution("binomial_logit", n, alpha)
+  def BinomialLogit[T <: StanType](n: StanValue[StanInt], alpha: StanValue[T]): StanDiscreteDistributionWithoutCdf[T] =
+    StanDiscreteDistributionWithoutCdf("binomial_logit", n, alpha)
 
   def Cauchy[R <: StanType](
     position: StanValue[StanReal],
     scale: StanValue[StanReal]
-  ): StanDistribution[R] = StanDistribution("cauchy", position, scale)
+  ): StanContinuousDistribution[R] = StanContinuousDistribution("cauchy", position, scale)
 
-  def Exponential[R <: StanType](lambda: StanValue[StanReal]): StanDistribution[R] =
-    StanDistribution("exponential", lambda)
+  def Exponential[R <: StanType](lambda: StanValue[StanReal]): StanContinuousDistribution[R] =
+    StanContinuousDistribution("exponential", lambda)
 
-  def Gamma(alpha: StanValue[StanReal], beta: StanValue[StanReal]): StanDistribution[StanReal] =
-    StanDistribution("gamma", alpha, beta)
+  def Gamma(alpha: StanValue[StanReal], beta: StanValue[StanReal]): StanContinuousDistribution[StanReal] =
+    StanContinuousDistribution("gamma", alpha, beta)
 
   def Hypergeometric[T <: StanType](
     n: StanValue[StanInt],
     a: StanValue[T],
     b: StanValue[T]
-  ): StanDistribution[T] = StanDistribution("hypergeometric", n, a, b)
+  ): StanDiscreteDistributionWithoutCdf[T] = StanDiscreteDistributionWithoutCdf("hypergeometric", n, a, b)
 
   def Normal[A <: StanType, B <: StanType, R <: StanType](
     mu: StanValue[A],
     sigma: StanValue[B]
-  ): StanDistribution[R] = StanDistribution("normal", mu, sigma)
+  ): StanContinuousDistribution[R] = StanContinuousDistribution("normal", mu, sigma)
 }

@@ -2,6 +2,7 @@ package com.cibo.scalastan
 
 import scala.collection.mutable.ArrayBuffer
 
+// Base class for value types.
 abstract class StanValue[T <: StanType] extends StanNode with Implicits {
 
   def unary_-(): StanValue[T] = UnaryOperator("-", this)
@@ -71,25 +72,25 @@ abstract class StanValue[T <: StanType] extends StanNode with Implicits {
 
   def +=[B <: StanType](right: StanValue[B])(
     implicit ev: AdditionAllowed[T, T, B], code: ArrayBuffer[StanNode]
-  ): StanValue[T] = {
+  ): Unit = {
     this := this + right
   }
 
   def -=[B <: StanType](right: StanValue[B])(
     implicit ev: AdditionAllowed[T, T, B], code: ArrayBuffer[StanNode]
-  ): StanValue[T] = {
+  ): Unit = {
     this := this - right
   }
 
   def *=[B <: StanType](right: StanValue[B])(
     implicit ev: MultiplicationAllowed[T, T, B], code: ArrayBuffer[StanNode]
-  ): StanValue[T] = {
+  ): Unit = {
     this := this * right
   }
 
   def /=[B <: StanScalarType](right: StanValue[B])(
     implicit code: ArrayBuffer[StanNode]
-  ): StanValue[T] = {
+  ): Unit = {
     this := this / right
   }
 
@@ -99,10 +100,8 @@ abstract class StanValue[T <: StanType] extends StanNode with Implicits {
 
   def t[R <: StanType](implicit e: TranposeAllowed[T, R]): StanValue[R] = TransposeOperator(this)
 
-  def :=(right: StanValue[T])(implicit code: ArrayBuffer[StanNode]): StanValue[T] = {
-    val op = BinaryOperator[T, T, T]("=", this, right, parens = false)
-    code += op
-    op
+  def :=(right: StanValue[T])(implicit code: ArrayBuffer[StanNode]): Unit = {
+    code += BinaryOperator[T, T, T]("=", this, right, parens = false)
   }
 
   def apply[N <: StanType](index: StanValue[StanInt])(implicit ev: N =:= T#NEXT_TYPE): StanValue[N] = {
@@ -141,6 +140,18 @@ case class FunctionNode[T <: StanType](
   def emit: String = {
     val argStr = args.map(_.emit).mkString(",")
     s"$name($argStr)"
+  }
+}
+
+case class DistributionFunctionNode[T <: StanType](
+  name: String,
+  y: StanValue[T],
+  sep: String,
+  args: Seq[StanValue[_]]
+) extends StanValue[T] {
+  def emit: String = {
+    val argStr = args.map(_.emit).mkString(",")
+    s"$name(${y.emit} $sep $argStr)"
   }
 }
 

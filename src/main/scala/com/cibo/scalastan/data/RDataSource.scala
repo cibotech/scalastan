@@ -22,7 +22,7 @@ object RDataSource {
     }
   }
 
-  private val parser = new JavaTokenParsers {
+  private object RDataParser extends JavaTokenParsers {
 
     override protected val whiteSpace = """(\s|#.*)+""".r
 
@@ -65,19 +65,19 @@ object RDataSource {
   }
 
   def fromString(content: String): DataSource = {
-    val values = parser.parse(content) match {
-      case parser.Success(vs, _)  => vs
-      case parser.Error(msg, _)   => throw new IllegalArgumentException(s"error parsing string: $msg")
-      case parser.Failure(msg, _) => throw new IllegalArgumentException(s"error parsing string: $msg")
+    val values = RDataParser.parse(content) match {
+      case RDataParser.Success(vs, _)  => vs
+      case RDataParser.Error(msg, _)   => throw new IllegalArgumentException(s"error parsing string: $msg")
+      case RDataParser.Failure(msg, _) => throw new IllegalArgumentException(s"error parsing string: $msg")
     }
     new RDataSource(values)
   }
 
   def fromFile(fileName: String): DataSource = {
-    val values = parser.parseFile(fileName) match {
-      case parser.Success(vs, _)  => vs
-      case parser.Error(msg, _)   => throw new IllegalArgumentException(s"error parsing $fileName: $msg")
-      case parser.Failure(msg, _) => throw new IllegalArgumentException(s"error parsing $fileName: $msg")
+    val values = RDataParser.parseFile(fileName) match {
+      case RDataParser.Success(vs, _)  => vs
+      case RDataParser.Error(msg, _)   => throw new IllegalArgumentException(s"error parsing $fileName: $msg")
+      case RDataParser.Failure(msg, _) => throw new IllegalArgumentException(s"error parsing $fileName: $msg")
     }
     new RDataSource(values)
   }

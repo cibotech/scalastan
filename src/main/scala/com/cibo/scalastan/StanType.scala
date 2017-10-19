@@ -43,7 +43,7 @@ sealed trait StanType {
       case 1 =>
         require(strs.length == dims.head)
         strs.mkString("c(", ",", ")")
-      case n =>
+      case _ =>
         require(strs.length == dims.product)
         val cstr = strs.mkString("c(", ",", ")")
         val dstr = dims.mkString("c(", ",", ")")

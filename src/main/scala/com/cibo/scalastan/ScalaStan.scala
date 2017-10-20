@@ -61,14 +61,14 @@ trait ScalaStan extends Implicits { stan =>
     inner: T
   ): StanArray[T] = StanArray(dim, inner)
 
-  implicit def dataTransform2Value[T <: StanType](transform: DataTransform[T]): StanValue[T] = {
+  implicit def dataTransform2Value[T <: StanType](transform: DataTransform[T]): StanLocalDeclaration[T] = {
     if (!dataTransforms.exists(_.result.emit == transform.result.emit)) {
       dataTransforms += transform
     }
     transform.result
   }
 
-  implicit def paramTransform2Value[T <: StanType](transform: ParameterTransform[T]): StanValue[T] = {
+  implicit def paramTransform2Value[T <: StanType](transform: ParameterTransform[T]): StanParameterDeclaration[T] = {
     if (!parameterTransforms.exists(_.result.emit == transform.result.emit)) {
       parameterTransforms += transform
     }
@@ -79,40 +79,40 @@ trait ScalaStan extends Implicits { stan =>
 
   trait StanCode extends StanBuiltInFunctions with StanDistributions {
 
-    protected implicit val code: ArrayBuffer[StanNode] = ArrayBuffer[StanNode]()
+    protected implicit val _codeBuffer: ArrayBuffer[StanNode] = ArrayBuffer[StanNode]()
 
     def local[T <: StanType](typeConstructor: T): StanLocalDeclaration[T] = {
       if (typeConstructor.lower.isDefined || typeConstructor.upper.isDefined) {
         throw new IllegalStateException("local variables may not have constraints")
       }
       val decl = StanLocalDeclaration[T](typeConstructor)
-      code += StanInlineDeclaration(decl)
+      _codeBuffer += StanInlineDeclaration(decl)
       decl
     }
 
     case class when(cond: StanValue[StanInt])(block: => Unit) {
-      code += IfStatement(cond)
+      _codeBuffer += IfStatement(cond)
       block
-      code += LeaveScope
+      _codeBuffer += LeaveScope
 
       def when(otherCond: StanValue[StanInt])(otherBlock: => Unit): when = {
-        code += ElseIfStatement(otherCond)
+        _codeBuffer += ElseIfStatement(otherCond)
         otherBlock
-        code += LeaveScope
+        _codeBuffer += LeaveScope
         this
       }
 
       def otherwise(otherBlock: => Unit): Unit = {
-        code += ElseStatement
+        _codeBuffer += ElseStatement
         otherBlock
-        code += LeaveScope
+        _codeBuffer += LeaveScope
       }
     }
 
     def range(start: StanValue[StanInt], end: StanValue[StanInt]): ValueRange = ValueRange(start, end)
 
     private[ScalaStan] def emitCode(writer: PrintWriter): Unit = {
-      code.foreach { c =>
+      _codeBuffer.foreach { c =>
         writer.println(s"  ${c.emit}${c.terminator}")
       }
     }
@@ -130,7 +130,7 @@ trait ScalaStan extends Implicits { stan =>
     }
 
     def output(value: StanValue[RETURN_TYPE]): Unit = {
-      code += ReturnNode(value)
+      _codeBuffer += ReturnNode(value)
     }
 
     def apply(args: StanValue[_]*): FunctionNode[RETURN_TYPE] = {
@@ -140,7 +140,7 @@ trait ScalaStan extends Implicits { stan =>
       }
       val node = FunctionNode[RETURN_TYPE](name, args)
       if (returnType == StanVoid()) {
-        code += node
+        _codeBuffer += node
       }
       node
     }

@@ -17,11 +17,17 @@ object StanDeclaration {
   }
 }
 
-case class StanDataDeclaration[T <: StanType] private[scalastan] (typeConstructor: T) extends StanDeclaration[T]
+case class StanDataDeclaration[T <: StanType] private[scalastan] (
+  typeConstructor: T
+) extends StanDeclaration[T] with ReadOnlyIndex[T]
 
-case class StanParameterDeclaration[T <: StanType] private[scalastan] (typeConstructor: T) extends StanDeclaration[T]
+case class StanParameterDeclaration[T <: StanType] private[scalastan] (
+  typeConstructor: T
+) extends StanDeclaration[T] with Assignment[T]
 
-case class StanLocalDeclaration[T <: StanType] private[scalastan] (typeConstructor: T) extends StanDeclaration[T]
+case class StanLocalDeclaration[T <: StanType] private[scalastan] (
+  typeConstructor: T
+) extends StanDeclaration[T] with Assignment[T]
 
 case class StanInlineDeclaration[T <: StanType](
   decl: StanLocalDeclaration[T]

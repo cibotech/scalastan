@@ -57,11 +57,6 @@ trait ScalaStan extends Implicits { stan =>
     upper: Option[StanValue[StanReal]] = None
   ): StanMatrix = StanMatrix(rows, cols, lower, upper)
 
-  def array[T <: StanType](
-    dim: StanValue[StanInt],
-    inner: T
-  ): StanArray[T] = StanArray(dim, inner)
-
   implicit def dataTransform2Value[T <: StanType](transform: DataTransform[T]): StanLocalDeclaration[T] = {
     transform.result
   }

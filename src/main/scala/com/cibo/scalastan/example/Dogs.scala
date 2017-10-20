@@ -7,7 +7,7 @@ object Dogs extends App with ScalaStan {
 
   val nDogs = data(int(lower = 0))
   val nTrials = data(int(lower = 0))
-  val y = data(array(nDogs, array(nTrials, int(lower = 0, upper = 1))))
+  val y = data(int(lower = 0, upper = 1)(nDogs, nTrials))
 
   val beta = parameter(vector(3))
 

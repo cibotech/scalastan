@@ -2,6 +2,9 @@ package com.cibo.scalastan
 
 sealed trait StanType {
 
+  // Our type (for apply).
+  type THIS_TYPE <: StanType
+
   // The type of elements for this type (real for vector, etc.)
   type ELEMENT_TYPE <: StanType
 
@@ -75,6 +78,32 @@ sealed trait StanType {
     } else {
       ""
     }
+
+  def apply(
+    dim: StanValue[StanInt]
+  ): StanArray[THIS_TYPE] =
+    StanArray(dim, this.asInstanceOf[THIS_TYPE])
+
+  def apply(
+    dim1: StanValue[StanInt],
+    dim2: StanValue[StanInt]
+  ): StanArray[StanArray[THIS_TYPE]] =
+    StanArray(dim1, StanArray(dim2, this.asInstanceOf[THIS_TYPE]))
+
+  def apply(
+    dim1: StanValue[StanInt],
+    dim2: StanValue[StanInt],
+    dim3: StanValue[StanInt]
+  ): StanArray[StanArray[StanArray[THIS_TYPE]]] =
+    StanArray(dim1, StanArray(dim2, StanArray(dim3, this.asInstanceOf[THIS_TYPE])))
+
+  def apply(
+    dim1: StanValue[StanInt],
+    dim2: StanValue[StanInt],
+    dim3: StanValue[StanInt],
+    dim4: StanValue[StanInt]
+  ): StanArray[StanArray[StanArray[StanArray[THIS_TYPE]]]] =
+    StanArray(dim1, StanArray(dim2, StanArray(dim3, StanArray(dim4, this.asInstanceOf[THIS_TYPE]))))
 }
 
 trait StanScalarType extends StanType {
@@ -87,6 +116,7 @@ case class StanVoid private[scalastan] (
   lower: Option[StanValue[StanVoid]] = None,
   upper: Option[StanValue[StanVoid]] = None
 ) extends StanType {
+  type THIS_TYPE = StanVoid
   type ELEMENT_TYPE = StanVoid
   type NEXT_TYPE = StanVoid
   type SCALA_TYPE = Unit
@@ -103,6 +133,7 @@ case class StanInt private[scalastan] (
   lower: Option[StanValue[StanInt]] = None,
   upper: Option[StanValue[StanInt]] = None
 ) extends StanScalarType {
+  type THIS_TYPE = StanInt
   type ELEMENT_TYPE = StanInt
   type NEXT_TYPE = StanVoid
   type SCALA_TYPE = Int
@@ -118,6 +149,7 @@ case class StanArray[CONTAINED <: StanType] private[scalastan] (
   dim: StanValue[StanInt],
   inner: CONTAINED
 ) extends StanCompoundType {
+  type THIS_TYPE = StanArray[CONTAINED]
   type ELEMENT_TYPE = CONTAINED#ELEMENT_TYPE
   type NEXT_TYPE = CONTAINED
   type SCALA_TYPE = Vector[CONTAINED#SCALA_TYPE]
@@ -165,6 +197,7 @@ case class StanReal private[scalastan] (
   lower: Option[StanValue[StanReal]] = None,
   upper: Option[StanValue[StanReal]] = None
 ) extends StanScalarType {
+  type THIS_TYPE = StanReal
   type ELEMENT_TYPE = StanReal
   type NEXT_TYPE = StanVoid
   type SCALA_TYPE = Double
@@ -206,6 +239,7 @@ case class StanVector private[scalastan] (
   lower: Option[StanValue[StanReal]] = None,
   upper: Option[StanValue[StanReal]] = None
 ) extends StanVectorLike {
+  type THIS_TYPE = StanVector
   def typeName: String = s"vector$emitBounds[${dim.emit}]"
 }
 
@@ -214,6 +248,7 @@ case class StanRowVector private[scalastan] (
   lower: Option[StanValue[StanReal]] = None,
   upper: Option[StanValue[StanReal]] = None
 ) extends StanVectorLike {
+  type THIS_TYPE = StanRowVector
   def typeName: String = s"row_vector$emitBounds[${dim.emit}]"
 }
 
@@ -223,6 +258,7 @@ case class StanMatrix private[scalastan] (
   lower: Option[StanValue[StanReal]] = None,
   upper: Option[StanValue[StanReal]] = None
 ) extends StanCompoundType {
+  type THIS_TYPE = StanMatrix
   type ELEMENT_TYPE = StanReal
   type NEXT_TYPE = StanVector
   type SCALA_TYPE = Vector[Vector[Double]]

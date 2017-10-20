@@ -66,3 +66,8 @@ object TransposeAllowed {
   implicit val vectorTranspose = new TranposeAllowed[StanRowVector, StanVector]
   implicit val rowVectorTranspose = new TranposeAllowed[StanVector, StanRowVector]
 }
+
+@implicitNotFound("function only allowed in a GeneratedQuantity")
+sealed trait InGeneratedQuantityBlock extends TypeCheck
+
+object InGeneratedQuantityBlock extends InGeneratedQuantityBlock

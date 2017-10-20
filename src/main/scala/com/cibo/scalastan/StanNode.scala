@@ -60,13 +60,15 @@ case class SampleNode[T <: StanType](
 }
 
 // A distribution (Normal, etc.)
-abstract class StanDistribution[+T <: StanType] extends StanNode {
+abstract class StanDistribution[T <: StanType] extends StanNode {
   val name: String
   val args: Seq[StanValue[_]]
   def emit: String = {
     val argStr = args.map(_.emit).mkString(",")
     s"$name($argStr)"
   }
+
+  def rng(implicit gen: InGeneratedQuantityBlock): FunctionNode[T] = FunctionNode(s"${name}_rng", args)
 }
 
 case class StanContinuousDistribution[T <: StanType](

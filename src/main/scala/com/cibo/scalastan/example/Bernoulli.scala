@@ -11,7 +11,6 @@ object Bernoulli extends App with ScalaStan {
   val model = new Model {
     theta ~ Beta(1.0, 1.0)
     for(n <- range(1, N)) {
-      print(target())
       target += Bernoulli(theta).lpmf(y(n))
     }
   }

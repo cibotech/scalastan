@@ -210,7 +210,7 @@ Now, the transformed parameter can be referenced instead of the actual parameter
 
 User-Defined Functions
 ----------------------
-User-defined functions are created by extending the `Function` class. This class takes an option parameter to
+User-defined functions are created by extending the `Function` class. This class takes an optional parameter to
 determine the return type (it is assumed to return `void` if not specified).  The body of the class provides
 a DSL for implementing the function.  Inputs to the function are specified using the `input` function,
 which works much like the `local` function, but creates an input parameter instead of a local variable.
@@ -221,6 +221,20 @@ Here is an example to add `1` to all elements of an array:
 val myFunc = new Function(vector(n)) {
   val x = input(n)
   output(x + 1)
+}
+```
+
+Generated Quantities
+--------------------
+Generated quantities provide a means of deriving quantities from parameters, data, and random number generation.
+In ScalaStan, such quantities are created by extending the `GeneratedQuantity` class. This class works like
+the data and parameter transform blocks.  In addition to parameters and data, a generated quantity can use
+random numbers drawn from a distribution.
+
+Here is an example to draw a random number:
+```scala
+val rand = new GeneratedQuantity(real()) {
+  result := Normal(0.0, 1.0).rng
 }
 ```
 

@@ -14,6 +14,7 @@ trait ScalaStan extends Implicits { stan =>
   private val functions = ArrayBuffer[Function[_]]()
   private val dataTransforms = ArrayBuffer[DataTransform[_]]()
   private val parameterTransforms = ArrayBuffer[ParameterTransform[_]]()
+  private val generatedQuantities = ArrayBuffer[GeneratedQuantity[_]]()
 
   def data[T <: StanType](typeConstructor: T): StanDataDeclaration[T] = {
     val v = StanDataDeclaration[T](typeConstructor)
@@ -62,17 +63,15 @@ trait ScalaStan extends Implicits { stan =>
   ): StanArray[T] = StanArray(dim, inner)
 
   implicit def dataTransform2Value[T <: StanType](transform: DataTransform[T]): StanLocalDeclaration[T] = {
-    if (!dataTransforms.exists(_.result.emit == transform.result.emit)) {
-      dataTransforms += transform
-    }
     transform.result
   }
 
   implicit def paramTransform2Value[T <: StanType](transform: ParameterTransform[T]): StanParameterDeclaration[T] = {
-    if (!parameterTransforms.exists(_.result.emit == transform.result.emit)) {
-      parameterTransforms += transform
-    }
     transform.result
+  }
+
+  implicit def generatedQuntity2Value[T <: StanType](quantity: GeneratedQuantity[T]): StanParameterDeclaration[T] = {
+    quantity.result
   }
 
   implicit def compile(model: Model): CompiledModel = model.compile
@@ -163,10 +162,29 @@ trait ScalaStan extends Implicits { stan =>
 
   abstract class DataTransform[T <: StanType](typeConstructor: T) extends StanCode {
     val result: StanLocalDeclaration[T] = StanLocalDeclaration[T](typeConstructor)
+
+    if (!dataTransforms.exists(_.result.emit == result.emit)) {
+      dataTransforms += this
+    }
   }
 
   abstract class ParameterTransform[T <: StanType](typeConstructor: T) extends StanCode {
     val result: StanParameterDeclaration[T] = StanParameterDeclaration[T](typeConstructor)
+
+    if (!parameterTransforms.exists(_.result.emit == result.emit)) {
+      parameterTransforms += this
+    }
+  }
+
+  abstract class GeneratedQuantity[T <: StanType](typeConstructor: T) extends StanCode {
+
+    protected implicit val _generatedQuantity: InGeneratedQuantityBlock = InGeneratedQuantityBlock
+
+    val result: StanParameterDeclaration[T] = StanParameterDeclaration[T](typeConstructor)
+
+    if (!generatedQuantities.exists(_.result.emit == result.emit)) {
+      generatedQuantities += this
+    }
   }
 
   trait Model extends StanCode {
@@ -208,6 +226,13 @@ trait ScalaStan extends Implicits { stan =>
 
       writer.println("model {")
       emitCode(writer)
+      writer.println("}")
+
+      writer.println("generated quantities {")
+      generatedQuantities.foreach { g =>
+        writer.println(s"  ${g.result.emitDeclaration};")
+      }
+      generatedQuantities.foreach(g => g.emitCode(writer))
       writer.println("}")
     }
 

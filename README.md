@@ -181,6 +181,11 @@ To indicate that a value is sampled from a distribution, the `~` operator is use
 y ~ Normal(0.0, 1.0)
 ```
 
+This is equivalent to the following:
+```scala
+target += Normal(0.0, 1.0).lpdf(y)
+```
+
 #### Other Functions
 Most of the built-in Stan functions are available in ScalaStan.  The naming convention uses camel-case instead
 of underscores.

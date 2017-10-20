@@ -2,7 +2,7 @@ package com.cibo.scalastan.data
 
 import java.io.{BufferedReader, FileReader}
 import scala.collection.JavaConverters._
-import com.cibo.scalastan.{DataDeclarationType, StanDeclaration, StanType}
+import com.cibo.scalastan.{StanDataDeclaration, StanType}
 
 case class CsvDataSource(fileName: String) extends DataSource {
 
@@ -20,7 +20,7 @@ case class CsvDataSource(fileName: String) extends DataSource {
   }
 
   def read[T <: StanType, R](
-    decl: StanDeclaration[T, DataDeclarationType],
+    decl: StanDataDeclaration[T],
     name: String
   )(implicit ev: =:=[R, T#SCALA_TYPE]): R = {
     ???

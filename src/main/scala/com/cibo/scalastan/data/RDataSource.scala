@@ -2,7 +2,7 @@ package com.cibo.scalastan.data
 
 import java.io.FileReader
 
-import com.cibo.scalastan.{DataDeclarationType, StanDeclaration, StanType}
+import com.cibo.scalastan.{StanDataDeclaration, StanType}
 
 import scala.util.parsing.combinator.JavaTokenParsers
 
@@ -12,7 +12,7 @@ object RDataSource {
 
   private class RDataSource(values: Seq[Value]) extends DataSource {
     def read[T <: StanType, R](
-      decl: StanDeclaration[T, DataDeclarationType],
+      decl: StanDataDeclaration[T],
       name: String
     )(implicit ev: R =:= T#SCALA_TYPE): R = {
       values.find(_.name == name) match {

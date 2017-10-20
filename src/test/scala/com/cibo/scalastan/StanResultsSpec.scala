@@ -2,9 +2,9 @@ package com.cibo.scalastan
 
 class StanResultsSpec extends ScalaStanBaseSpec {
 
-  private val v1 = StanDeclaration[StanInt, ParameterDeclarationType](StanInt())
-  private val v2 = StanDeclaration[StanVector, ParameterDeclarationType](StanVector(v1))
-  private val v3 = StanDeclaration[StanArray[StanVector], ParameterDeclarationType](StanArray(v1, StanVector(v1)))
+  private val v1 = StanParameterDeclaration[StanInt](StanInt())
+  private val v2 = StanParameterDeclaration[StanVector](StanVector(v1))
+  private val v3 = StanParameterDeclaration[StanArray[StanVector]](StanArray(v1, StanVector(v1)))
 
   private val testData1 = Map[String, Int](
     "lp__" -> 1,

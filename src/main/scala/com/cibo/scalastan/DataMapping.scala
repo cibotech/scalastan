@@ -1,7 +1,7 @@
 package com.cibo.scalastan
 
 case class DataMapping[T <: StanType] private[scalastan] (
-  decl: StanDeclaration[T, DataDeclarationType],
+  decl: StanDataDeclaration[T],
   values: T#SCALA_TYPE
 ) {
   def emit: String = {

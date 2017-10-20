@@ -58,20 +58,15 @@ abstract class StanValue[T <: StanType] extends StanNode with Implicits {
 
   // Element-wise operators.
   def :*(right: StanValue[T]): StanValue[T]= BinaryOperator(".*", this, right)
-  /*
-  def :*[B <: StanType, R <: StanType](
-    right: StanValue[B]
-  )(implicit e: ElementwiseMultiplicationAllowed[R, T, B]): StanValue[R]= BinaryOperator(".*", this, right)
-  */
-  /*
-  def :/[B <: StanType, R <: StanType](
-    right: StanValue[T]
-  )(implicit e: ElementwiseMultiplicationAllowed[R, T, B]): StanValue[R] = BinaryOperator("./", this, right)
-  */
   def :/(right: StanValue[T]): StanValue[T]= BinaryOperator("./", this, right)
 
+  def ~(dist: StanDistribution[T])(implicit code: ArrayBuffer[StanNode]): Unit = {
+    code += SampleNode[T](this, dist)
+  }
+
   def +=[B <: StanType](right: StanValue[B])(
-    implicit ev: AdditionAllowed[T, T, B], code: ArrayBuffer[StanNode]
+    implicit ev: AdditionAllowed[T, T, B],
+    code: ArrayBuffer[StanNode]
   ): Unit = {
     code += BinaryOperator("+=", this, right, parens = false)
   }
@@ -94,24 +89,22 @@ abstract class StanValue[T <: StanType] extends StanNode with Implicits {
     code += BinaryOperator("/=", this, right, parens = false)
   }
 
-  def ~(dist: StanDistribution[T])(implicit code: ArrayBuffer[StanNode]): Unit = {
-    code += SampleNode[T](this, dist)
+  def :=(right: StanValue[T])(
+    implicit code: ArrayBuffer[StanNode]
+  ): Unit = {
+    code += BinaryOperator[T, T, T]("=", this, right, parens = false)
   }
 
   def t[R <: StanType](implicit e: TranposeAllowed[T, R]): StanValue[R] = TransposeOperator(this)
 
-  def :=(right: StanValue[T])(implicit code: ArrayBuffer[StanNode]): Unit = {
-    code += BinaryOperator[T, T, T]("=", this, right, parens = false)
-  }
-
-  def apply[N <: StanType](index: StanValue[StanInt])(implicit ev: N =:= T#NEXT_TYPE): StanValue[N] = {
+  def apply[N <: StanType](index: StanValue[StanInt])(implicit ev: N =:= T#NEXT_TYPE): IndexOperator[T, N] = {
     IndexOperator(this, index)
   }
 
   def apply[N <: StanType](
     index1: StanValue[StanInt],
     index2: StanValue[StanInt]
-  )(implicit ev: N =:= T#NEXT_TYPE#NEXT_TYPE): StanValue[N] = {
+  )(implicit ev: N =:= T#NEXT_TYPE#NEXT_TYPE): IndexOperator[T, N] = {
     IndexOperator(this, index1, index2)
   }
 
@@ -119,7 +112,7 @@ abstract class StanValue[T <: StanType] extends StanNode with Implicits {
     index1: StanValue[StanInt],
     index2: StanValue[StanInt],
     index3: StanValue[StanInt]
-  )(implicit ev: N =:= T#NEXT_TYPE#NEXT_TYPE#NEXT_TYPE): StanValue[N] = {
+  )(implicit ev: N =:= T#NEXT_TYPE#NEXT_TYPE#NEXT_TYPE): IndexOperator[T, N] = {
     IndexOperator(this, index1, index2, index3)
   }
 
@@ -128,7 +121,7 @@ abstract class StanValue[T <: StanType] extends StanNode with Implicits {
     index2: StanValue[StanInt],
     index3: StanValue[StanInt],
     index4: StanValue[StanInt]
-  )(implicit ev: N =:= T#NEXT_TYPE#NEXT_TYPE#NEXT_TYPE#NEXT_TYPE): StanValue[N] = {
+  )(implicit ev: N =:= T#NEXT_TYPE#NEXT_TYPE#NEXT_TYPE#NEXT_TYPE): IndexOperator[T, N] = {
     IndexOperator(this, index1, index2, index3, index4)
   }
 }
@@ -143,10 +136,13 @@ case class FunctionNode[T <: StanType](
   }
 }
 
-case class LiteralNode[T <: StanType](
-  value: String
-) extends StanValue[T] {
-  def emit: String = value
+case class TargetFunction() extends StanValue[StanReal] {
+  def emit: String = "target()"
+}
+
+case class TargetValue() extends StanValue[StanReal] {
+  def emit: String = "target"
+  def apply(): TargetFunction = TargetFunction()
 }
 
 case class DistributionFunctionNode[T <: StanType](

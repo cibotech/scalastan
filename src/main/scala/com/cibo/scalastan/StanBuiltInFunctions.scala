@@ -5,7 +5,7 @@ import scala.collection.mutable.ArrayBuffer
 protected trait StanBuiltInFunctions {
 
   // Print (38.1).
-  def print(args: StanValue[_]*)(implicit code: ArrayBuffer[StanValue[_]]): Unit = {
+  def print(args: StanValue[_]*)(implicit code: ArrayBuffer[StanNode]): Unit = {
     code += FunctionNode[StanVoid]("print", args)
   }
 

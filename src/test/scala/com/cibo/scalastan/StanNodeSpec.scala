@@ -2,10 +2,10 @@ package com.cibo.scalastan
 
 class StanNodeSpec extends ScalaStanBaseSpec with ScalaStan with StanDistributions {
 
-  private val v1 = StanDeclaration[StanReal, LocalDeclarationType](StanReal())
-  private val v2 = StanDeclaration[StanReal, LocalDeclarationType](StanReal())
-  private val v3 = StanDeclaration[StanInt, LocalDeclarationType](StanInt())
-  private val y = StanDeclaration[StanReal, LocalDeclarationType](StanReal())
+  private val v1 = StanLocalDeclaration[StanReal](StanReal())
+  private val v2 = StanLocalDeclaration[StanReal](StanReal())
+  private val v3 = StanLocalDeclaration[StanInt](StanInt())
+  private val y = StanLocalDeclaration[StanReal](StanReal())
   private val continuous: StanContinuousDistribution[StanReal] = Normal(v1, v2)
   private val discreteCdf: StanDiscreteDistribution[StanReal] = Binomial(v3, v2)
 

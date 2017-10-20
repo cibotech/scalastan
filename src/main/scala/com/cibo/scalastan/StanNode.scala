@@ -20,7 +20,7 @@ abstract class EnterScope extends StanNode {
 
 // "For loop"
 case class ForLoop[T <: StanType](
-  decl: StanDeclaration[T, LocalDeclarationType],
+  decl: StanLocalDeclaration[T],
   range: ValueRange
 ) extends EnterScope {
   def emit: String = s"for(${decl.emit} in ${range.emit}) {"
@@ -110,7 +110,7 @@ case class ValueRange(start: StanValue[StanInt], end: StanValue[StanInt]) extend
   // This foreach will get called automatically when a for comprehension is used with ValueRange.
   def foreach(f: StanValue[StanInt] => Unit)(implicit ev: TemporaryValue[StanInt], code: ArrayBuffer[StanNode]): Unit = {
     val temp = ev.create()
-    val decl = StanDeclaration[StanInt, LocalDeclarationType](temp)
+    val decl = StanLocalDeclaration[StanInt](temp)
     code += ForLoop(decl, this)
     f(decl)
     code += LeaveScope

@@ -56,7 +56,7 @@ class StanValueSpec extends ScalaStanBaseSpec {
 
     describe("vectors and ints") {
       it("can add vector + const_int") {
-        val r = StanDeclaration[StanVector, LocalDeclarationType](StanVector(StanConstant[StanInt](1))) + 1
+        val r = StanLocalDeclaration[StanVector](StanVector(StanConstant[StanInt](1))) + 1
         check(r.emit, "(v#) + 1")
       }
     }

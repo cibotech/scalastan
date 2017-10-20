@@ -9,20 +9,20 @@ import scala.collection.JavaConverters._
 
 trait ScalaStan extends Implicits { stan =>
 
-  private[scalastan] val dataValues = ArrayBuffer[StanDeclaration[_, DataDeclarationType]]()
-  private val parameterValues = ArrayBuffer[StanDeclaration[_, ParameterDeclarationType]]()
+  private[scalastan] val dataValues = ArrayBuffer[StanDataDeclaration[_]]()
+  private val parameterValues = ArrayBuffer[StanParameterDeclaration[_]]()
   private val functions = ArrayBuffer[Function[_]]()
   private val dataTransforms = ArrayBuffer[DataTransform[_]]()
   private val parameterTransforms = ArrayBuffer[ParameterTransform[_]]()
 
-  def data[T <: StanType](typeConstructor: T): StanDeclaration[T, DataDeclarationType] = {
-    val v = StanDeclaration[T, DataDeclarationType](typeConstructor)
+  def data[T <: StanType](typeConstructor: T): StanDataDeclaration[T] = {
+    val v = StanDataDeclaration[T](typeConstructor)
     dataValues += v
     v
   }
 
-  def parameter[T <: StanType](typeConstructor: T): StanDeclaration[T, ParameterDeclarationType] = {
-    val v = StanDeclaration[T, ParameterDeclarationType](typeConstructor)
+  def parameter[T <: StanType](typeConstructor: T): StanParameterDeclaration[T] = {
+    val v = StanParameterDeclaration[T](typeConstructor)
     parameterValues += v
     v
   }
@@ -81,11 +81,11 @@ trait ScalaStan extends Implicits { stan =>
 
     protected implicit val code: ArrayBuffer[StanNode] = ArrayBuffer[StanNode]()
 
-    def local[T <: StanType](typeConstructor: T): StanDeclaration[T, LocalDeclarationType] = {
+    def local[T <: StanType](typeConstructor: T): StanLocalDeclaration[T] = {
       if (typeConstructor.lower.isDefined || typeConstructor.upper.isDefined) {
         throw new IllegalStateException("local variables may not have constraints")
       }
-      val decl = StanDeclaration[T, LocalDeclarationType](typeConstructor)
+      val decl = StanLocalDeclaration[T](typeConstructor)
       code += StanInlineDeclaration(decl)
       decl
     }
@@ -120,11 +120,11 @@ trait ScalaStan extends Implicits { stan =>
 
   abstract class Function[RETURN_TYPE <: StanType](returnType: RETURN_TYPE = StanVoid()) extends StanCode {
 
-    private val result = StanDeclaration[RETURN_TYPE, LocalDeclarationType](returnType)
-    private val inputs = new ArrayBuffer[StanDeclaration[_, LocalDeclarationType]]()
+    private val result = StanLocalDeclaration[RETURN_TYPE](returnType)
+    private val inputs = new ArrayBuffer[StanLocalDeclaration[_]]()
 
-    def input[T <: StanType](typeConstructor: T): StanDeclaration[T, LocalDeclarationType] = {
-      val decl = StanDeclaration[T, LocalDeclarationType](typeConstructor)
+    def input[T <: StanType](typeConstructor: T): StanLocalDeclaration[T] = {
+      val decl = StanLocalDeclaration[T](typeConstructor)
       inputs += decl
       decl
     }
@@ -154,19 +154,17 @@ trait ScalaStan extends Implicits { stan =>
   }
 
   abstract class DataTransform[T <: StanType](typeConstructor: T) extends StanCode {
-    val result: StanDeclaration[T, DataDeclarationType] =
-      StanDeclaration[T, DataDeclarationType](typeConstructor)
+    val result: StanLocalDeclaration[T] = StanLocalDeclaration[T](typeConstructor)
   }
 
   abstract class ParameterTransform[T <: StanType](typeConstructor: T) extends StanCode {
-    val result: StanDeclaration[T, ParameterDeclarationType] =
-      StanDeclaration[T, ParameterDeclarationType](typeConstructor)
+    val result: StanParameterDeclaration[T] = StanParameterDeclaration[T](typeConstructor)
   }
 
   trait Model extends StanCode {
 
     // Log probability function.
-    def target: StanValue[StanReal] = LiteralNode("target")
+    def target: TargetValue = TargetValue()
 
     private def emit(writer: PrintWriter): Unit = {
 

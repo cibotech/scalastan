@@ -23,11 +23,11 @@ case class StanDataDeclaration[T <: StanType] private[scalastan] (
 
 case class StanParameterDeclaration[T <: StanType] private[scalastan] (
   typeConstructor: T
-) extends StanDeclaration[T] with Assignment[T]
+) extends StanDeclaration[T] with Assignable[T] with Updatable[T]
 
 case class StanLocalDeclaration[T <: StanType] private[scalastan] (
   typeConstructor: T
-) extends StanDeclaration[T] with Assignment[T]
+) extends StanDeclaration[T] with Assignable[T] with Updatable[T]
 
 case class StanInlineDeclaration[T <: StanType](
   decl: StanLocalDeclaration[T]

@@ -64,31 +64,6 @@ abstract class StanValue[T <: StanType] extends StanNode with Implicits {
     code += SampleNode[T](this, dist)
   }
 
-  def +=[B <: StanType](right: StanValue[B])(
-    implicit ev: AdditionAllowed[T, T, B],
-    code: ArrayBuffer[StanNode]
-  ): Unit = {
-    code += BinaryOperator("+=", this, right, parens = false)
-  }
-
-  def -=[B <: StanType](right: StanValue[B])(
-    implicit ev: AdditionAllowed[T, T, B], code: ArrayBuffer[StanNode]
-  ): Unit = {
-    code += BinaryOperator("-=", this, right, parens = false)
-  }
-
-  def *=[B <: StanType](right: StanValue[B])(
-    implicit ev: MultiplicationAllowed[T, T, B], code: ArrayBuffer[StanNode]
-  ): Unit = {
-    code += BinaryOperator("*=", this, right, parens = false)
-  }
-
-  def /=[B <: StanScalarType](right: StanValue[B])(
-    implicit code: ArrayBuffer[StanNode]
-  ): Unit = {
-    code += BinaryOperator("/=", this, right, parens = false)
-  }
-
   def t[R <: StanType](implicit e: TranposeAllowed[T, R]): StanValue[R] = TransposeOperator(this)
 
 }
@@ -125,7 +100,7 @@ trait ReadOnlyIndex[T <: StanType] { self: StanValue[T] =>
   }
 }
 
-trait Assignment[T <: StanType] { self: StanValue[T] =>
+trait Assignable[T <: StanType] { self: StanValue[T] =>
   def :=(right: StanValue[T])(
     implicit code: ArrayBuffer[StanNode]
   ): Unit = {
@@ -163,6 +138,33 @@ trait Assignment[T <: StanType] { self: StanValue[T] =>
   }
 }
 
+trait Updatable[T <: StanType] { self: StanValue[T] =>
+  def +=[B <: StanType](right: StanValue[B])(
+    implicit ev: AdditionAllowed[T, T, B],
+    code: ArrayBuffer[StanNode]
+  ): Unit = {
+    code += BinaryOperator("+=", this, right, parens = false)
+  }
+
+  def -=[B <: StanType](right: StanValue[B])(
+    implicit ev: AdditionAllowed[T, T, B], code: ArrayBuffer[StanNode]
+  ): Unit = {
+    code += BinaryOperator("-=", this, right, parens = false)
+  }
+
+  def *=[B <: StanType](right: StanValue[B])(
+    implicit ev: MultiplicationAllowed[T, T, B], code: ArrayBuffer[StanNode]
+  ): Unit = {
+    code += BinaryOperator("*=", this, right, parens = false)
+  }
+
+  def /=[B <: StanScalarType](right: StanValue[B])(
+    implicit code: ArrayBuffer[StanNode]
+  ): Unit = {
+    code += BinaryOperator("/=", this, right, parens = false)
+  }
+}
+
 case class FunctionNode[T <: StanType](
   name: String,
   args: Seq[StanValue[_]]
@@ -177,7 +179,7 @@ case class TargetFunction() extends StanValue[StanReal] {
   def emit: String = "target()"
 }
 
-case class TargetValue() extends StanValue[StanReal] {
+case class TargetValue() extends StanValue[StanReal] with Updatable[StanReal] {
   def emit: String = "target"
   def apply(): TargetFunction = TargetFunction()
 }
@@ -231,7 +233,7 @@ case class IndexOperator[T <: StanType, N <: StanType](
 case class IndexOperatorWithAssignment[T <: StanType, N <: StanType](
   value: StanValue[T],
   indices: StanValue[StanInt]*
-) extends StanValue[N] with Assignment[N] {
+) extends StanValue[N] with Assignable[N] {
   def emit: String = value.emit + indices.map(_.emit).mkString("[", ",", "]")
 }
 

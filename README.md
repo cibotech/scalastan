@@ -93,9 +93,13 @@ the following data types:
  - `vector(length, [lower], [upper])` // A (column) vector of reals
  - `rowVector(length, [lower], [upper])` // A row vector of reals
  - `matrix(rows, cols, [lower], [upper])` // A matrix of reals
- - `array(length, subtype)` // An array of the specified subtype
 
-Note that the `array` type can be arbitrarily nested to create arrays with multiple dimensions.
+Arrays can be created for any data type with multiple dimensions by calling `apply` on the type.
+For example, to create a 2-dimensional array of `int`:
+
+```scala
+int()(j, k)
+```
 
 Parameter Declarations
 ----------------------

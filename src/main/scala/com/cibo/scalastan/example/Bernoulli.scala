@@ -5,7 +5,7 @@ import com.cibo.scalastan.ScalaStan
 object Bernoulli extends App with ScalaStan {
 
   val N = data(int(lower = 0))
-  val y = data(array(N, int(lower = 0, upper = 1)))
+  val y = data(int(lower = 0, upper = 1)(N))
   val theta = parameter(real(lower = 0.0, upper = 1.0))
 
   val model = new Model {

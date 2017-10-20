@@ -5,7 +5,7 @@ import com.cibo.scalastan.{OptimizeMethod, ScalaStan}
 object RadonInterVary extends App with ScalaStan {
 
   val N = data(int(lower = 0))
-  val county = data(array(N, int(lower = 1, upper = 85)))
+  val county = data(int(lower = 1, upper = 85)(N))
   val u = data(vector(N))
   val x = data(vector(N))
   val y = data(vector(N))

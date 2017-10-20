@@ -20,6 +20,6 @@ object Normal extends App with ScalaStan {
     .withData(y, dataset)
     .run()
   println(s"mu = ${results.mean(mu)}")
-  println(s"sigma = ${results.mean(sigma)}, ${results.sd(sigma)}, ${results.percentile(sigma, 0.5)}")
+  println(s"sigma = ${results.mean(sigma)}, ${results.sd(sigma)}, ${results.quantile(sigma, 0.5)}")
 
 }

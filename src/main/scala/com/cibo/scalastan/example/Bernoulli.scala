@@ -20,5 +20,6 @@ object Bernoulli extends App with ScalaStan {
     .withData(N, dataset.length)
     .withData(y, dataset)
     .run()
-  println(s"theta = ${results.best(theta)}")
+  println(s"theta = ${results.mean(theta)}")
+  println(s"N_Eff = ${results.effectiveSampleSize(theta)}")
 }

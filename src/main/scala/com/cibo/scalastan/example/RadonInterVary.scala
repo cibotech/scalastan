@@ -32,11 +32,11 @@ object RadonInterVary extends App with ScalaStan {
   }
 
   val model = new Model {
-    muBeta ~ Normal(0.0, 1.0)
+    muBeta ~ Normal(0, 1)
     beta ~ Normal(100.0 * muBeta, sigmaBeta)
-    muA ~ Normal(0.0, 1.0)
+    muA ~ Normal(0, 1)
     a ~ Normal(muA, sigmaA)
-    muB ~ Normal(0.0, 1.0)
+    muB ~ Normal(0, 1)
     b ~ Normal(0.1 * muB, sigmaB)
     y ~ Normal(yhat, sigmaY)
   }

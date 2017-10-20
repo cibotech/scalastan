@@ -71,3 +71,20 @@ object TransposeAllowed {
 sealed trait InGeneratedQuantityBlock extends TypeCheck
 
 object InGeneratedQuantityBlock extends InGeneratedQuantityBlock
+
+@implicitNotFound("continuous type required, got ${T}")
+sealed class ContinuousType[T <: StanType] extends TypeCheck
+
+object ContinuousType {
+  implicit def hasRealElement[T <: StanType](implicit ev: T#ELEMENT_TYPE =:= StanReal) = new ContinuousType[T]
+
+  // Because Stan auto-converts ints to reals, we allow bare ints to be treated as continuous.
+  implicit val canConvertToReal = new ContinuousType[StanInt]
+}
+
+@implicitNotFound("discrete type required, got ${T}")
+sealed class DiscreteType[T <: StanType] extends TypeCheck
+
+object DiscreteType {
+  implicit def hasIntElement[T <: StanType](implicit ev: T#ELEMENT_TYPE =:= StanInt) = new DiscreteType[T]
+}

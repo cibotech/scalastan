@@ -5,7 +5,7 @@ case class StanResults private (values: Seq[Map[String, String]]) {
   lazy val bestIndex: Int = values.zipWithIndex.maxBy(v => v._1("lp__").toDouble)._2
 
   def samples[T <: StanType, R](
-    decl: StanDeclaration[T, ParameterDeclarationType]
+    decl: StanParameterDeclaration[T]
   )(implicit ev: T#SCALA_TYPE =:= R): Vector[R] = {
     val name = decl.emit
     values.map { value => decl.typeConstructor.parse(name, value) }.toVector.asInstanceOf[Vector[R]]
@@ -14,7 +14,7 @@ case class StanResults private (values: Seq[Map[String, String]]) {
   lazy val logProbabilities: Seq[Double] = values.map(v => v("lp__").toDouble)
 
   def best[T <: StanType, R](
-    decl: StanDeclaration[T, ParameterDeclarationType]
+    decl: StanParameterDeclaration[T]
   )(implicit ev: T#SCALA_TYPE =:= R): R = {
     decl.typeConstructor.parse(decl.emit, values(bestIndex)).asInstanceOf[R]
   }
@@ -31,7 +31,7 @@ case class StanResults private (values: Seq[Map[String, String]]) {
   }
 
   def mean[T <: StanType, R](
-    decl: StanDeclaration[T, ParameterDeclarationType]
+    decl: StanParameterDeclaration[T]
   )(implicit ev: R =:= T#SUMMARY_TYPE): R = {
     val tc = decl.typeConstructor
     tc.combine(samples(decl).asInstanceOf[Seq[tc.SCALA_TYPE]])(mean).asInstanceOf[R]
@@ -52,7 +52,7 @@ case class StanResults private (values: Seq[Map[String, String]]) {
   }
 
   def variance[T <: StanType, R](
-    decl: StanDeclaration[T, ParameterDeclarationType]
+    decl: StanParameterDeclaration[T]
   )(implicit ev: R =:= T#SUMMARY_TYPE): R = {
     val tc = decl.typeConstructor
     tc.combine(samples(decl).asInstanceOf[Seq[tc.SCALA_TYPE]])(variance).asInstanceOf[R]
@@ -61,7 +61,7 @@ case class StanResults private (values: Seq[Map[String, String]]) {
   private def sd(values: Seq[Double]): Double = math.sqrt(variance(values))
 
   def sd[T <: StanType, R](
-    decl: StanDeclaration[T, ParameterDeclarationType]
+    decl: StanParameterDeclaration[T]
   )(implicit ev: R =:= T#SUMMARY_TYPE): R = {
     decl.typeConstructor.combine(samples(decl).asInstanceOf[Seq[decl.typeConstructor.SCALA_TYPE]])(sd).asInstanceOf[R]
   }
@@ -72,7 +72,7 @@ case class StanResults private (values: Seq[Map[String, String]]) {
   }
 
   def percentile[T <: StanType, R](
-    decl: StanDeclaration[T, ParameterDeclarationType],
+    decl: StanParameterDeclaration[T],
     frac: Double = 0.5
   )(implicit ev: R =:= T#SUMMARY_TYPE): R = {
     require(frac > 0.0 && frac < 1.0)

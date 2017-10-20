@@ -20,7 +20,7 @@ abstract class EnterScope extends StanNode {
 
 // "For loop"
 case class ForLoop[T <: StanType](
-  decl: StanDeclaration[T, LocalDeclarationType],
+  decl: StanLocalDeclaration[T],
   range: ValueRange
 ) extends EnterScope {
   def emit: String = s"for(${decl.emit} in ${range.emit}) {"
@@ -60,13 +60,15 @@ case class SampleNode[T <: StanType](
 }
 
 // A distribution (Normal, etc.)
-abstract class StanDistribution[+T <: StanType] extends StanNode {
+abstract class StanDistribution[T <: StanType] extends StanNode {
   val name: String
   val args: Seq[StanValue[_]]
   def emit: String = {
     val argStr = args.map(_.emit).mkString(",")
     s"$name($argStr)"
   }
+
+  def rng(implicit gen: InGeneratedQuantityBlock): FunctionNode[T] = FunctionNode(s"${name}_rng", args)
 }
 
 case class StanContinuousDistribution[T <: StanType](
@@ -110,7 +112,7 @@ case class ValueRange(start: StanValue[StanInt], end: StanValue[StanInt]) extend
   // This foreach will get called automatically when a for comprehension is used with ValueRange.
   def foreach(f: StanValue[StanInt] => Unit)(implicit ev: TemporaryValue[StanInt], code: ArrayBuffer[StanNode]): Unit = {
     val temp = ev.create()
-    val decl = StanDeclaration[StanInt, LocalDeclarationType](temp)
+    val decl = StanLocalDeclaration[StanInt](temp)
     code += ForLoop(decl, this)
     f(decl)
     code += LeaveScope

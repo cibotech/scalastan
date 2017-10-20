@@ -1,16 +1,11 @@
 package com.cibo.scalastan
 
-sealed trait DeclarationType
-final class DataDeclarationType extends DeclarationType
-final class ParameterDeclarationType extends DeclarationType
-final class LocalDeclarationType extends DeclarationType
-
-case class StanDeclaration[T <: StanType, D <: DeclarationType] private[scalastan] (
-  typeConstructor: T
-) extends StanValue[T] {
+trait StanDeclaration[T <: StanType] extends StanValue[T] {
+  val typeConstructor: T
   private val name: String = StanDeclaration.getName
   def emit: String = name
   def emitDeclaration: String = typeConstructor.emitDeclaration(name)
+
 }
 
 object StanDeclaration {
@@ -22,8 +17,20 @@ object StanDeclaration {
   }
 }
 
+case class StanDataDeclaration[T <: StanType] private[scalastan] (
+  typeConstructor: T
+) extends StanDeclaration[T] with ReadOnlyIndex[T]
+
+case class StanParameterDeclaration[T <: StanType] private[scalastan] (
+  typeConstructor: T
+) extends StanDeclaration[T] with Assignable[T] with Updatable[T]
+
+case class StanLocalDeclaration[T <: StanType] private[scalastan] (
+  typeConstructor: T
+) extends StanDeclaration[T] with Assignable[T] with Updatable[T]
+
 case class StanInlineDeclaration[T <: StanType](
-  decl: StanDeclaration[T, LocalDeclarationType]
+  decl: StanLocalDeclaration[T]
 ) extends StanValue[T] {
   def emit: String = decl.emitDeclaration
 }

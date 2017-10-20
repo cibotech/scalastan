@@ -4,8 +4,13 @@ import scala.collection.mutable.ArrayBuffer
 
 protected trait StanBuiltInFunctions {
 
+  // Reject (5.10).
+  def reject(args: StanValue[_]*)(implicit code: ArrayBuffer[StanNode]): Unit = {
+    code += FunctionNode[StanVoid]("reject", args)
+  }
+
   // Print (38.1).
-  def print(args: StanValue[_]*)(implicit code: ArrayBuffer[StanValue[_]]): Unit = {
+  def print(args: StanValue[_]*)(implicit code: ArrayBuffer[StanNode]): Unit = {
     code += FunctionNode[StanVoid]("print", args)
   }
 

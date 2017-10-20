@@ -21,7 +21,7 @@ case class CompiledModel private[scalastan] (
   }
 
   def withData[T <: StanType, V](
-    decl: StanDeclaration[T, DataDeclarationType],
+    decl: StanDataDeclaration[T],
     data: V
   )(implicit ev: V =:= T#SCALA_TYPE): CompiledModel = {
     val conv = data.asInstanceOf[T#SCALA_TYPE]
@@ -29,7 +29,7 @@ case class CompiledModel private[scalastan] (
   }
 
   def withData[T <: StanType, V](
-    value: (StanDeclaration[T, DataDeclarationType], V)
+    value: (StanDataDeclaration[T], V)
   )(implicit ev: V =:= T#SCALA_TYPE): CompiledModel = withData(value._1, value._2)
 
   private def processOutput(fileName: String): StanResults = {

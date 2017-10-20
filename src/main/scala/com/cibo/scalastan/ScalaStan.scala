@@ -9,20 +9,21 @@ import scala.collection.JavaConverters._
 
 trait ScalaStan extends Implicits { stan =>
 
-  private[scalastan] val dataValues = ArrayBuffer[StanDeclaration[_, DataDeclarationType]]()
-  private val parameterValues = ArrayBuffer[StanDeclaration[_, ParameterDeclarationType]]()
+  private[scalastan] val dataValues = ArrayBuffer[StanDataDeclaration[_]]()
+  private val parameterValues = ArrayBuffer[StanParameterDeclaration[_]]()
   private val functions = ArrayBuffer[Function[_]]()
   private val dataTransforms = ArrayBuffer[DataTransform[_]]()
   private val parameterTransforms = ArrayBuffer[ParameterTransform[_]]()
+  private val generatedQuantities = ArrayBuffer[GeneratedQuantity[_]]()
 
-  def data[T <: StanType](typeConstructor: T): StanDeclaration[T, DataDeclarationType] = {
-    val v = StanDeclaration[T, DataDeclarationType](typeConstructor)
+  def data[T <: StanType](typeConstructor: T): StanDataDeclaration[T] = {
+    val v = StanDataDeclaration[T](typeConstructor)
     dataValues += v
     v
   }
 
-  def parameter[T <: StanType](typeConstructor: T): StanDeclaration[T, ParameterDeclarationType] = {
-    val v = StanDeclaration[T, ParameterDeclarationType](typeConstructor)
+  def parameter[T <: StanType](typeConstructor: T): StanParameterDeclaration[T] = {
+    val v = StanParameterDeclaration[T](typeConstructor)
     parameterValues += v
     v
   }
@@ -61,58 +62,64 @@ trait ScalaStan extends Implicits { stan =>
     inner: T
   ): StanArray[T] = StanArray(dim, inner)
 
-  implicit def dataTransform2Value[T <: StanType](transform: DataTransform[T]): StanValue[T] = {
-    if (!dataTransforms.exists(_.result.emit == transform.result.emit)) {
-      dataTransforms += transform
-    }
+  implicit def dataTransform2Value[T <: StanType](transform: DataTransform[T]): StanLocalDeclaration[T] = {
     transform.result
   }
 
-  implicit def paramTransform2Value[T <: StanType](transform: ParameterTransform[T]): StanValue[T] = {
-    if (!parameterTransforms.exists(_.result.emit == transform.result.emit)) {
-      parameterTransforms += transform
-    }
+  implicit def paramTransform2Value[T <: StanType](transform: ParameterTransform[T]): StanParameterDeclaration[T] = {
     transform.result
+  }
+
+  implicit def generatedQuntity2Value[T <: StanType](quantity: GeneratedQuantity[T]): StanParameterDeclaration[T] = {
+    quantity.result
   }
 
   implicit def compile(model: Model): CompiledModel = model.compile
 
   trait StanCode extends StanBuiltInFunctions with StanDistributions {
 
-    protected implicit val code: ArrayBuffer[StanNode] = ArrayBuffer[StanNode]()
+    protected implicit val _codeBuffer: ArrayBuffer[StanNode] = ArrayBuffer[StanNode]()
 
-    def local[T <: StanType](typeConstructor: T): StanDeclaration[T, LocalDeclarationType] = {
+    def local[T <: StanType](typeConstructor: T): StanLocalDeclaration[T] = {
       if (typeConstructor.lower.isDefined || typeConstructor.upper.isDefined) {
         throw new IllegalStateException("local variables may not have constraints")
       }
-      val decl = StanDeclaration[T, LocalDeclarationType](typeConstructor)
-      code += StanInlineDeclaration(decl)
+
+      // Local declarations need to go at the top of the block.
+      // Here we insert after the last EnterScope, the last declaration, or at the beginning.
+      val decl = StanLocalDeclaration[T](typeConstructor)
+      val insertionPoint = _codeBuffer.lastIndexWhere {
+        case _: EnterScope               => true
+        case _: StanInlineDeclaration[_] => true
+        case _                           => false
+      }
+      _codeBuffer.insert(insertionPoint + 1, StanInlineDeclaration(decl))
       decl
     }
 
     case class when(cond: StanValue[StanInt])(block: => Unit) {
-      code += IfStatement(cond)
+      _codeBuffer += IfStatement(cond)
       block
-      code += LeaveScope
+      _codeBuffer += LeaveScope
 
       def when(otherCond: StanValue[StanInt])(otherBlock: => Unit): when = {
-        code += ElseIfStatement(otherCond)
+        _codeBuffer += ElseIfStatement(otherCond)
         otherBlock
-        code += LeaveScope
+        _codeBuffer += LeaveScope
         this
       }
 
       def otherwise(otherBlock: => Unit): Unit = {
-        code += ElseStatement
+        _codeBuffer += ElseStatement
         otherBlock
-        code += LeaveScope
+        _codeBuffer += LeaveScope
       }
     }
 
     def range(start: StanValue[StanInt], end: StanValue[StanInt]): ValueRange = ValueRange(start, end)
 
     private[ScalaStan] def emitCode(writer: PrintWriter): Unit = {
-      code.foreach { c =>
+      _codeBuffer.foreach { c =>
         writer.println(s"  ${c.emit}${c.terminator}")
       }
     }
@@ -120,17 +127,17 @@ trait ScalaStan extends Implicits { stan =>
 
   abstract class Function[RETURN_TYPE <: StanType](returnType: RETURN_TYPE = StanVoid()) extends StanCode {
 
-    private val result = StanDeclaration[RETURN_TYPE, LocalDeclarationType](returnType)
-    private val inputs = new ArrayBuffer[StanDeclaration[_, LocalDeclarationType]]()
+    private val result = StanLocalDeclaration[RETURN_TYPE](returnType)
+    private val inputs = new ArrayBuffer[StanLocalDeclaration[_]]()
 
-    def input[T <: StanType](typeConstructor: T): StanDeclaration[T, LocalDeclarationType] = {
-      val decl = StanDeclaration[T, LocalDeclarationType](typeConstructor)
+    def input[T <: StanType](typeConstructor: T): StanLocalDeclaration[T] = {
+      val decl = StanLocalDeclaration[T](typeConstructor)
       inputs += decl
       decl
     }
 
     def output(value: StanValue[RETURN_TYPE]): Unit = {
-      code += ReturnNode(value)
+      _codeBuffer += ReturnNode(value)
     }
 
     def apply(args: StanValue[_]*): FunctionNode[RETURN_TYPE] = {
@@ -140,7 +147,7 @@ trait ScalaStan extends Implicits { stan =>
       }
       val node = FunctionNode[RETURN_TYPE](name, args)
       if (returnType == StanVoid()) {
-        code += node
+        _codeBuffer += node
       }
       node
     }
@@ -154,19 +161,36 @@ trait ScalaStan extends Implicits { stan =>
   }
 
   abstract class DataTransform[T <: StanType](typeConstructor: T) extends StanCode {
-    val result: StanDeclaration[T, DataDeclarationType] =
-      StanDeclaration[T, DataDeclarationType](typeConstructor)
+    val result: StanLocalDeclaration[T] = StanLocalDeclaration[T](typeConstructor)
+
+    if (!dataTransforms.exists(_.result.emit == result.emit)) {
+      dataTransforms += this
+    }
   }
 
   abstract class ParameterTransform[T <: StanType](typeConstructor: T) extends StanCode {
-    val result: StanDeclaration[T, ParameterDeclarationType] =
-      StanDeclaration[T, ParameterDeclarationType](typeConstructor)
+    val result: StanParameterDeclaration[T] = StanParameterDeclaration[T](typeConstructor)
+
+    if (!parameterTransforms.exists(_.result.emit == result.emit)) {
+      parameterTransforms += this
+    }
+  }
+
+  abstract class GeneratedQuantity[T <: StanType](typeConstructor: T) extends StanCode {
+
+    protected implicit val _generatedQuantity: InGeneratedQuantityBlock = InGeneratedQuantityBlock
+
+    val result: StanParameterDeclaration[T] = StanParameterDeclaration[T](typeConstructor)
+
+    if (!generatedQuantities.exists(_.result.emit == result.emit)) {
+      generatedQuantities += this
+    }
   }
 
   trait Model extends StanCode {
 
     // Log probability function.
-    def target: StanValue[StanReal] = LiteralNode("target")
+    def target: TargetValue = TargetValue()
 
     private def emit(writer: PrintWriter): Unit = {
 
@@ -202,6 +226,13 @@ trait ScalaStan extends Implicits { stan =>
 
       writer.println("model {")
       emitCode(writer)
+      writer.println("}")
+
+      writer.println("generated quantities {")
+      generatedQuantities.foreach { g =>
+        writer.println(s"  ${g.result.emitDeclaration};")
+      }
+      generatedQuantities.foreach(g => g.emitCode(writer))
       writer.println("}")
     }
 

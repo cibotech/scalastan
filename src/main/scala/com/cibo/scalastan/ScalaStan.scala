@@ -85,8 +85,16 @@ trait ScalaStan extends Implicits { stan =>
       if (typeConstructor.lower.isDefined || typeConstructor.upper.isDefined) {
         throw new IllegalStateException("local variables may not have constraints")
       }
+
+      // Local declarations need to go at the top of the block.
+      // Here we insert after the last EnterScope, the last declaration, or at the beginning.
       val decl = StanLocalDeclaration[T](typeConstructor)
-      _codeBuffer += StanInlineDeclaration(decl)
+      val insertionPoint = _codeBuffer.lastIndexWhere {
+        case _: EnterScope               => true
+        case _: StanInlineDeclaration[_] => true
+        case _                           => false
+      }
+      _codeBuffer.insert(insertionPoint + 1, StanInlineDeclaration(decl))
       decl
     }
 

@@ -2,7 +2,7 @@ package com.cibo.scalastan
 
 import org.scalatest.{FunSpec, Matchers}
 
-trait ScalaStanBaseSpec extends FunSpec with Matchers {
+trait ScalaStanBaseSpec extends FunSpec with Matchers with ScalaStan {
 
   private def compare(actual: String, template: String): Boolean = {
     (actual, template) match {

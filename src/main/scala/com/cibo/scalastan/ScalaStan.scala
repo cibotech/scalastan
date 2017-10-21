@@ -6,8 +6,11 @@ import java.nio.file.Files
 import scala.language.implicitConversions
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.JavaConverters._
+import scala.reflect.{ClassTag, classTag}
 
 trait ScalaStan extends Implicits { stan =>
+
+  protected implicit val _scalaStan: ScalaStan = this
 
   private[scalastan] val dataValues = ArrayBuffer[StanDataDeclaration[_]]()
   private val parameterValues = ArrayBuffer[StanParameterDeclaration[_]]()
@@ -15,6 +18,9 @@ trait ScalaStan extends Implicits { stan =>
   private val dataTransforms = ArrayBuffer[DataTransform[_]]()
   private val parameterTransforms = ArrayBuffer[ParameterTransform[_]]()
   private val generatedQuantities = ArrayBuffer[GeneratedQuantity[_]]()
+
+  private[scalastan] def parameters: Seq[StanParameterDeclaration[_]] =
+    parameterValues ++ parameterTransforms.map(_.result) ++ generatedQuantities.map(_.result)
 
   def data[T <: StanType](typeConstructor: T): StanDataDeclaration[T] = {
     val v = StanDataDeclaration[T](typeConstructor)
@@ -155,29 +161,37 @@ trait ScalaStan extends Implicits { stan =>
     }
   }
 
-  abstract class DataTransform[T <: StanType](typeConstructor: T) extends StanCode {
-    val result: StanLocalDeclaration[T] = StanLocalDeclaration[T](typeConstructor)
+  abstract class TransformBase[T <: StanType, D <: StanDeclaration[T]] extends StanCode with NameLookup {
+    val result: D
+  }
 
-    if (!dataTransforms.exists(_.result.emit == result.emit)) {
+  abstract class DataTransform[T <: StanType](typeConstructor: T) extends TransformBase[T, StanLocalDeclaration[T]] {
+    protected val _ctag: ClassTag[_] = classTag[DataTransform[T]]
+    lazy val result: StanLocalDeclaration[T] =
+      StanLocalDeclaration[T](typeConstructor, () => Some(NameLookup.lookupName(this)(stan)))
+
+    if (!dataTransforms.exists(_._id == _id)) {
       dataTransforms += this
     }
   }
 
-  abstract class ParameterTransform[T <: StanType](typeConstructor: T) extends StanCode {
-    val result: StanParameterDeclaration[T] = StanParameterDeclaration[T](typeConstructor)
+  abstract class ParameterTransform[T <: StanType](typeConstructor: T) extends TransformBase[T, StanParameterDeclaration[T]] {
+    protected val _ctag: ClassTag[_] = classTag[ParameterTransform[T]]
+    lazy val result: StanParameterDeclaration[T] =
+      StanParameterDeclaration[T](typeConstructor, () => Some(NameLookup.lookupName(this)(stan)))
 
-    if (!parameterTransforms.exists(_.result.emit == result.emit)) {
+    if (!parameterTransforms.exists(_._id == _id)) {
       parameterTransforms += this
     }
   }
 
-  abstract class GeneratedQuantity[T <: StanType](typeConstructor: T) extends StanCode {
-
+  abstract class GeneratedQuantity[T <: StanType](typeConstructor: T) extends TransformBase[T, StanParameterDeclaration[T]] {
+    protected val _ctag: ClassTag[_] = classTag[GeneratedQuantity[T]]
+    lazy val result: StanParameterDeclaration[T] =
+      StanParameterDeclaration[T](typeConstructor, () => Some(NameLookup.lookupName(this)(stan)))
     protected implicit val _generatedQuantity: InGeneratedQuantityBlock = InGeneratedQuantityBlock
 
-    val result: StanParameterDeclaration[T] = StanParameterDeclaration[T](typeConstructor)
-
-    if (!generatedQuantities.exists(_.result.emit == result.emit)) {
+    if (!generatedQuantities.exists(_._id == _id)) {
       generatedQuantities += this
     }
   }

@@ -61,7 +61,8 @@ sealed trait StanType {
   def parse(dims: Seq[Int], values: Seq[Double]): SCALA_TYPE
 
   // Combine values using the specified function.
-  def combine(values: Seq[SCALA_TYPE])(func: Seq[Double] => Double): SUMMARY_TYPE
+  // The function takes a seq of chain -> iteration -> value
+  def combine(values: Seq[Seq[SCALA_TYPE]])(func: Seq[Seq[Double]] => Double): SUMMARY_TYPE
 
   // Emit a full Stan declaration for this type given the specified name.
   final def emitDeclaration(name: String): String = {
@@ -126,7 +127,7 @@ case class StanVoid private[scalastan] (
   def getDims(data: Unit): Seq[Int] = Seq.empty
   def parse(name: String, values: Map[String, String]): Unit = ()
   def parse(dims: Seq[Int], values: Seq[Double]): Unit = ()
-  def combine(values: Seq[Unit])(func: Seq[Double] => Double): Unit = ()
+  def combine(values: Seq[Seq[SCALA_TYPE]])(func: Seq[Seq[Double]] => Double): Unit = ()
 }
 
 case class StanInt private[scalastan] (
@@ -142,7 +143,7 @@ case class StanInt private[scalastan] (
   def getDims(data: Int): Seq[Int] = Seq.empty
   def parse(name: String, values: Map[String, String]): Int = values(name).toInt
   def parse(dims: Seq[Int], values: Seq[Double]): Int = values.head.toInt
-  def combine(values: Seq[Int])(func: Seq[Double] => Double): Double = func(values.map(_.toDouble))
+  def combine(values: Seq[Seq[Int]])(func: Seq[Seq[Double]] => Double): Double = func(values.map(_.map(_.toDouble)))
 }
 
 case class StanArray[CONTAINED <: StanType] private[scalastan] (
@@ -186,9 +187,13 @@ case class StanArray[CONTAINED <: StanType] private[scalastan] (
     }
   }
 
-  def combine(values: Seq[Vector[CONTAINED#SCALA_TYPE]])(func: Seq[Double] => Double): Vector[CONTAINED#SUMMARY_TYPE] = {
+  def combine(
+    values: Seq[Seq[Vector[CONTAINED#SCALA_TYPE]]]
+  )(
+    func: Seq[Seq[Double]] => Double
+  ): Vector[CONTAINED#SUMMARY_TYPE] = {
     values.transpose.map { v =>
-      inner.combine(v.asInstanceOf[Seq[inner.SCALA_TYPE]])(func)
+      inner.combine(v.asInstanceOf[Seq[Seq[inner.SCALA_TYPE]]])(func)
     }.toVector
   }
 }
@@ -206,7 +211,7 @@ case class StanReal private[scalastan] (
   def getDims(data: Double): Seq[Int] = Seq.empty
   def parse(name: String, values: Map[String, String]): Double = values(name).toDouble
   def parse(dims: Seq[Int], values: Seq[Double]): Double = values.head
-  def combine(values: Seq[Double])(func: Seq[Double] => Double): Double = func(values)
+  def combine(values: Seq[Seq[Double]])(func: Seq[Seq[Double]] => Double): Double = func(values)
 }
 
 trait StanVectorLike extends StanCompoundType {
@@ -227,8 +232,8 @@ trait StanVectorLike extends StanCompoundType {
 
   def parse(dims: Seq[Int], values: Seq[Double]): Vector[Double] = values.take(dims.head).toVector
 
-  def combine(values: Seq[Vector[Double]])(func: Seq[Double] => Double): Vector[Double] = {
-    values.transpose.map { v =>
+  def combine(values: Seq[Seq[Vector[Double]]])(func: Seq[Seq[Double]] => Double): Vector[Double] = {
+    values.map(_.transpose).transpose.map { v =>
       func(v)
     }.toVector
   }
@@ -294,10 +299,12 @@ case class StanMatrix private[scalastan] (
     }
   }
 
-  def combine(values: Seq[Vector[Vector[Double]]])(func: Seq[Double] => Double): Vector[Vector[Double]] = {
-    values.head.indices.map { i =>
-      values.head.head.indices.map { j =>
-        func(values.map(v => v(i)(j)))
+  def combine(
+    values: Seq[Seq[Vector[Vector[Double]]]]
+  )(func: Seq[Seq[Double]] => Double): Vector[Vector[Double]] = {
+    values.head.head.indices.map { i =>
+      values.head.head.head.indices.map { j =>
+        func(values.map(_.map(v => v(i)(j))))
       }.toVector
     }.toVector
   }

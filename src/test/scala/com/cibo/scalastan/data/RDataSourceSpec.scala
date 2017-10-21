@@ -3,7 +3,7 @@ package com.cibo.scalastan.data
 import com.cibo.scalastan._
 import org.scalatest.{FunSpec, Matchers}
 
-class RDataSourceSpec extends FunSpec with Matchers {
+class RDataSourceSpec extends FunSpec with Matchers with ScalaStan {
   describe("RDataSourceSpec") {
     it("parses reals") {
       val ds = RDataSource.fromString("x <- 1.5")

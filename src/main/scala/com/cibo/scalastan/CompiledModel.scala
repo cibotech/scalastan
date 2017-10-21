@@ -45,32 +45,36 @@ case class CompiledModel private[scalastan] (
     }
   }
 
-  private def processOutput(fileNames: Seq[String]): StanResults = StanResults(fileNames.map(readIterations))
+  private def processOutput(fileNames: Seq[String]): StanResults = StanResults(fileNames.par.map(readIterations).seq)
 
-  def run(method: RunMethod = SampleMethod()): StanResults = {
-    val dataFileName = CompiledModel.getNextDataFileName
-    val outputFileName = CompiledModel.getNextOutputFileName
+  def run(chains: Int = 1, method: RunMethod = SampleMethod()): StanResults = {
+    require(chains > 0, s"Must run at least one chain")
 
     code.dataValues.filterNot(v => dataMapping.contains(v.emit)).foreach { v =>
       throw new IllegalStateException(s"data not supplied for ${v.emit}")
     }
 
+    val dataFileName = CompiledModel.getNextDataFileName
     println(s"writing data to $dataFileName")
     emitData(dataFileName)
 
-    val command = Vector(
-      "./code",
-      "data", s"file=$dataFileName",
-      "output", s"file=$outputFileName"
-    ) ++ method.arguments
-    println("Running " + command.mkString(" "))
-    val pb = new ProcessBuilder(command: _*).directory(dir).inheritIO()
-    val rc = pb.start().waitFor()
-    if (rc != 0) {
-      throw new IllegalStateException(s"model returned $rc")
-    }
+    val outputFileNames = (0 until chains).par.map { _ =>
+      val name = CompiledModel.getNextOutputFileName
+      val command = Vector(
+        "./code",
+        "data", s"file=$dataFileName",
+        "output", s"file=$name"
+      ) ++ method.arguments
+      println("Running " + command.mkString(" "))
+      val pb = new ProcessBuilder(command: _*).directory(dir).inheritIO()
+      val rc = pb.start().waitFor()
+      if (rc != 0) {
+        throw new IllegalStateException(s"model returned $rc")
+      }
+      name
+    }.seq
 
-    processOutput(Seq(outputFileName))
+    processOutput(outputFileNames)
   }
 }
 
@@ -79,12 +83,16 @@ object CompiledModel {
   private var outputFileIndex: Int = 0
 
   private def getNextDataFileName: String = {
-    dataFileIndex += 1
-    s"data$dataFileIndex.R"
+    synchronized {
+      dataFileIndex += 1
+      s"data$dataFileIndex.R"
+    }
   }
 
   private def getNextOutputFileName: String = {
-    outputFileIndex += 1
-    s"output$dataFileIndex.csv"
+    synchronized {
+      outputFileIndex += 1
+      s"output$outputFileIndex.csv"
+    }
   }
 }

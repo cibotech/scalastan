@@ -19,7 +19,7 @@ object Bernoulli extends App with ScalaStan {
   val results = model
     .withData(N, dataset.length)
     .withData(y, dataset)
-    .run()
+    .run(chains = 5)
   println(s"mean(${theta.name}) = ${results.mean(theta)}")
   println(s"N_Eff(${theta.name}) = ${results.effectiveSampleSize(theta)}")
 

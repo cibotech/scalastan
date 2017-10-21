@@ -4,7 +4,7 @@ import java.io.PrintStream
 
 import scala.util.Try
 
-case class StanResults private (chains: Seq[Seq[Map[String, String]]]) {
+case class StanResults private (private val chains: Seq[Seq[Map[String, String]]]) {
 
   private val lpName = "lp__"
   private val divergentName = "divergent__"
@@ -14,6 +14,10 @@ case class StanResults private (chains: Seq[Seq[Map[String, String]]]) {
 
   lazy val logProbabilities: Seq[Seq[Double]] = chains.map(c => c.map(v => v(lpName).toDouble))
   lazy val divergent: Seq[Seq[Double]] = chains.map(c => c.map(v => v(divergentName).toDouble))
+
+  val chainCount: Int = chains.size
+  val iterationsPerChain: Int = chains.head.size
+  val iterationsTotal: Int = chains.map(_.size).sum
 
   def samples[T <: StanType, R](
     decl: StanParameterDeclaration[T]
@@ -184,6 +188,10 @@ case class StanResults private (chains: Seq[Seq[Map[String, String]]]) {
     val data: Seq[(String, Seq[Double])] = results.toSeq.sortBy(_._1).par.map { case (name, values) =>
       name -> stats.map { case (_, stat) => stat(values) }
     }.seq
+
+    ps.println()
+    ps.println(s"$chainCount chains with $iterationsPerChain iterations each, $iterationsTotal total")
+    ps.println()
 
     // Write the header.
     val padding = "  "

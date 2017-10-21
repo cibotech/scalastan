@@ -23,14 +23,14 @@ case class CompiledModel private[scalastan] (
   def withData[T <: StanType, V](
     decl: StanDataDeclaration[T],
     data: V
-  )(implicit ev: V =:= T#SCALA_TYPE): CompiledModel = {
+  )(implicit ev: V <:< T#SCALA_TYPE): CompiledModel = {
     val conv = data.asInstanceOf[T#SCALA_TYPE]
     copy(dataMapping = dataMapping.updated(decl.emit, DataMapping[T](decl, conv)))
   }
 
   def withData[T <: StanType, V](
     value: (StanDataDeclaration[T], V)
-  )(implicit ev: V =:= T#SCALA_TYPE): CompiledModel = withData(value._1, value._2)
+  )(implicit ev: V <:< T#SCALA_TYPE): CompiledModel = withData(value._1, value._2)
 
   private def readIterations(fileName: String): Seq[Map[String, String]] = {
     val reader = new BufferedReader(new FileReader(s"$dir/$fileName"))

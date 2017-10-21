@@ -19,9 +19,6 @@ trait ScalaStan extends Implicits { stan =>
   private val parameterTransforms = ArrayBuffer[ParameterTransform[_]]()
   private val generatedQuantities = ArrayBuffer[GeneratedQuantity[_]]()
 
-  private[scalastan] def parameters: Seq[StanParameterDeclaration[_]] =
-    parameterValues ++ parameterTransforms.map(_.result) ++ generatedQuantities.map(_.result)
-
   def data[T <: StanType](typeConstructor: T): StanDataDeclaration[T] = {
     val v = StanDataDeclaration[T](typeConstructor)
     dataValues += v

@@ -15,7 +15,7 @@ object Bernoulli extends App with ScalaStan {
     }
   }
 
-  val dataset = Vector(0, 1, 0, 0, 0, 0, 0, 0, 0, 1)
+  val dataset = Seq(0, 1, 0, 0, 0, 0, 0, 0, 0, 1)
   val results = model
     .withData(N, dataset.length)
     .withData(y, dataset)

@@ -38,23 +38,25 @@ class StanResultsSpec extends ScalaStanBaseSpec {
 
   describe("samples") {
     it("returns all scalar samples") {
-      results.samples(v1) shouldBe Vector(1, 0)
+      results.samples(v1) shouldBe Seq(Seq(1, 0))
     }
 
     it("returns all vector samples") {
-      results.samples(v2) shouldBe Vector(Vector(2.0, 3.0, 4.0), Vector(1.0, 2.0, 3.0))
+      results.samples(v2) shouldBe Seq(Seq(Seq(2.0, 3.0, 4.0), Seq(1.0, 2.0, 3.0)))
     }
 
     it("returns all array of vector samples") {
-      results.samples(v3) shouldBe Vector(
-        Vector(
-          Vector(311, 312),
-          Vector(321, 322),
-          Vector(331, 332)
-        ), Vector(
-          Vector(311, 312),
-          Vector(321, 322),
-          Vector(331, 332)
+      results.samples(v3) shouldBe Seq(
+        Seq(
+          Seq(
+            Seq(311, 312),
+            Seq(321, 322),
+            Seq(331, 332)
+          ), Seq(
+            Seq(311, 312),
+            Seq(321, 322),
+            Seq(331, 332)
+          )
         )
       )
     }

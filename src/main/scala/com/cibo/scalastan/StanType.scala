@@ -153,8 +153,8 @@ case class StanArray[CONTAINED <: StanType] private[scalastan] (
   type THIS_TYPE = StanArray[CONTAINED]
   type ELEMENT_TYPE = CONTAINED#ELEMENT_TYPE
   type NEXT_TYPE = CONTAINED
-  type SCALA_TYPE = Vector[CONTAINED#SCALA_TYPE]
-  type SUMMARY_TYPE = Vector[CONTAINED#SUMMARY_TYPE]
+  type SCALA_TYPE = Seq[CONTAINED#SCALA_TYPE]
+  type SUMMARY_TYPE = Seq[CONTAINED#SUMMARY_TYPE]
 
   val lower: Option[StanValue[CONTAINED#ELEMENT_TYPE]] = inner.lower.asInstanceOf[Option[StanValue[CONTAINED#ELEMENT_TYPE]]]
   val upper: Option[StanValue[CONTAINED#ELEMENT_TYPE]] = inner.upper.asInstanceOf[Option[StanValue[CONTAINED#ELEMENT_TYPE]]]
@@ -188,10 +188,10 @@ case class StanArray[CONTAINED <: StanType] private[scalastan] (
   }
 
   def combine(
-    values: Seq[Seq[Vector[CONTAINED#SCALA_TYPE]]]
+    values: Seq[Seq[Seq[CONTAINED#SCALA_TYPE]]]
   )(
     func: Seq[Seq[Double]] => Double
-  ): Vector[CONTAINED#SUMMARY_TYPE] = {
+  ): Seq[CONTAINED#SUMMARY_TYPE] = {
     values.transpose.map { v =>
       inner.combine(v.asInstanceOf[Seq[Seq[inner.SCALA_TYPE]]])(func)
     }.toVector
@@ -217,22 +217,22 @@ case class StanReal private[scalastan] (
 trait StanVectorLike extends StanCompoundType {
   type ELEMENT_TYPE = StanReal
   type NEXT_TYPE = StanReal
-  type SCALA_TYPE = Vector[Double]
-  type SUMMARY_TYPE = Vector[Double]
+  type SCALA_TYPE = Seq[Double]
+  type SUMMARY_TYPE = Seq[Double]
 
-  def getData(data: Vector[Double]): Seq[String] = data.map(_.toString)
-  def getDims(data: Vector[Double]): Seq[Int] = Seq(data.length)
+  def getData(data: Seq[Double]): Seq[String] = data.map(_.toString)
+  def getDims(data: Seq[Double]): Seq[Int] = Seq(data.length)
 
-  def parse(name: String, values: Map[String, String]): Vector[Double] = {
+  def parse(name: String, values: Map[String, String]): Seq[Double] = {
     val prefix = s"$name."
     values.filterKeys(_.startsWith(prefix)).toVector.map { case (key, value) =>
       key.slice(prefix.length, key.length).toInt -> value
     }.sortBy(_._1).map(_._2.toDouble)
   }
 
-  def parse(dims: Seq[Int], values: Seq[Double]): Vector[Double] = values.take(dims.head).toVector
+  def parse(dims: Seq[Int], values: Seq[Double]): Seq[Double] = values.take(dims.head).toVector
 
-  def combine(values: Seq[Seq[Vector[Double]]])(func: Seq[Seq[Double]] => Double): Vector[Double] = {
+  def combine(values: Seq[Seq[Seq[Double]]])(func: Seq[Seq[Double]] => Double): Seq[Double] = {
     values.map(_.transpose).transpose.map { v =>
       func(v)
     }.toVector
@@ -266,14 +266,14 @@ case class StanMatrix private[scalastan] (
   type THIS_TYPE = StanMatrix
   type ELEMENT_TYPE = StanReal
   type NEXT_TYPE = StanVector
-  type SCALA_TYPE = Vector[Vector[Double]]
-  type SUMMARY_TYPE = Vector[Vector[Double]]
+  type SCALA_TYPE = Seq[Seq[Double]]
+  type SUMMARY_TYPE = Seq[Seq[Double]]
 
   def typeName: String = s"matrix$emitBounds[${rows.emit},${cols.emit}]"
-  def getData(data: Vector[Vector[Double]]): Seq[String] = data.flatMap(_.map(_.toString))
-  def getDims(data: Vector[Vector[Double]]): Seq[Int] = Seq(data.length, data.head.length)
+  def getData(data: Seq[Seq[Double]]): Seq[String] = data.flatMap(_.map(_.toString))
+  def getDims(data: Seq[Seq[Double]]): Seq[Int] = Seq(data.length, data.head.length)
 
-  def parse(name: String, values: Map[String, String]): Vector[Vector[Double]] ={
+  def parse(name: String, values: Map[String, String]): Seq[Seq[Double]] ={
     // Determine the size of the matrix.
     val prefix1 = s"$name."
     val dim1Keys = values.keys.filter(_.startsWith(prefix1))
@@ -292,7 +292,7 @@ case class StanMatrix private[scalastan] (
     }
   }
 
-  def parse(dims: Seq[Int], values: Seq[Double]): Vector[Vector[Double]] = {
+  def parse(dims: Seq[Int], values: Seq[Double]): Seq[Seq[Double]] = {
     val innerSize = dims(1)
     Vector.tabulate[Vector[Double]](dims.head) { i =>
       values.slice(i * innerSize, i * innerSize + innerSize).toVector
@@ -300,8 +300,8 @@ case class StanMatrix private[scalastan] (
   }
 
   def combine(
-    values: Seq[Seq[Vector[Vector[Double]]]]
-  )(func: Seq[Seq[Double]] => Double): Vector[Vector[Double]] = {
+    values: Seq[Seq[Seq[Seq[Double]]]]
+  )(func: Seq[Seq[Double]] => Double): Seq[Seq[Double]] = {
     values.head.head.indices.map { i =>
       values.head.head.head.indices.map { j =>
         func(values.map(_.map(v => v(i)(j))))

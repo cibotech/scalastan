@@ -17,9 +17,14 @@ object NameLookup {
 
   private[scalastan] def lookupName(obj: NameLookup)(implicit ss: ScalaStan): String = {
     ss.getClass.getDeclaredMethods.find { m =>
-      m.getParameterCount == 0 &&
-        m.getReturnType == obj._ctag.runtimeClass &&
+      if (m.getParameterCount == 0 && m.getReturnType == obj._ctag.runtimeClass) {
+        m.setAccessible(true)
         m.invoke(ss).asInstanceOf[NameLookup]._id == obj._id
-    }.map(_.getName).getOrElse(s"v${obj._id}")
+      } else {
+        false
+      }
+    }.map { m =>
+      m.getName.split("\\$").last
+    }.getOrElse(s"v${obj._id}")
   }
 }

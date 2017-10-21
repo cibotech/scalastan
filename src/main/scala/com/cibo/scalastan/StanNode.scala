@@ -107,7 +107,10 @@ case class ReturnNode[T <: StanType](
 }
 
 // A range (x:n in Stan), used with for loops.
-case class ValueRange(start: StanValue[StanInt], end: StanValue[StanInt]) extends StanNode {
+case class ValueRange(
+  start: StanValue[StanInt],
+  end: StanValue[StanInt]
+)(implicit ss: ScalaStan) extends StanNode {
 
   // This foreach will get called automatically when a for comprehension is used with ValueRange.
   def foreach(f: StanValue[StanInt] => Unit)(implicit ev: TemporaryValue[StanInt], code: ArrayBuffer[StanNode]): Unit = {

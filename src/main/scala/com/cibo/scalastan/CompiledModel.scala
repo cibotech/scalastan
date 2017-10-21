@@ -32,19 +32,20 @@ case class CompiledModel private[scalastan] (
     value: (StanDataDeclaration[T], V)
   )(implicit ev: V =:= T#SCALA_TYPE): CompiledModel = withData(value._1, value._2)
 
-  private def processOutput(fileName: String): StanResults = {
+  private def readIterations(fileName: String): Seq[Map[String, String]] = {
     val reader = new BufferedReader(new FileReader(s"$dir/$fileName"))
     try {
       val lines = reader.lines.iterator.asScala.filterNot(_.startsWith("#")).toVector
       val header: Seq[String] = lines.head.split(",")
-      val values = lines.tail.map { sample =>
+      lines.tail.map { sample =>
         header.zip(sample.split(",")).toMap
       }
-      StanResults(values)
     } finally {
       reader.close()
     }
   }
+
+  private def processOutput(fileNames: Seq[String]): StanResults = StanResults(fileNames.map(readIterations))
 
   def run(method: RunMethod = SampleMethod()): StanResults = {
     val dataFileName = CompiledModel.getNextDataFileName
@@ -69,7 +70,7 @@ case class CompiledModel private[scalastan] (
       throw new IllegalStateException(s"model returned $rc")
     }
 
-    processOutput(outputFileName)
+    processOutput(Seq(outputFileName))
   }
 }
 

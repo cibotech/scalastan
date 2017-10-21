@@ -56,5 +56,6 @@ object Dogs extends App with ScalaStan {
   println(results.mean(beta))
   val pValues = results.mean(p.result)
   println(pValues(30 - 1)(19 - 1))
+  results.summary(System.out)
 
 }

@@ -8,8 +8,8 @@ sealed abstract class StanDeclaration[T <: StanType](implicit ss: ScalaStan) ext
   protected val internalNameFunc: Function0[Option[String]]
   private[scalastan] lazy val name: String = internalNameFunc().getOrElse(NameLookup.lookupName(this))
 
-  def emit: String = name
-  def emitDeclaration: String = typeConstructor.emitDeclaration(name)
+  def emit: String = _internalName
+  def emitDeclaration: String = typeConstructor.emitDeclaration(_internalName)
 }
 
 case class StanDataDeclaration[T <: StanType] private[scalastan] (

@@ -68,7 +68,7 @@ abstract class StanDistribution[T <: StanType] extends StanNode {
     s"$name($argStr)"
   }
 
-  def rng(implicit gen: InGeneratedQuantityBlock): FunctionNode[T] = FunctionNode(s"${name}_rng", args)
+  def rng(implicit gen: InGeneratedQuantityBlock): FunctionNode[T] = FunctionNode(s"${name}_rng", args: _*)
 }
 
 case class StanContinuousDistribution[T <: StanType](

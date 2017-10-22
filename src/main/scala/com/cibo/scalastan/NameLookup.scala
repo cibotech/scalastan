@@ -5,14 +5,17 @@ import scala.reflect.ClassTag
 trait NameLookup {
   protected val _ctag: ClassTag[_]
   protected val _id: Int = NameLookup.nextId
+  protected lazy val _internalName: String = s"v${_id}"
 }
 
 object NameLookup {
   private var counter: Int = 0
 
   private def nextId: Int = {
-    counter += 1
-    counter
+    synchronized {
+      counter += 1
+      counter
+    }
   }
 
   private[scalastan] def lookupName(obj: NameLookup)(implicit ss: ScalaStan): String = {

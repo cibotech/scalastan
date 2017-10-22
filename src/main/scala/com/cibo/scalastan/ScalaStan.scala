@@ -19,6 +19,9 @@ trait ScalaStan extends Implicits { stan =>
   private val parameterTransforms = ArrayBuffer[ParameterTransform[_]]()
   private val generatedQuantities = ArrayBuffer[GeneratedQuantity[_]]()
 
+  private[scalastan] def parameters: Seq[StanParameterDeclaration[_]] =
+    parameterValues ++ parameterTransforms.map(_.result) ++ generatedQuantities.map(_.result)
+
   def data[T <: StanType](typeConstructor: T): StanDataDeclaration[T] = {
     val v = StanDataDeclaration[T](typeConstructor)
     dataValues += v
@@ -193,6 +196,15 @@ trait ScalaStan extends Implicits { stan =>
     }
   }
 
+  private def emitDeclarations(
+    writer: PrintWriter,
+    decls: Seq[StanDeclaration[_]]
+  ): Unit = {
+    decls.foreach { decl =>
+      writer.println(s"  ${decl.emitDeclaration}; // ${decl.name}")
+    }
+  }
+
   trait Model extends StanCode {
 
     // Log probability function.
@@ -205,28 +217,20 @@ trait ScalaStan extends Implicits { stan =>
       writer.println("}")
 
       writer.println("data {")
-      dataValues.foreach { v =>
-        writer.println(s"  ${v.emitDeclaration};")
-      }
+      emitDeclarations(writer, dataValues)
       writer.println("}")
 
       writer.println("transformed data {")
-      dataTransforms.foreach { v =>
-        writer.println(s"  ${v.result.emitDeclaration};")
-      }
+      emitDeclarations(writer, dataTransforms.map(_.result))
       dataTransforms.foreach(t => t.emitCode(writer))
       writer.println("}")
 
       writer.println("parameters {")
-      parameterValues.foreach { v =>
-        writer.println(s"  ${v.emitDeclaration};")
-      }
+      emitDeclarations(writer, parameterValues)
       writer.println("}")
 
       writer.println("transformed parameters {")
-      parameterTransforms.foreach { v =>
-        writer.println(s"  ${v.result.emitDeclaration};")
-      }
+      emitDeclarations(writer, parameterTransforms.map(_.result))
       parameterTransforms.foreach(t => t.emitCode(writer))
       writer.println("}")
 
@@ -235,9 +239,7 @@ trait ScalaStan extends Implicits { stan =>
       writer.println("}")
 
       writer.println("generated quantities {")
-      generatedQuantities.foreach { g =>
-        writer.println(s"  ${g.result.emitDeclaration};")
-      }
+      emitDeclarations(writer, generatedQuantities.map(_.result))
       generatedQuantities.foreach(g => g.emitCode(writer))
       writer.println("}")
     }

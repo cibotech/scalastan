@@ -124,9 +124,11 @@ case class StanResults private (private val chains: Seq[Seq[Map[String, String]]
   private def autocovariance(k: Int, x: Seq[Double]): Double = {
     val n = x.size
     val xMean = mean(x)
-    (1.0 / (n - 1.0)) * (0 until n - k).map { i =>
-      (x(i + k) - xMean) * (x(i) - xMean)
-    }.sum
+    mean {
+      (0 until n - k).map { i =>
+        (x(i + k) - xMean) * (x(i) - xMean)
+      }
+    }
   }
 
   private def effectiveSampleSize(values: Seq[Seq[Double]]): Double = {
@@ -146,6 +148,28 @@ case class StanResults private (private val chains: Seq[Seq[Map[String, String]]
   def effectiveSampleSize[T <: StanType, R](
     decl: StanParameterDeclaration[T]
   )(implicit ev: R =:= T#SUMMARY_TYPE): R = combine(decl)(effectiveSampleSize)
+
+  private def betweenSampleVariance(values: Seq[Seq[Double]]): Double = {
+    val m = values.size.toDouble
+    val n = values.head.size.toDouble
+    val totalMean = mean(values.flatten)
+    (n / (m - 1.0)) * values.map { vs =>
+      math.pow(mean(vs) - totalMean, 2)
+    }.sum
+  }
+
+  private def withinSampleVariance(values: Seq[Seq[Double]]): Double = {
+    val m = values.size.toDouble
+    values.map(variance).sum / m
+  }
+
+  private def prsf(values: Seq[Seq[Double]]): Double = {
+    val n = values.head.size.toDouble
+    val w = withinSampleVariance(values)
+    val b = betweenSampleVariance(values)
+    val varPlus = ((n - 1.0) * w + b) / n
+    math.sqrt(varPlus / w)
+  }
 
   private def cleanName(name: String): String = {
     val parts = name.split("\\.")
@@ -181,7 +205,7 @@ case class StanResults private (private val chains: Seq[Seq[Map[String, String]]
       "50%" -> (vs => quantile(0.5)(vs.flatten)),
       "95%" -> (vs => quantile(0.95)(vs.flatten)),
       "N_Eff" -> effectiveSampleSize,
-      "R_hat" -> (vs => 0.0)
+      "R_hat" -> prsf
     )
 
     // Compute the statistics.

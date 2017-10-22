@@ -171,9 +171,9 @@ case class StanResults private (private val chains: Seq[Seq[Map[String, String]]
     math.sqrt(varPlus / w)
   }
 
-  private def cleanName(name: String): String = {
+  private def cleanName(name: String, mapping: Map[String, String]): String = {
     val parts = name.split("\\.")
-    val first = parts.head
+    val first = mapping.getOrElse(parts.head, parts.head)
     if (parts.tail.nonEmpty) {
       val indices = parts.tail.mkString("[", ",", "]")
       s"$first$indices"
@@ -182,14 +182,17 @@ case class StanResults private (private val chains: Seq[Seq[Map[String, String]]
     }
   }
 
-  def summary(ps: PrintStream): Unit = {
+  def summary(ps: PrintStream)(implicit ss: ScalaStan): Unit = {
 
     val fieldWidth = 8
+
+    // Get a mapping from Stan name to ScalaStan name.
+    val mapping = ss.parameters.map(p => p.emit -> p.name).toMap
 
     // Build a mapping of name -> chain -> iteration -> value
     val names = chains.head.head.keys
     val results: Map[String, Seq[Seq[Double]]] = names.par.map { name =>
-      cleanName(name) -> chains.map { chain =>
+      cleanName(name, mapping) -> chains.map { chain =>
         chain.map { iteration =>
           Try(iteration(name).toDouble).getOrElse(Double.NaN)
         }

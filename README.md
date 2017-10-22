@@ -74,7 +74,7 @@ Data Declarations
 -----------------
 Data declarations define the inputs to the model.
 These go in the `data` section in Stan:
-```
+```stan
 data {
   real<lower=0> x;
 }
@@ -104,7 +104,7 @@ int()(j, k)
 Parameter Declarations
 ----------------------
 Parameter declarations define the outputs of the model.  In Stan, these go in the `parameters` section:
-```
+```stan
 parameters {
   real y;
 }

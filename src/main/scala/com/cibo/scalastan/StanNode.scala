@@ -18,12 +18,19 @@ abstract class EnterScope extends StanNode {
   override val terminator: String = ""
 }
 
-// "For loop"
+// "for" loop
 case class ForLoop[T <: StanType](
   decl: StanLocalDeclaration[T],
   range: ValueRange
 ) extends EnterScope {
   def emit: String = s"for(${decl.emit} in ${range.emit}) {"
+}
+
+// "while" loop
+case class WhileLoop(
+  cond: StanValue[StanInt]
+) extends EnterScope {
+  def emit: String = s"while(${cond.emit}) {"
 }
 
 // "if" (or "when") statement

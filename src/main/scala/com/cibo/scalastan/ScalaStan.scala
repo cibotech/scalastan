@@ -119,6 +119,12 @@ trait ScalaStan extends Implicits { stan =>
 
     def range(start: StanValue[StanInt], end: StanValue[StanInt]): ValueRange = ValueRange(start, end)
 
+    def loop(cond: StanValue[StanInt])(body: => Unit): Unit = {
+      _codeBuffer += WhileLoop(cond)
+      body
+      _codeBuffer += LeaveScope
+    }
+
     private[ScalaStan] def emitCode(writer: PrintWriter): Unit = {
       _codeBuffer.foreach { c =>
         writer.println(s"  ${c.emit}${c.terminator}")

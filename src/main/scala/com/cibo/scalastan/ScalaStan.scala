@@ -101,19 +101,19 @@ trait ScalaStan extends Implicits { stan =>
     case class when(cond: StanValue[StanInt])(block: => Unit) {
       _codeBuffer += IfStatement(cond)
       block
-      _codeBuffer += LeaveScope
+      _codeBuffer += LeaveScope()
 
       def when(otherCond: StanValue[StanInt])(otherBlock: => Unit): when = {
         _codeBuffer += ElseIfStatement(otherCond)
         otherBlock
-        _codeBuffer += LeaveScope
+        _codeBuffer += LeaveScope()
         this
       }
 
       def otherwise(otherBlock: => Unit): Unit = {
         _codeBuffer += ElseStatement
         otherBlock
-        _codeBuffer += LeaveScope
+        _codeBuffer += LeaveScope()
       }
     }
 
@@ -122,13 +122,24 @@ trait ScalaStan extends Implicits { stan =>
     def loop(cond: StanValue[StanInt])(body: => Unit): Unit = {
       _codeBuffer += WhileLoop(cond)
       body
-      _codeBuffer += LeaveScope
+      _codeBuffer += LeaveScope()
     }
 
     private[ScalaStan] def emitCode(writer: PrintWriter): Unit = {
+      val indentSpaces = 2
+      var indent: Int = 0
       _codeBuffer.foreach { c =>
-        writer.println(s"  ${c.emit}${c.terminator}")
+        if (c.isInstanceOf[LeaveScope]) {
+          indent -= 1
+        }
+        writer.print(" " * (indentSpaces * (indent + 1)))
+        writer.print(c.emit)
+        writer.println(c.terminator)
+        if (c.isInstanceOf[EnterScope]) {
+          indent += 1
+        }
       }
+      require(indent == 0)
     }
   }
 

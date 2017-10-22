@@ -53,7 +53,7 @@ case object ElseStatement extends EnterScope {
 }
 
 // The end of a scope.
-case object LeaveScope extends StanNode {
+case class LeaveScope() extends StanNode {
   def emit: String = "}"
   override val terminator: String = ""
 }
@@ -125,7 +125,7 @@ case class ValueRange(
     val decl = StanLocalDeclaration[StanInt](temp)
     code += ForLoop(decl, this)
     f(decl)
-    code += LeaveScope
+    code += LeaveScope()
   }
 
   def emit: String = s"${start.emit}:${end.emit}"

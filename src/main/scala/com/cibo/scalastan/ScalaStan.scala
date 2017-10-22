@@ -143,7 +143,7 @@ trait ScalaStan extends Implicits { stan =>
       if (!functions.exists(_.result.emit == name)) {
         functions += this
       }
-      val node = FunctionNode[RETURN_TYPE](name, args)
+      val node = FunctionNode[RETURN_TYPE](name, args: _*)
       if (returnType == StanVoid()) {
         _codeBuffer += node
       }

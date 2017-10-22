@@ -167,7 +167,7 @@ trait Updatable[T <: StanType] { self: StanValue[T] =>
 
 case class FunctionNode[T <: StanType](
   name: String,
-  args: Seq[StanValue[_]]
+  args: StanValue[_]*
 ) extends StanValue[T] with ReadOnlyIndex[T] {
   def emit: String = {
     val argStr = args.map(_.emit).mkString(",")

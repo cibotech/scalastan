@@ -1,11 +1,26 @@
 package com.cibo.scalastan
 
-import scala.reflect.ClassTag
-
 trait NameLookup {
-  protected val _ctag: ClassTag[_]
+  // Subclasses should override "_userName" and set it to the result of lookupName from the right context.
+  protected def _userName: Option[String]
+
+  // Unique ID for identifiers.
   protected val _id: Int = NameLookup.nextId
-  protected lazy val _internalName: String = s"v${_id}"
+
+  private val defaultName: String = s"v${_id}"
+
+  // A user-facing name to use for this identifier.
+  lazy val name: String = _userName.getOrElse(defaultName)
+
+  // A list of valid characters tot place in the generated Stan.
+  private val validCharacters: Set[Char] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_0123456789".toSet
+
+  // A cleaned name to use in the generated Stan code.
+  // This needs to be unique and valid.
+  protected lazy val _internalName: String = _userName.map { un =>
+    val cleanedName = un.filter(c => validCharacters.contains(c))
+    s"${defaultName}_$cleanedName"
+  }.getOrElse(defaultName)
 }
 
 object NameLookup {
@@ -18,16 +33,18 @@ object NameLookup {
     }
   }
 
-  private[scalastan] def lookupName(obj: NameLookup)(implicit ss: ScalaStan): String = {
-    ss.getClass.getDeclaredMethods.find { m =>
-      if (m.getParameterCount == 0 && m.getReturnType == obj._ctag.runtimeClass) {
-        m.setAccessible(true)
-        m.invoke(ss).asInstanceOf[NameLookup]._id == obj._id
+  private[scalastan] def lookupName(obj: NameLookup)(implicit ss: ScalaStan): Option[String] = {
+    import scala.reflect.runtime.{universe => ru}
+    val mirror = ru.runtimeMirror(ss.getClass.getClassLoader)
+    val ssMirror = mirror.reflect(ss)
+    ssMirror.symbol.typeSignature.decls.find { decl =>
+      if (decl.isMethod && decl.asMethod.isGetter && decl.asMethod.returnType <:< ru.typeOf[NameLookup]) {
+        ssMirror.reflectMethod(decl.asMethod).apply().asInstanceOf[NameLookup]._id == obj._id
       } else {
         false
       }
-    }.map { m =>
-      m.getName.split("\\$").last
-    }.getOrElse(s"v${obj._id}")
+    }.map { decl =>
+      decl.name.decodedName.toString
+    }
   }
 }

@@ -169,12 +169,11 @@ trait ScalaStan extends Implicits { stan =>
 
   abstract class TransformBase[T <: StanType, D <: StanDeclaration[T]] extends StanCode with NameLookup {
     val result: D
+    protected def _userName: Option[String] = NameLookup.lookupName(this)(stan)
   }
 
   abstract class DataTransform[T <: StanType](typeConstructor: T) extends TransformBase[T, StanLocalDeclaration[T]] {
-    protected val _ctag: ClassTag[_] = classTag[DataTransform[T]]
-    lazy val result: StanLocalDeclaration[T] =
-      StanLocalDeclaration[T](typeConstructor, () => Some(NameLookup.lookupName(this)(stan)))
+    lazy val result: StanLocalDeclaration[T] = StanLocalDeclaration[T](typeConstructor, () => _userName)
 
     if (!dataTransforms.exists(_._id == _id)) {
       dataTransforms += this
@@ -182,9 +181,7 @@ trait ScalaStan extends Implicits { stan =>
   }
 
   abstract class ParameterTransform[T <: StanType](typeConstructor: T) extends TransformBase[T, StanParameterDeclaration[T]] {
-    protected val _ctag: ClassTag[_] = classTag[ParameterTransform[T]]
-    lazy val result: StanParameterDeclaration[T] =
-      StanParameterDeclaration[T](typeConstructor, () => Some(NameLookup.lookupName(this)(stan)))
+    lazy val result: StanParameterDeclaration[T] = StanParameterDeclaration[T](typeConstructor, () => _userName)
 
     if (!parameterTransforms.exists(_._id == _id)) {
       parameterTransforms += this
@@ -192,9 +189,7 @@ trait ScalaStan extends Implicits { stan =>
   }
 
   abstract class GeneratedQuantity[T <: StanType](typeConstructor: T) extends TransformBase[T, StanParameterDeclaration[T]] {
-    protected val _ctag: ClassTag[_] = classTag[GeneratedQuantity[T]]
-    lazy val result: StanParameterDeclaration[T] =
-      StanParameterDeclaration[T](typeConstructor, () => Some(NameLookup.lookupName(this)(stan)))
+    lazy val result: StanParameterDeclaration[T] = StanParameterDeclaration[T](typeConstructor, () => _userName)
     protected implicit val _generatedQuantity: InGeneratedQuantityBlock = InGeneratedQuantityBlock
 
     if (!generatedQuantities.exists(_._id == _id)) {

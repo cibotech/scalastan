@@ -61,7 +61,7 @@ case class CompiledModel private[scalastan] (
     val outputFileNames = (0 until chains).par.map { _ =>
       val name = CompiledModel.getNextOutputFileName
       val command = Vector(
-        "./code",
+        "./model",
         "data", s"file=$dataFileName",
         "output", s"file=$name"
       ) ++ method.arguments

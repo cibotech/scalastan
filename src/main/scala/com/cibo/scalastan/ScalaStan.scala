@@ -1,14 +1,16 @@
 package com.cibo.scalastan
 
 import java.io._
-import java.nio.file.Files
+import java.nio.file.{Files, Path, Paths}
 
 import scala.language.implicitConversions
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.JavaConverters._
-import scala.reflect.{ClassTag, classTag}
 
 trait ScalaStan extends Implicits { stan =>
+
+  private val modelExecutable: String = "model"
+  private val stanFileName: String = s"$modelExecutable.stan"
 
   protected implicit val _scalaStan: ScalaStan = this
 
@@ -291,8 +293,35 @@ trait ScalaStan extends Implicits { stan =>
       writer.toString
     }
 
+    private def getBasePath: Path = {
+      Option(System.getenv("HOME")) match {
+        case Some(home) => Paths.get(home).resolve(".scalastan")
+        case None       => Paths.get("/tmp").resolve("scalastan")
+      }
+    }
+
+    private def cleanOldModels(base: Path, hash: String): Unit = {
+      val maxCacheSize = 100
+      if (base.toFile.exists) {
+        val dirs = base.toFile.listFiles.filter { f =>
+          f.isDirectory && f.getName != hash
+        }.sortBy(_.lastModified).dropRight(maxCacheSize - 1)
+        dirs.foreach { dir =>
+          println(s"removing old cache directory ${dir.getAbsolutePath}")
+          try {
+            dir.listFiles.foreach(_.delete())
+            dir.delete()
+          } catch {
+            case ex: Exception =>
+              println(s"unable to remove cache directory: $ex")
+          }
+        }
+      }
+    }
+
     private def generate: File = {
       val str = getCode
+      println("code:")
       println(str)
 
       val md = java.security.MessageDigest.getInstance("SHA-1")
@@ -301,14 +330,14 @@ trait ScalaStan extends Implicits { stan =>
         digits((b.toInt & 255) >> 4).toString + digits(b.toInt & 15).toString
       }
       val hash = new String(hashBytes)
-
-      val dirName = s"/tmp/scalastan/$hash"
-      val dir = new File(dirName)
+      val base = getBasePath
+      cleanOldModels(base, hash)
+      val dir = base.resolve(hash).toFile
       println(s"writing code to $dir")
 
-      if (!dir.exists) {
+      if (!dir.exists || !dir.listFiles().exists(f => f.getName == stanFileName && f.canExecute)) {
         Files.createDirectories(dir.toPath)
-        val codeFile = new File(s"${dir.getPath}/code.stan")
+        val codeFile = new File(s"${dir.getPath}/$stanFileName")
         val codeWriter = new PrintWriter(codeFile)
         emit(codeWriter)
         codeWriter.close()
@@ -317,7 +346,7 @@ trait ScalaStan extends Implicits { stan =>
     }
 
     private def compile(dir: File): Unit = {
-      val pb = new ProcessBuilder("stanc", "code.stan").directory(dir).inheritIO()
+      val pb = new ProcessBuilder("stanc", stanFileName).directory(dir).inheritIO()
       val rc = pb.start().waitFor()
       if (rc != 0) {
         throw new IllegalStateException(s"stanc returned $rc")
@@ -325,7 +354,7 @@ trait ScalaStan extends Implicits { stan =>
     }
 
     private def build(dir: File, stanDir: String): Unit = {
-      val target = s"$dir/code"
+      val target = s"$dir/$modelExecutable"
       val pb = new ProcessBuilder("make", target).directory(new File(stanDir)).inheritIO()
       val rc = pb.start().waitFor()
       if (rc != 0) {
@@ -339,7 +368,7 @@ trait ScalaStan extends Implicits { stan =>
       val reader = new BufferedReader(new InputStreamReader(process.getInputStream))
       val rc = process.waitFor()
       if (rc != 0) {
-        throw new IllegalStateException(s"stanc not found")
+        throw new IllegalStateException("stanc not found")
       }
       val stancFile = new File(reader.lines.iterator.asScala.toStream.last).getCanonicalFile
       stancFile.getParentFile.getParentFile.getAbsolutePath
@@ -352,7 +381,7 @@ trait ScalaStan extends Implicits { stan =>
       // Generate the code.
       val dir = generate
 
-      if (new File(s"${dir.getPath}/code").canExecute) {
+      if (new File(s"${dir.getPath}/$modelExecutable").canExecute) {
         println("found existing executable")
       } else {
         compile(dir)

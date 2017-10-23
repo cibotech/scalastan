@@ -125,6 +125,34 @@ trait ScalaStan extends Implicits { stan =>
       _codeBuffer += LeaveScope()
     }
 
+    private def inLoop: Boolean = {
+      _codeBuffer.foldLeft(Seq.empty[StanNode]) { (stack, node) =>
+        node match {
+          case _: WhileLoop      => node +: stack
+          case _: ForLoop[_]     => node +: stack
+          case _: IfStatement[_] => node +: stack
+          case _: LeaveScope     => stack.tail
+          case _                 => stack
+        }
+      }.exists { node =>
+        node.isInstanceOf[WhileLoop] || node.isInstanceOf[ForLoop[_]]
+      }
+    }
+
+    def break: Unit = {
+      if (!inLoop) {
+        throw new IllegalStateException("'break' must be in a loop")
+      }
+      _codeBuffer += BreakNode()
+    }
+
+    def continue: Unit = {
+      if (!inLoop) {
+        throw new IllegalStateException("'continue' must be in a loop")
+      }
+      _codeBuffer += ContinueNode()
+    }
+
     private[ScalaStan] def emitCode(writer: PrintWriter): Unit = {
       val indentSpaces = 2
       var indent: Int = 0

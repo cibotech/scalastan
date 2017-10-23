@@ -58,6 +58,16 @@ case class LeaveScope() extends StanNode {
   override val terminator: String = ""
 }
 
+// "break" statement
+case class BreakNode() extends StanNode {
+  def emit: String = "break"
+}
+
+// "continue" statement
+case class ContinueNode() extends StanNode {
+  def emit: String = "continue"
+}
+
 // Sample from a distribution: "var ~ dist()"
 case class SampleNode[T <: StanType](
   left: StanValue[T],

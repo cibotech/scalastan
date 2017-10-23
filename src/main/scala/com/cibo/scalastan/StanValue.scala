@@ -57,9 +57,14 @@ abstract class StanValue[T <: StanType] extends StanNode with Implicits {
   )(implicit ev: LeftDivisionAllowed[R, T, B]): StanValue[R] =
     BinaryOperator("\\", this, right)
 
-  def %(right: StanValue[T])(implicit ev: ModulusAllowed[T]): StanValue[T] = BinaryOperator("%", this, right)
+  def %(right: StanValue[T])(implicit ev: ModulusAllowed[T]): StanValue[T] =
+    BinaryOperator("%", this, right)
 
-  def ^(right: StanValue[T])(implicit ev: IsScalarType[T]): StanValue[T] = BinaryOperator("^", this, right)
+  def ^[R <: StanScalarType](
+    right: StanValue[R]
+  )(
+    implicit ev: IsScalarType[R], ev2: T =:= StanReal
+  ): StanValue[T] = BinaryOperator("^", this, right)
 
   // Element-wise operators.
   def :*(right: StanValue[T])(implicit ev: IsCompoundType[T]): StanValue[T] =

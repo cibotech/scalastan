@@ -22,6 +22,8 @@ object IsScalarType {
 sealed class MultiplicationAllowed[R <: StanType, A <: StanType, B <: StanType] extends TypeCheck
 
 object MultiplicationAllowed {
+  implicit val riMultiplication = new MultiplicationAllowed[StanReal, StanReal, StanInt]
+  implicit val irMultiplication = new MultiplicationAllowed[StanReal, StanInt, StanReal]
   implicit def scalarMultiplication[T <: StanScalarType] = new MultiplicationAllowed[T, T, T]
   implicit def scalarVectorMultiplication[S <: StanScalarType, V <: StanCompoundType] = new MultiplicationAllowed[V, S, V]
   implicit def vectorScalarMultiplication[S <: StanScalarType, V <: StanCompoundType] = new MultiplicationAllowed[V, V, S]
@@ -35,6 +37,8 @@ object MultiplicationAllowed {
 sealed class DivisionAllowed[R <: StanType, A <: StanType, B <: StanType] extends TypeCheck
 
 object DivisionAllowed {
+  implicit val riDivision = new DivisionAllowed[StanReal, StanReal, StanInt]
+  implicit val irDivision = new DivisionAllowed[StanReal, StanInt, StanReal]
   implicit def scalarDivision[T <: StanScalarType] = new DivisionAllowed[T, T, T]
   implicit def vecScalarDivision[V <: StanVectorLike, T <: StanScalarType] = new DivisionAllowed[V, V, T]
   implicit def matScalarDivision[T <: StanScalarType] = new DivisionAllowed[StanMatrix, StanMatrix, T]

@@ -26,6 +26,16 @@ class ScalaStanSpec extends ScalaStanBaseSpec with ScalaStan {
         }
         checkCode(model, "model { if(1) { } }")
       }
+
+      it("generates an if - else if - else statement") {
+        val model = new Model {
+          when(1) {
+          }.when(2) {
+          } otherwise {
+          }
+        }
+        checkCode(model, "model { if(1) {} else if(2) {} else {} }")
+      }
     }
 
     describe(":=") {
@@ -45,6 +55,50 @@ class ScalaStanSpec extends ScalaStanBaseSpec with ScalaStan {
           a ~ Normal(0, 1)
         }
         checkCode(model, "model { real v#; v# ~ normal(0,1); }")
+      }
+    }
+
+    describe("operators") {
+      it("generates +") {
+        val model = new Model {
+          local(real()) := local(real()) + local(int())
+        }
+        checkCode(model, "v# = (v#) + (v#);")
+      }
+
+      it("generates -") {
+        val model = new Model {
+          local(real()) := local(real()) - local(int())
+        }
+        checkCode(model, "v# = (v#) - (v#);")
+      }
+
+      it("generates *") {
+        val model = new Model {
+          local(real()) := local(real()) * local(int())
+        }
+        checkCode(model, "v# = (v#) * (v#);")
+      }
+
+      it("generates /") {
+        val model = new Model {
+          local(real()) := local(real()) / local(int())
+        }
+        checkCode(model, "v# = (v#) / (v#);")
+      }
+
+      it("generates ^") {
+        val model = new Model {
+          local(real()) := local(real()) ^ local(int())
+        }
+        checkCode(model, "v# = (v#) ^ (v#);")
+      }
+
+      it("generates %") {
+        val model = new Model {
+          local(int()) := local(int()) % local(int())
+        }
+        checkCode(model, "v# = (v#) % (v#);")
       }
     }
 

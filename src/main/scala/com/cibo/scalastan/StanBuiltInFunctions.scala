@@ -18,8 +18,8 @@ protected trait StanBuiltInFunctions {
   def intStep[T <: StanScalarType](x: StanValue[T]): StanValue[StanInt] = FunctionNode("int_step", x)
 
   // Bound functions (39.3).
-  def min(x: StanValue[StanInt], y: StanValue[StanInt]): StanValue[StanInt] = FunctionNode("min", x, y)
-  def max(x: StanValue[StanInt], y: StanValue[StanInt]): StanValue[StanInt] = FunctionNode("max", x, y)
+  def min[T <: StanScalarType](x: StanValue[T], y: StanValue[T]): StanValue[T] = FunctionNode("min", x, y)
+  def max[T <: StanScalarType](x: StanValue[T], y: StanValue[T]): StanValue[T] = FunctionNode("max", x, y)
 
   // Mathematical constants (40.2).
   def pi: StanValue[StanReal] = FunctionNode("pi")
@@ -35,11 +35,11 @@ protected trait StanBuiltInFunctions {
   def machinePrecision: StanValue[StanReal] = FunctionNode("machine_precision")
 
   // Step-like functions (40.7)
-  def step(x: StanValue[StanReal]): StanValue[StanReal] = FunctionNode("step", x)
-  def isInf(x: StanValue[StanReal]): StanValue[StanInt] = FunctionNode("is_inf", x)
-  def isNan(x: StanValue[StanReal]): StanValue[StanInt] = FunctionNode("is_nan", x)
+  def step[T <: StanScalarType](x: StanValue[T]): StanValue[StanReal] = FunctionNode("step", x)
+  def isInf[T <: StanScalarType](x: StanValue[T]): StanValue[StanInt] = FunctionNode("is_inf", x)
+  def isNan[T <: StanScalarType](x: StanValue[T]): StanValue[StanInt] = FunctionNode("is_nan", x)
   def fabs[T <: StanType](x: StanValue[T]): StanValue[T] = FunctionNode("fabs", x)
-  def abs[T <: StanScalarType](x: StanValue[T]): StanValue[T] = FunctionNode("abs", x)
+  def abs[T <: StanType](x: StanValue[T]): StanValue[T] = FunctionNode("abs", x)
   def fdim(x: StanValue[StanReal], y: StanValue[StanReal]): StanValue[StanReal] = FunctionNode("fdim", x, y)
   def fmin(x: StanValue[StanReal], y: StanValue[StanReal]): StanValue[StanReal] = FunctionNode("fmin", x, y)
   def fmax(x: StanValue[StanReal], y: StanValue[StanReal]): StanValue[StanReal] = FunctionNode("fmax", x, y)
@@ -58,13 +58,13 @@ protected trait StanBuiltInFunctions {
   def log[T <: StanType](x: StanValue[T]): StanValue[T] = FunctionNode("log", x)
   def log2[T <: StanType](x: StanValue[T]): StanValue[T] = FunctionNode("log2", x)
   def log10[T <: StanType](x: StanValue[T]): StanValue[T] = FunctionNode("log10", x)
-  def pow(x: StanValue[StanReal], y: StanValue[StanReal]): StanValue[StanReal] = FunctionNode("pow", x, y)
+  def pow[T <: StanScalarType](x: StanValue[T], y: StanValue[T]): StanValue[StanReal] = FunctionNode("pow", x, y)
   def inv[T <: StanType](x: StanValue[T]): StanValue[T] = FunctionNode("inv", x)
   def invSqrt[T <: StanType](x: StanValue[T]): StanValue[T] = FunctionNode("inv_sqrt", x)
   def invSquare[T <: StanType](x: StanValue[T]): StanValue[T] = FunctionNode("inv_square", x)
 
   // Trigonometric functions (40.9).
-  def hypot(x: StanValue[StanReal], y: StanValue[StanReal]): StanValue[StanReal] = FunctionNode("hypot", x, y)
+  def hypot[T <: StanScalarType](x: StanValue[T], y: StanValue[T]): StanValue[StanReal] = FunctionNode("hypot", x, y)
   def cos[T <: StanType](x: StanValue[T]): StanValue[T] = FunctionNode("cos", x)
   def sin[T <: StanType](x: StanValue[T]): StanValue[T] = FunctionNode("sin", x)
   def tan[T <: StanType](x: StanValue[T]): StanValue[T] = FunctionNode("tan", x)
@@ -92,8 +92,9 @@ protected trait StanBuiltInFunctions {
   def phi[T <: StanType](x: StanValue[T]): StanValue[T] = FunctionNode("Phi", x)
   def invPhi[T <: StanType](x: StanValue[T]): StanValue[T] = FunctionNode("inv_Phi", x)
   def phiApprox[T <: StanType](x: StanValue[T]): StanValue[T] = FunctionNode("Phi_approx", x)
-  def binaryLogLoss(x: StanValue[StanInt], y: StanValue[StanReal]): StanValue[StanReal] = FunctionNode("binary_log_loss", x, y)
-  def owensT(h: StanValue[StanReal], a: StanValue[StanReal]): StanValue[StanReal] = FunctionNode("owens_t", h, a)
+  def binaryLogLoss[T <: StanScalarType](x: StanValue[StanInt], y: StanValue[T]): StanValue[StanReal] =
+    FunctionNode("binary_log_loss", x, y)
+  def owensT[T <: StanScalarType](h: StanValue[T], a: StanValue[T]): StanValue[StanReal] = FunctionNode("owens_t", h, a)
 
   // Combinatorial functions (40.13).
   def incBeta(alpha: StanValue[StanReal], beta: StanValue[StanReal], x: StanValue[StanReal]): StanValue[StanReal] =
@@ -104,6 +105,27 @@ protected trait StanBuiltInFunctions {
   def lgamma[T <: StanType](x: StanValue[T]): StanValue[T] = FunctionNode("lgamma", x)
   def digamma[T <: StanType](x: StanValue[T]): StanValue[T] = FunctionNode("digamma", x)
   def trigamma[T <: StanType](x: StanValue[T]): StanValue[T] = FunctionNode("trigamma", x)
+  def lmgamma[T <: StanScalarType](n: StanValue[StanInt], x: StanValue[T]): StanValue[StanReal] =
+    FunctionNode("lmgamma", n, x)
+  def gammaP[T <: StanScalarType](a: StanValue[T], z: StanValue[T]): StanValue[StanReal] =
+    FunctionNode("gamma_p", a, z)
+  def gammaQ[T <: StanScalarType](a: StanValue[T], z: StanValue[T]): StanValue[StanReal] =
+    FunctionNode("gamma_q", a, z)
+  def binomialCoefficientLog[T <: StanScalarType](x: StanValue[T], y: StanValue[T]): StanValue[StanReal] =
+    FunctionNode("binomial_coefficient_log", x, y)
+  def choose(x: StanValue[StanInt], y: StanValue[StanInt]): StanValue[StanInt] = FunctionNode("choose", x, y)
+  def besselFirstKind[T <: StanScalarType](v: StanValue[StanInt], x: StanValue[T]): StanValue[StanReal] =
+    FunctionNode("bessel_first_kind", v, x)
+  def besselSecondKind[T <: StanScalarType](v: StanValue[StanInt], x: StanValue[T]): StanValue[StanReal] =
+    FunctionNode("bessel_second_kind", v, x)
+  def modifiedBesselFirstKind[T <: StanScalarType](v: StanValue[StanInt], z: StanValue[T]): StanValue[StanReal] =
+    FunctionNode("modified_bessel_first_kind", v, z)
+  def modifiedBesselSecondKind[T <: StanScalarType](v: StanValue[StanInt], z: StanValue[T]): StanValue[StanReal] =
+    FunctionNode("modified_bessel_second_kind", v, z)
+  def fallingFactorial[T <: StanScalarType](x: StanValue[T], n: StanValue[T]): StanValue[StanReal] =
+    FunctionNode("falling_factorial", x, n)
+  def lchoose[T <: StanScalarType](x: StanValue[T], y: StanValue[T]): StanValue[StanReal] =
+    FunctionNode("lchoose", x, y)
   //TODO
 
   // Composed functions (40.14).
@@ -118,7 +140,7 @@ protected trait StanBuiltInFunctions {
     FunctionNode("sum", x)
   def prod[T <: StanCompoundType, E <: StanType](x: StanValue[T])(implicit ev: T#ELEMENT_TYPE =:= E): StanValue[E] =
     FunctionNode("prod", x)
-  def log_sum_exp[T <: StanCompoundType, E <: StanType](x: StanValue[T])(implicit ev: T#ELEMENT_TYPE =:= E): StanValue[E] =
+  def logSumExp[T <: StanCompoundType, E <: StanType](x: StanValue[T])(implicit ev: T#ELEMENT_TYPE =:= E): StanValue[E] =
     FunctionNode("log_sum_exp", x)
   def mean[T <: StanCompoundType, E <: StanType](x: StanValue[T])(implicit ev: T#ELEMENT_TYPE =:= E): StanValue[E] =
     FunctionNode("mean", x)
@@ -152,40 +174,299 @@ protected trait StanBuiltInFunctions {
     n: StanValue[StanInt]
   ): StanValue[StanArray[StanArray[StanArray[T]]]] = FunctionNode("rep_array", x, k, m, n)
 
-  // Sorting functions (41.4).
-  def sortAsc[T <: StanType](v: StanValue[StanArray[T]]): StanValue[StanArray[T]] = FunctionNode("sort_asc", v)
-  def sortDesc[T <: StanType](v: StanValue[StanArray[T]]): StanValue[StanArray[T]] = FunctionNode("sort_desc", v)
-  def sortIndicesAsc[T <: StanType](v: StanValue[StanArray[T]]): StanValue[StanArray[StanInt]] =
+  def repVector(x: StanValue[StanReal], m: StanValue[StanInt]): StanValue[StanVector] =
+    FunctionNode("rep_vector", x, m)
+  def repRowVector(x: StanValue[StanReal], n: StanValue[StanInt]): StanValue[StanRowVector] =
+    FunctionNode("rep_row_vector", x, n)
+  def repMatrix(x: StanValue[StanReal], m: StanValue[StanInt], n: StanValue[StanInt]): StanValue[StanMatrix] =
+    FunctionNode("rep_matrix", x, m, n)
+  def repMatrix[T <: StanVectorLike](v: StanValue[T], n: StanValue[StanInt]): StanValue[StanMatrix] =
+    FunctionNode("rep_matrix", v, n)
+
+  // Sorting functions (41.4, 42.14).
+  def sortAsc[T <: StanType: IsVectorLikeOrArray](v: StanValue[T]): StanValue[T] = FunctionNode("sort_asc", v)
+  def sortDesc[T <: StanType: IsVectorLikeOrArray](v: StanValue[T]): StanValue[T] = FunctionNode("sort_desc", v)
+  def sortIndicesAsc[T <: StanType: IsVectorLikeOrArray](v: StanValue[T]): StanValue[StanArray[StanInt]] =
     FunctionNode("sort_indices_asc", v)
-  def sortIndicesDesc[T <: StanType](v: StanValue[StanArray[T]]): StanValue[StanArray[StanInt]] =
+  def sortIndicesDesc[T <: StanType: IsVectorLikeOrArray](v: StanValue[T]): StanValue[StanArray[StanInt]] =
     FunctionNode("sort_indices_desc", v)
-  def rank[T <: StanScalarType](v: StanValue[StanArray[T]], s: StanValue[StanInt]): StanValue[StanInt] =
+  def rank[T <: StanScalarType: IsVectorLikeOrArray](v: StanValue[T], s: StanValue[StanInt]): StanValue[StanInt] =
     FunctionNode("rank", v, s)
 
   // Integer-valued matrix size functions (42.1).
-  def numElements[T <: StanCompoundType](x: StanValue[T]): StanValue[StanInt] = FunctionNode("num_elements", x)
-  def rows[T <: StanCompoundType](x: StanValue[T]): StanValue[StanInt] = FunctionNode("rows", x)
-  def cols[T <: StanCompoundType](x: StanValue[T]): StanValue[StanInt] = FunctionNode("cols", x)
+  def numElements[T <: StanVectorOrMatrix](x: StanValue[T]): StanValue[StanInt] = FunctionNode("num_elements", x)
+  def rows[T <: StanVectorOrMatrix](x: StanValue[T]): StanValue[StanInt] = FunctionNode("rows", x)
+  def cols[T <: StanVectorOrMatrix](x: StanValue[T]): StanValue[StanInt] = FunctionNode("cols", x)
 
   // Dot products and specialized products (42.5).
-  //TODO
+  def dotProduct[A <: StanVectorLike, B <: StanVectorLike](
+    x: StanValue[A],
+    y: StanValue[B]
+  ): StanValue[StanReal] = FunctionNode("dot_product", x, y)
+  def columnsDotProduct[T <: StanVectorOrMatrix](
+    x: StanValue[T],
+    y: StanValue[T]
+  ): StanValue[StanRowVector] = FunctionNode("columns_dot_product", x, y)
+  def rowsDotProduct[T <: StanVectorOrMatrix](
+    x: StanValue[T],
+    y: StanValue[T]
+  ): StanValue[StanVector] = FunctionNode("rows_dot_product", x, y)
+  def dotSelf[T <: StanVectorLike](x: StanValue[T]): StanValue[StanReal] = FunctionNode("dot_self", x)
+  def columnsDotSelf[T <: StanVectorOrMatrix](
+    x: StanValue[T]
+  ): StanValue[StanRowVector] = FunctionNode("columns_dot_self", x)
+  def rowsDotSelf[T <: StanVectorOrMatrix](
+    x: StanValue[T]
+  ): StanValue[StanVector] = FunctionNode("rows_dot_self", x)
+  def tcrossprod(x: StanValue[StanMatrix]): StanValue[StanMatrix] = FunctionNode("tcrossprod", x)
+  def crossprod(x: StanValue[StanMatrix]): StanValue[StanMatrix] = FunctionNode("crossprod", x)
+  def quadForm[B <: StanVectorOrMatrix, R <: StanType](
+    a: StanValue[StanMatrix],
+    b: StanValue[B]
+  ): StanValue[R] = FunctionNode("quad_form", a, b)
+  def quadFormDiag[T <: StanVectorLike](
+    m: StanValue[StanMatrix],
+    v: StanValue[T]
+  ): StanValue[StanMatrix] = FunctionNode("quad_form_diag", m, v)
+  def quadFormSym[T <: StanVectorOrMatrix, R <: StanType](
+    a: StanValue[StanMatrix],
+    b: StanValue[T]
+  ): StanValue[R] = FunctionNode("quad_form_sym", a, b)
+  def traceQuadForm(
+    a: StanValue[StanMatrix],
+    b: StanValue[StanMatrix]
+  ): StanValue[StanReal] = FunctionNode("trace_quad_form", a, b)
+  def traceGenQuadForm(
+    d: StanValue[StanMatrix],
+    a: StanValue[StanMatrix],
+    b: StanValue[StanMatrix]
+  ): StanValue[StanReal] = FunctionNode("trace_gen_quad_form", d, a, b)
+  def multiplyLowerTriSelfTranspose(
+    x: StanValue[StanMatrix]
+  ): StanValue[StanMatrix] = FunctionNode("multiply_lower_tri_self_transpose", x)
+  def diagPreMultiply[T <: StanVectorLike](
+    v: StanValue[T],
+    m: StanValue[StanMatrix]
+  ): StanValue[StanMatrix] = FunctionNode("diag_pre_multiply", v, m)
+  def diagPostMultiply[T <: StanVectorLike](
+    m: StanValue[StanMatrix],
+    v: StanValue[T]
+  ): StanValue[StanMatrix] = FunctionNode("diag_post_multiply", m, v)
+
+  // Diagonal Matrix Functions (42.8).
+  def diagonal(x: StanValue[StanMatrix]): StanValue[StanVector] = FunctionNode("diagonal", x)
+  def diag_matrix(x: StanValue[StanVector]): StanValue[StanMatrix] = FunctionNode("diag_matrix", x)
 
   // Slicing and blocking functions (42.9).
-  //TODO
+  def col(x: StanValue[StanMatrix], n: StanValue[StanInt]): StanValue[StanVector] = FunctionNode("col", x, n)
+  def row(x: StanValue[StanMatrix], m: StanValue[StanInt]): StanValue[StanRowVector] = FunctionNode("row", x, m)
+  def block(
+    x: StanValue[StanMatrix],
+    i: StanValue[StanInt],
+    j: StanValue[StanInt],
+    nRows: StanValue[StanInt],
+    nCols: StanValue[StanInt]
+  ): StanValue[StanMatrix] = FunctionNode("block", x, i, j, nRows, nCols)
+  def subCol(
+    x: StanValue[StanMatrix],
+    i: StanValue[StanInt],
+    j: StanValue[StanInt],
+    nRows: StanValue[StanInt]
+  ): StanValue[StanVector] = FunctionNode("sub_col", x, i, j, nRows)
+  def subRow(
+    x: StanValue[StanMatrix],
+    i: StanValue[StanInt],
+    j: StanValue[StanInt],
+    nCols: StanValue[StanInt]
+  ): StanValue[StanRowVector] = FunctionNode("sub_row", x, i, j, nCols)
+  def head[T <: StanCompoundType: IsVectorLikeOrArray](
+    v: StanValue[T],
+    n: StanValue[StanInt]
+  ): StanValue[T] = FunctionNode("head", v, n)
+  def tail[T <: StanCompoundType: IsVectorLikeOrArray](
+    v: StanValue[T],
+    n: StanValue[StanInt]
+  ): StanValue[T] = FunctionNode("tail", v, n)
+  def segment[T <: StanCompoundType: IsVectorLikeOrArray](
+    v: StanValue[T],
+    i: StanValue[StanInt],
+    n: StanValue[StanInt]
+  ): StanValue[T] = FunctionNode("segment", i, n)
 
   // Matrix concatenation (42.10).
-  //TODO
+  def appendCol[X <: StanType, Y <: StanType, R <: StanType](
+    x: StanValue[X],
+    y: StanValue[Y]
+  )(
+    implicit ev: AppendColAllowed[X, Y, R]
+  ): StanValue[R] = FunctionNode("append_col", x, y)
+  def appendRow[X <: StanType, Y <: StanType, R <: StanType](
+    x: StanValue[X],
+    y: StanValue[Y]
+  )(
+    implicit ev: AppendRowAllowed[X, Y, R]
+  ): StanValue[R] = FunctionNode("append_row", x, y)
 
   // Special matrix functions (42.11).
-  //TODO
+  def softmax(x: StanValue[StanVector]): StanValue[StanVector] = FunctionNode("softmax", x)
+  def logSoftmax(x: StanValue[StanVector]): StanValue[StanVector] = FunctionNode("logSoftmax", x)
+  def cumulativeSum[T <: StanType: IsVectorLikeOrArray: ContinuousType](
+    x: StanValue[T]
+  ): StanValue[T] = FunctionNode("cumulative_sum", x)
 
   // Covariance functions (42.12).
-  //TODO
+  def covExpQuad[T <: StanType: IsVectorLikeOrArray: ContinuousType, A <: StanScalarType, R <: StanScalarType](
+    x: StanValue[T],
+    alpha: StanValue[A],
+    rho: StanValue[R]
+  ): StanValue[StanMatrix] = FunctionNode("cov_exp_quad", x, alpha, rho)
+
+  // Linear Algebra Functions and Solvers (42.13).
+  def mdivideLeftTriLow[T <: StanCompoundType: IsVectorOrMatrix](
+    a: StanValue[StanMatrix],
+    b: StanValue[T]
+  ): StanValue[T] = FunctionNode("mdivide_left_tri_low", a, b)
+  def mdivideRightTriLow[T <: StanCompoundType: IsRowVectorOrMatrix](
+    a: StanValue[T],
+    b: StanValue[StanMatrix]
+  ): StanValue[T] = FunctionNode("mdivide_right_tri_low", a, b)
+  def mdivideLeftSpd[T <: StanCompoundType: IsVectorOrMatrix](
+    a: StanValue[StanMatrix],
+    b: StanValue[T]
+  ): StanValue[T] = FunctionNode("mdivide_left_spd", a, b)
+  def mdivideRightSpd[T <: StanCompoundType: IsRowVectorOrMatrix](
+    a: StanValue[T],
+    b: StanValue[StanMatrix]
+  ): StanValue[T] = FunctionNode("mdivide_right_spd", a, b)
+  def matrixExp(a: StanValue[StanMatrix]): StanValue[StanMatrix] = FunctionNode("matrix_exp", a)
+  def trace(a: StanValue[StanMatrix]): StanValue[StanReal] = FunctionNode("trace", a)
+  def determinant(a: StanValue[StanMatrix]): StanValue[StanReal] = FunctionNode("determinant", a)
+  def logDeterminant(a: StanValue[StanMatrix]): StanValue[StanReal] = FunctionNode("log_determinant", a)
+  def inverse(a: StanValue[StanMatrix]): StanValue[StanMatrix] = FunctionNode("inverse", a)
+  def inverseSpd(a: StanValue[StanMatrix]): StanValue[StanMatrix] = FunctionNode("inverse_spd", a)
+  def eigenvaluesSym(a: StanValue[StanMatrix]): StanValue[StanVector] = FunctionNode("eigenvalues_sym", a)
+  def eigenvectorsSym(a: StanValue[StanMatrix]): StanValue[StanMatrix] = FunctionNode("eigenvectors_sym", a)
+  def qrQ(a: StanValue[StanMatrix]): StanValue[StanMatrix] = FunctionNode("qr_Q", a)
+  def qrR(a: StanValue[StanMatrix]): StanValue[StanMatrix] = FunctionNode("qr_R", a)
+  def choleskyDecompose(a: StanValue[StanMatrix]): StanValue[StanMatrix] = FunctionNode("cholesky_decompose", a)
+  def singularValues(a: StanValue[StanMatrix]): StanValue[StanVector] = FunctionNode("singular_values", a)
+
+  // Sparse Matrix Operatiosn (43).
+  def csrExtractW(a: StanValue[StanMatrix]): StanValue[StanVector] = FunctionNode("csr_extract_w", a)
+  def csrExtractV(a: StanValue[StanMatrix]): StanValue[StanArray[StanInt]] = FunctionNode("csr_extract_v", a)
+  def csrExtractU(a: StanValue[StanMatrix]): StanValue[StanArray[StanInt]] = FunctionNode("csr_extract_u", a)
+  def csrToDenseMatrix(
+    m: StanValue[StanInt],
+    n: StanValue[StanInt],
+    w: StanValue[StanVector],
+    v: StanValue[StanArray[StanInt]],
+    u: StanValue[StanArray[StanInt]]
+  ): StanValue[StanMatrix] = FunctionNode("csr_to_dense_matrix", m, n, w, v, u)
+  def csrMatrixTimesVector(
+    m: StanValue[StanInt],
+    n: StanValue[StanInt],
+    w: StanValue[StanVector],
+    v: StanValue[StanArray[StanInt]],
+    u: StanValue[StanArray[StanInt]],
+    b: StanValue[StanVector]
+  ): StanValue[StanVector] = FunctionNode("csr_matrix_times_vector", m, n, w, v, u, b)
 
   // Mixed operations (44).
-  //TODO
+  def toMatrix[T <: StanType: ToMatrixAllowed](v: StanValue[T]): StanValue[StanMatrix] =
+    FunctionNode("to_matrix", v)
+  def toMatrix[T <: StanType: ToMatrixAllowed](
+    v: StanValue[T],
+    m: StanValue[StanInt],
+    n: StanValue[StanInt]
+  ): StanValue[StanMatrix] = FunctionNode("to_matrix", v, m, n)
+  def toMatrix[T <: StanType: ToMatrixAllowed](
+    v: StanValue[T],
+    m: StanValue[StanInt],
+    n: StanValue[StanInt],
+    colMajor: StanValue[StanInt]
+  ): StanValue[StanMatrix] = FunctionNode("to_matrix", v, m, n, colMajor)
+  def toVector[T <: StanType: ToVectorAllowed](
+    v: StanValue[T]
+  ): StanValue[StanVector] = FunctionNode("to_vector", v)
+  def toRowVector[T <: StanType: ToVectorAllowed](
+    v: StanValue[T]
+  ): StanValue[StanRowVector] = FunctionNode("to_row_vector", v)
+  def toArray2d(m: StanValue[StanMatrix]): StanValue[StanArray[StanArray[StanReal]]] = FunctionNode("to_array_2d", m)
+  def toArray1d[T <: StanCompoundType, R <: StanScalarType](
+    v: StanValue[T]
+  ): StanValue[StanArray[R]] = FunctionNode("to_array_1d", v)
 
   // ODE Solvers (45).
-  //TODO
+  def intgrateOdeRk45[T <: StanScalarType](
+    ode: ScalaStan#Function[StanArray[StanReal]],
+    initialState: StanValue[StanArray[StanReal]],
+    initialTime: StanValue[T],
+    times: StanValue[StanArray[StanReal]],
+    theta: StanValue[StanArray[StanReal]],
+    xr: StanValue[StanArray[StanReal]],
+    xi: StanValue[StanArray[StanInt]]
+  ): StanValue[StanArray[StanArray[StanReal]]] =
+    FunctionNode("integrate_ode_rk45", LiteralNode(ode.result.emit), initialState, initialTime, times, theta, xr, xi)
+
+  def intgrateOdeRk45[T <: StanScalarType, RT <: StanScalarType, AT <: StanScalarType](
+    ode: ScalaStan#Function[StanArray[StanReal]],
+    initialState: StanValue[StanArray[StanReal]],
+    initialTime: StanValue[T],
+    times: StanValue[StanArray[StanReal]],
+    theta: StanValue[StanArray[StanReal]],
+    xr: StanValue[StanArray[StanReal]],
+    xi: StanValue[StanArray[StanInt]],
+    relTol: StanValue[RT],
+    absTol: StanValue[AT],
+    maxNumSteps: StanValue[StanInt]
+  ): StanValue[StanArray[StanArray[StanReal]]] = FunctionNode(
+    "integrate_ode_rk45",
+    LiteralNode(ode.result.emit),
+    initialState,
+    initialTime,
+    times,
+    theta,
+    xr,
+    xi,
+    relTol,
+    absTol,
+    maxNumSteps
+  )
+
+  def intgrateOdeBdf[T <: StanScalarType](
+    ode: ScalaStan#Function[StanArray[StanReal]],
+    initialState: StanValue[StanArray[StanReal]],
+    initialTime: StanValue[T],
+    times: StanValue[StanArray[StanReal]],
+    theta: StanValue[StanArray[StanReal]],
+    xr: StanValue[StanArray[StanReal]],
+    xi: StanValue[StanArray[StanInt]]
+  ): StanValue[StanArray[StanReal]] =
+    FunctionNode("integrate_ode_bdf", LiteralNode(ode.result.emit), initialState, initialTime, times, theta, xr, xi)
+
+  def intgrateOdeBdf[T <: StanScalarType, RT <: StanScalarType, AT <: StanScalarType](
+    ode: ScalaStan#Function[StanArray[StanReal]],
+    initialState: StanValue[StanArray[StanReal]],
+    initialTime: StanValue[T],
+    times: StanValue[StanArray[StanReal]],
+    theta: StanValue[StanArray[StanReal]],
+    xr: StanValue[StanArray[StanReal]],
+    xi: StanValue[StanArray[StanInt]],
+    relTol: StanValue[RT],
+    absTol: StanValue[AT],
+    maxNumSteps: StanValue[StanInt]
+  ): StanValue[StanArray[StanArray[StanReal]]] = FunctionNode(
+    "integrate_ode_bdf",
+    LiteralNode(ode.result.emit),
+    initialState,
+    initialTime,
+    times,
+    theta,
+    xr,
+    xi,
+    relTol,
+    absTol,
+    maxNumSteps
+  )
 
 }

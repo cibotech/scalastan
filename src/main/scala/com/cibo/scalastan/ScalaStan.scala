@@ -173,7 +173,7 @@ trait ScalaStan extends Implicits { stan =>
 
   abstract class Function[RETURN_TYPE <: StanType](returnType: RETURN_TYPE = StanVoid()) extends StanCode {
 
-    private val result = StanLocalDeclaration[RETURN_TYPE](returnType)
+    private[scalastan] val result = StanLocalDeclaration[RETURN_TYPE](returnType)
     private val inputs = new ArrayBuffer[StanLocalDeclaration[_]]()
 
     def input[T <: StanType](typeConstructor: T): StanLocalDeclaration[T] = {

@@ -107,14 +107,18 @@ protected trait StanDistributions {
     beta: StanValue[B]
   ): StanContinuousDistribution[R] = StanContinuousDistribution("inv_gamma", alpha, beta)
 
-  def InvWishart(nu: StanValue[StanReal], sigma: StanValue[StanMatrix]): StanContinuousDistribution[StanMatrix] =
-    StanContinuousDistribution("inv_wishart", nu, sigma)
+  def InvWishart[N <: StanScalarType](
+    nu: StanValue[N],
+    sigma: StanValue[StanMatrix]
+  ): StanContinuousDistribution[StanMatrix] = StanContinuousDistribution("inv_wishart", nu, sigma)
 
-  def LkjCorr(eta: StanValue[StanReal]): StanContinuousDistribution[StanMatrix] =
-    StanContinuousDistribution("lkj_corr", eta)
+  def LkjCorr[E <: StanScalarType](
+    eta: StanValue[E]
+  ): StanContinuousDistribution[StanMatrix] = StanContinuousDistribution("lkj_corr", eta)
 
-  def LkjCholesky(eta: StanValue[StanReal]): StanContinuousDistribution[StanMatrix] =
-    StanContinuousDistribution("lkj_cholesky", eta)
+  def LkjCholesky[E <: StanScalarType](
+    eta: StanValue[E]
+  ): StanContinuousDistribution[StanMatrix] = StanContinuousDistribution("lkj_cholesky", eta)
 
   def Logistic[M <: StanType: ContinuousType, S <: StanType: ContinuousType, R <: StanType](
     mu: StanValue[M],
@@ -151,8 +155,8 @@ protected trait StanDistributions {
     omega: StanValue[StanMatrix]
   ): StanContinuousDistribution[R] = StanContinuousDistribution("multi_normal_prec", mu, omega)
 
-  def MultiStudentT[M <: StanVectorLike: ContinuousType, R <: StanType](
-    nu: StanValue[StanReal],
+  def MultiStudentT[N <: StanScalarType, M <: StanVectorLike: ContinuousType, R <: StanType](
+    nu: StanValue[N],
     mu: StanValue[M],
     sigma: StanValue[StanMatrix]
   ): StanContinuousDistribution[R] = StanContinuousDistribution("multi_student_t", nu, mu, sigma)
@@ -177,8 +181,8 @@ protected trait StanDistributions {
     sigma: StanValue[B]
   ): StanContinuousDistribution[R] = StanContinuousDistribution("normal", mu, sigma)
 
-  def OrderedLogistic(
-    eta: StanValue[StanReal],
+  def OrderedLogistic[E <: StanScalarType](
+    eta: StanValue[E],
     c: StanValue[StanVector]
   ): StanDiscreteDistributionWithoutCdf[StanInt] = StanDiscreteDistributionWithoutCdf("ordered_logistic", eta, c)
 
@@ -251,6 +255,8 @@ protected trait StanDistributions {
     delta: StanValue[D]
   ): StanContinuousDistribution[R] = StanContinuousDistribution("wiener", alpha, tau, beta, delta)
 
-  def Wishart(nu: StanValue[StanReal], sigma: StanValue[StanMatrix]): StanContinuousDistribution[StanMatrix] =
-    StanContinuousDistribution("wishart", nu, sigma)
+  def Wishart[N <: StanScalarType](
+    nu: StanValue[N],
+    sigma: StanValue[StanMatrix]
+  ): StanContinuousDistribution[StanMatrix] = StanContinuousDistribution("wishart", nu, sigma)
 }

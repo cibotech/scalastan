@@ -38,13 +38,40 @@ class ScalaStanSpec extends ScalaStanBaseSpec with ScalaStan {
       }
     }
 
-    describe(":=") {
-      it("generates an assignment") {
+    describe("assignment operators") {
+      it("generates :=") {
         val model = new Model {
-          val a = local(int())
-          a := 1
+          local(int()) := 1
         }
         checkCode(model, "model { int v#; v# = 1; }")
+      }
+
+      it("generates +=") {
+        val model = new Model {
+          local(int()) += 1
+        }
+        checkCode(model, "model { int v#; v# += 1; }")
+      }
+
+      it("generates -=") {
+        val model = new Model {
+          local(int()) -= 1
+        }
+        checkCode(model, "model { int v#; v# -= 1; }")
+      }
+
+      it("generates *=") {
+        val model = new Model {
+          local(int()) *= 1
+        }
+        checkCode(model, "model { int v#; v# *= 1; }")
+      }
+
+      it("generates /=") {
+        val model = new Model {
+          local(int()) /= 1
+        }
+        checkCode(model, "model { int v#; v# /= 1; }")
       }
     }
 
@@ -87,6 +114,14 @@ class ScalaStanSpec extends ScalaStanBaseSpec with ScalaStan {
         checkCode(model, "v# = (v#) / (v#);")
       }
 
+      it("generates \\") {
+        val model = new Model {
+          val n = local(int())
+          local(matrix(n, n)) := local(matrix(n, n)) \ local(matrix(n, n))
+        }
+        checkCode(model, "v# = (v#) \\ (v#);")
+      }
+
       it("generates ^") {
         val model = new Model {
           local(real()) := local(real()) ^ local(int())
@@ -99,6 +134,30 @@ class ScalaStanSpec extends ScalaStanBaseSpec with ScalaStan {
           local(int()) := local(int()) % local(int())
         }
         checkCode(model, "v# = (v#) % (v#);")
+      }
+
+      it("generates transpose") {
+        val model = new Model {
+          val n = local(int())
+          local(matrix(n, n)) := local(matrix(n, n)).t
+        }
+        checkCode(model, "v# = (v#)';")
+      }
+
+      it("generate index 1") {
+        val model = new Model {
+          val r = local(vector(local(int())))
+          r(5) := 1
+        }
+        checkCode(model, "v#[5] = 1.0;")
+      }
+
+      it("generate index 2") {
+        val model = new Model {
+          val r = local(matrix(local(int()), local(int())))
+          r(5, 6) := 1
+        }
+        checkCode(model, "v#[5,6] = 1.0;")
       }
     }
 

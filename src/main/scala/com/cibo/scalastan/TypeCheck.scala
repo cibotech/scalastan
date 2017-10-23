@@ -100,12 +100,12 @@ object DistanceAllowed {
 }
 
 @implicitNotFound("transpose not allowed for ${R} = ${T}.t")
-sealed class TranposeAllowed[T <: StanType, R <: StanType] extends TypeCheck
+sealed class TransposeAllowed[T <: StanType, R <: StanType] extends TypeCheck
 
 object TransposeAllowed {
-  implicit val matrixTranspose = new TranposeAllowed[StanMatrix, StanMatrix]
-  implicit val vectorTranspose = new TranposeAllowed[StanRowVector, StanVector]
-  implicit val rowVectorTranspose = new TranposeAllowed[StanVector, StanRowVector]
+  implicit val matrixTranspose = new TransposeAllowed[StanMatrix, StanMatrix]
+  implicit val vectorTranspose = new TransposeAllowed[StanRowVector, StanVector]
+  implicit val rowVectorTranspose = new TransposeAllowed[StanVector, StanRowVector]
 }
 
 @implicitNotFound("function only allowed in a GeneratedQuantity")

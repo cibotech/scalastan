@@ -7,6 +7,8 @@ protected trait Implicits {
 
   implicit def doubleLiteral2real(value: Double): StanValue[StanReal] = StanConstant[StanReal](value)
 
+  implicit def stringLiteral2string(value: String): StanValue[StanString] = StanStringLiteral(value)
+
   implicit def intLiteral2optInt(value: Int): Option[StanValue[StanInt]] = Some(StanConstant[StanInt](value))
 
   implicit def intLiteral2optReal(value: Int): Option[StanValue[StanReal]] = Some(StanConstant[StanReal](value.toDouble))

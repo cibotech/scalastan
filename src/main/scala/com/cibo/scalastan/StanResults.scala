@@ -183,7 +183,9 @@ case class StanResults private (private val chains: Seq[Seq[Map[String, String]]
   }
 
   def summary(ps: PrintStream)(implicit ss: ScalaStan): Unit = {
-    summary(new PrintWriter(ps))
+    val pw = new PrintWriter(ps)
+    summary(pw)
+    pw.flush()
   }
 
   def summary(pw: PrintWriter)(implicit ss: ScalaStan): Unit = {

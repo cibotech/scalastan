@@ -8,64 +8,71 @@ abstract class StanValue[T <: StanType] extends StanNode with Implicits {
   def unary_-(): StanValue[T] = UnaryOperator("-", this)
 
   // Logical functions.
-  def ===(right: StanValue[T])(implicit ev: LogicalAllowed[T]): StanValue[StanInt] = BinaryOperator("==", this, right)
-  def =/=(right: StanValue[T])(implicit ev: LogicalAllowed[T]): StanValue[StanInt] = BinaryOperator("!=", this, right)
-  def <(right: StanValue[T])(implicit ev: LogicalAllowed[T]): StanValue[StanInt] = BinaryOperator("<", this, right)
-  def <=(right: StanValue[T])(implicit ev: LogicalAllowed[T]): StanValue[StanInt] = BinaryOperator("<=", this, right)
-  def >(right: StanValue[T])(implicit ev: LogicalAllowed[T]): StanValue[StanInt] = BinaryOperator(">", this, right)
-  def >=(right: StanValue[T])(implicit ev: LogicalAllowed[T]): StanValue[StanInt] = BinaryOperator(">=", this, right)
+  def ===[R <: StanScalarType](right: StanValue[R])(implicit ev: LogicalAllowed[T]): StanValue[StanInt] =
+    BinaryOperator("==", this, right)
+  def =/=[R <: StanScalarType](right: StanValue[R])(implicit ev: LogicalAllowed[T]): StanValue[StanInt] =
+    BinaryOperator("!=", this, right)
+  def <[R <: StanScalarType](right: StanValue[R])(implicit ev: LogicalAllowed[T]): StanValue[StanInt] =
+    BinaryOperator("<", this, right)
+  def <=[R <: StanScalarType](right: StanValue[R])(implicit ev: LogicalAllowed[T]): StanValue[StanInt] =
+    BinaryOperator("<=", this, right)
+  def >[R <: StanScalarType](right: StanValue[R])(implicit ev: LogicalAllowed[T]): StanValue[StanInt] =
+    BinaryOperator(">", this, right)
+  def >=[R <: StanScalarType](right: StanValue[R])(implicit ev: LogicalAllowed[T]): StanValue[StanInt] =
+    BinaryOperator(">=", this, right)
 
   // Boolean operators.
   def unary_!()(implicit ev: LogicalAllowed[T]): StanValue[StanInt] = UnaryOperator("!", this)
-  def ||(right: StanValue[T])(implicit ev: LogicalAllowed[T]): StanValue[StanInt] = BinaryOperator("||", this, right)
-  def &&(right: StanValue[T])(implicit ev: LogicalAllowed[T]): StanValue[StanInt] = BinaryOperator("&&", this, right)
+  def ||[R <: StanScalarType](right: StanValue[R])(implicit ev: LogicalAllowed[T]): StanValue[StanInt] =
+    BinaryOperator("||", this, right)
+  def &&[R <: StanScalarType](right: StanValue[R])(implicit ev: LogicalAllowed[T]): StanValue[StanInt] =
+    BinaryOperator("&&", this, right)
 
-  def +[R <: StanType](right: Int)(implicit ev: AdditionAllowed[R, T, StanInt]): StanValue[R] =
-    BinaryOperator[R, T, StanInt]("+", this, right)
-  def +[R <: StanType](right: Double)(implicit ev: AdditionAllowed[R, T, StanReal]): StanValue[R] =
-    BinaryOperator[R, T, StanReal]("+", this, right)
   def +[B <: StanType, R <: StanType](
     right: StanValue[B]
   )(
     implicit ev: AdditionAllowed[R, T, B]
   ): StanValue[R] = BinaryOperator("+", this, right)
 
-  def -[R <: StanType](right: Int)(implicit ev: AdditionAllowed[R, T, StanInt]): StanValue[R] =
-    BinaryOperator[R, T, StanInt]("-", this, right)
-  def -[R <: StanType](right: Double)(implicit ev: AdditionAllowed[R, T, StanReal]): StanValue[R] =
-    BinaryOperator[R, T, StanReal]("-", this, right)
   def -[B <: StanType, R <: StanType](
     right: StanValue[B]
   )(
     implicit ev: AdditionAllowed[R, T, B]
   ): StanValue[R] = BinaryOperator("-", this, right)
 
-  def *[R <: StanType](right: Int)(implicit ev: MultiplicationAllowed[R, T, StanInt]): StanValue[R] =
-    BinaryOperator[R, T, StanInt]("*", this, right)
-  def *[R <: StanType](right: Double)(implicit ev: MultiplicationAllowed[R, T, StanReal]): StanValue[R] =
-    BinaryOperator[R, T, StanReal]("*", this, right)
   def *[B <: StanType, R <: StanType](
     right: StanValue[B]
   )(
     implicit ev: MultiplicationAllowed[R, T, B]
   ): StanValue[R] = BinaryOperator("*", this, right)
 
-  def /[B <: StanScalarType](right: StanValue[B]): StanValue[T] = BinaryOperator("/", this, right)
+  def /[B <: StanType, R <: StanType](
+    right: StanValue[B]
+  )(
+    implicit ev: DivisionAllowed[R, T, B]
+  ): StanValue[R] = BinaryOperator("/", this, right)
+
+  def \[B <: StanType, R <: StanType](
+    right: StanValue[B]
+  )(implicit ev: LeftDivisionAllowed[R, T, B]): StanValue[R] =
+    BinaryOperator("\\", this, right)
 
   def %(right: StanValue[T])(implicit ev: ModulusAllowed[T]): StanValue[T] = BinaryOperator("%", this, right)
 
-  def ^(right: StanValue[T]): StanValue[T] = BinaryOperator("^", this, right)
+  def ^(right: StanValue[T])(implicit ev: IsScalarType[T]): StanValue[T] = BinaryOperator("^", this, right)
 
   // Element-wise operators.
-  def :*(right: StanValue[T]): StanValue[T]= BinaryOperator(".*", this, right)
-  def :/(right: StanValue[T]): StanValue[T]= BinaryOperator("./", this, right)
+  def :*(right: StanValue[T])(implicit ev: IsCompoundType[T]): StanValue[T] =
+    BinaryOperator(".*", this, right)
+  def :/[B <: StanType, R <: StanType](
+    right: StanValue[B]
+  )(implicit ev: ElementWiseDivisionAllowed[R, T, B]): StanValue[R]= BinaryOperator("./", this, right)
 
   def ~(dist: StanDistribution[T])(implicit code: ArrayBuffer[StanNode]): Unit = {
     code += SampleNode[T](this, dist)
   }
 
   def t[R <: StanType](implicit e: TranposeAllowed[T, R]): StanValue[R] = TransposeOperator(this)
-
 }
 
 trait ReadOnlyIndex[T <: StanType] { self: StanValue[T] =>
@@ -244,5 +251,9 @@ case class TransposeOperator[T <: StanType, R <: StanType](
 }
 
 case class StanConstant[T <: StanType](value: T#SCALA_TYPE) extends StanValue[T] with ReadOnlyIndex[T] {
+  def emit: String = value.toString
+}
+
+case class LiteralNode(value: String) extends StanValue[StanVoid] {
   def emit: String = value.toString
 }

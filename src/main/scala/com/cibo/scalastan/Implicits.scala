@@ -16,7 +16,6 @@ protected trait Implicits {
   implicit def int2real(value: StanValue[StanInt]): StanValue[StanReal] = ImplicitConversion(value)
 
   implicit def stanValue2optValue[T <: StanType](value: StanValue[T]): Option[StanValue[T]] = Some(value)
-
 }
 
 protected object Implicits extends Implicits

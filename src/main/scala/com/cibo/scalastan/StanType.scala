@@ -112,6 +112,7 @@ trait StanScalarType extends StanType {
 }
 
 trait StanCompoundType extends StanType
+trait StanVectorOrMatrix extends StanCompoundType
 
 case class StanVoid private[scalastan] (
   lower: Option[StanValue[StanVoid]] = None,
@@ -214,7 +215,7 @@ case class StanReal private[scalastan] (
   def combine(values: Seq[Seq[Double]])(func: Seq[Seq[Double]] => Double): Double = func(values)
 }
 
-trait StanVectorLike extends StanCompoundType {
+trait StanVectorLike extends StanVectorOrMatrix {
   type ELEMENT_TYPE = StanReal
   type NEXT_TYPE = StanReal
   type SCALA_TYPE = Seq[Double]
@@ -262,7 +263,7 @@ case class StanMatrix private[scalastan] (
   cols: StanValue[StanInt],
   lower: Option[StanValue[StanReal]] = None,
   upper: Option[StanValue[StanReal]] = None
-) extends StanCompoundType {
+) extends StanVectorOrMatrix {
   type THIS_TYPE = StanMatrix
   type ELEMENT_TYPE = StanReal
   type NEXT_TYPE = StanVector

@@ -126,10 +126,31 @@ protected trait StanBuiltInFunctions {
     FunctionNode("falling_factorial", x, n)
   def lchoose[T <: StanScalarType](x: StanValue[T], y: StanValue[T]): StanValue[StanReal] =
     FunctionNode("lchoose", x, y)
-  //TODO
+  def logFallingFactorial[T <: StanScalarType](x: StanValue[T], n: StanValue[T]): StanValue[StanReal] =
+    FunctionNode("log_falling_factorial", x, n)
+  def risingFactorial[T <: StanScalarType](x: StanValue[T], n: StanValue[T]): StanValue[StanReal] =
+    FunctionNode("rising_factorial", x, n)
+  def logRisingFactorial[T <: StanScalarType](x: StanValue[T], n: StanValue[T]): StanValue[StanReal] =
+    FunctionNode("log_rising_factorial", x, n)
 
   // Composed functions (40.14).
-  //TODO
+  def expm1[T <: StanType](x: StanValue[T]): StanValue[T] = FunctionNode("expm1", x)
+  def fma[T <: StanScalarType](x: StanValue[T], y: StanValue[T], z: StanValue[T]): StanValue[StanReal] =
+    FunctionNode("fma", x, y, z)
+  def lmultiply[T <: StanScalarType](x: StanValue[T], y: StanValue[T]): StanValue[StanReal] =
+    FunctionNode("lmultiply", x, y)
+  def log1p[T <: StanType](x: StanValue[T]): StanValue[T] = FunctionNode("log1p", x)
+  def log1m[T <: StanType](x: StanValue[T]): StanValue[T] = FunctionNode("log1m", x)
+  def log1pExp[T <: StanType](x: StanValue[T]): StanValue[T] = FunctionNode("log1p_exp", x)
+  def log1mExp[T <: StanType](x: StanValue[T]): StanValue[T] = FunctionNode("log1m_exp", x)
+  def logDiffExp[T <: StanScalarType](x: StanValue[T], y: StanValue[T]): StanValue[StanReal] =
+    FunctionNode("log_diff_exp", x, y)
+  def logMix[T <: StanScalarType](theta: StanValue[T], lp1: StanValue[T], lp2: StanValue[T]): StanValue[StanReal] =
+    FunctionNode("log_mix", theta, lp1, lp2)
+  def logSumExp[T <: StanScalarType](x: StanValue[T], y: StanValue[T]): StanValue[StanReal] =
+    FunctionNode("log_sum_exp", x, y)
+  def logInvLogit[T <: StanType](x: StanValue[T]): StanValue[T] = FunctionNode("log_inv_logit", x)
+  def log1mInvLogit[T <: StanType](x: StanValue[T]): StanValue[T] = FunctionNode("log1m_inv_logit", x)
 
   // Array reductions (41.1).
   def min[T <: StanCompoundType, E <: StanType](x: StanValue[T])(implicit ev: T#ELEMENT_TYPE =:= E): StanValue[E] =

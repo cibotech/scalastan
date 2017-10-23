@@ -131,6 +131,22 @@ case class StanVoid private[scalastan] (
   def combine(values: Seq[Seq[SCALA_TYPE]])(func: Seq[Seq[Double]] => Double): Unit = ()
 }
 
+case class StanString private[scalastan] () extends StanType {
+  type THIS_TYPE = StanString
+  type ELEMENT_TYPE = StanString
+  type NEXT_TYPE = StanVoid
+  type SCALA_TYPE = String
+  type SUMMARY_TYPE = String
+  val lower: Option[StanValue[StanString]] = None
+  val upper: Option[StanValue[StanString]] = None
+  def typeName: String = "string"
+  def getData(data: String): Seq[String] = Seq(data)
+  def getDims(data: String): Seq[Int] = Seq.empty
+  def parse(name: String, values: Map[String, String]): String = values(name)
+  def parse(dims: Seq[Int], values: Seq[Double]): String = ""
+  def combine(values: Seq[Seq[SCALA_TYPE]])(func: Seq[Seq[Double]] => Double): String = ""
+}
+
 case class StanInt private[scalastan] (
   lower: Option[StanValue[StanInt]] = None,
   upper: Option[StanValue[StanInt]] = None

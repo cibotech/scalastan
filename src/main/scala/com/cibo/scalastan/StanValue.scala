@@ -77,7 +77,7 @@ abstract class StanValue[T <: StanType] extends StanNode with Implicits {
     code += SampleNode[T](this, dist)
   }
 
-  def t[R <: StanType](implicit e: TranposeAllowed[T, R]): StanValue[R] = TransposeOperator(this)
+  def t[R <: StanType](implicit e: TransposeAllowed[T, R]): StanValue[R] = TransposeOperator(this)
 }
 
 trait ReadOnlyIndex[T <: StanType] { self: StanValue[T] =>
@@ -257,6 +257,10 @@ case class TransposeOperator[T <: StanType, R <: StanType](
 
 case class StanConstant[T <: StanType](value: T#SCALA_TYPE) extends StanValue[T] with ReadOnlyIndex[T] {
   def emit: String = value.toString
+}
+
+case class StanStringLiteral(value: String) extends StanValue[StanString] {
+  def emit: String = s""""$value""""
 }
 
 case class LiteralNode(value: String) extends StanValue[StanVoid] {

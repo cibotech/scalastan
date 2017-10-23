@@ -1,5 +1,7 @@
 package com.cibo.scalastan
 
+import java.io._
+
 class StanResultsSpec extends ScalaStanBaseSpec {
 
   private val v1 = StanParameterDeclaration[StanInt](StanInt())
@@ -81,6 +83,68 @@ class StanResultsSpec extends ScalaStanBaseSpec {
 
     it("returns the mean vector") {
       results.mean(v2) shouldBe Vector(1.5, 2.5, 3.5)
+    }
+  }
+
+  describe("variance") {
+    it("returns the variance") {
+      results.variance(v1) shouldBe 0.5
+    }
+  }
+
+  describe("sd") {
+    it("returns the standard deviation") {
+      results.sd(v1) shouldBe math.sqrt(0.5)
+    }
+  }
+
+  describe("min") {
+    it("returns the min") {
+      results.min(v1) shouldBe 0
+    }
+  }
+
+  describe("max") {
+    it("returns the max") {
+      results.max(v1) shouldBe 1
+    }
+  }
+
+  describe("quantile") {
+    it("returns 5%") {
+      results.quantile(v1, 0.05) shouldBe 0
+    }
+
+    it("returns 95%") {
+      results.quantile(v1, 0.95) shouldBe 1
+    }
+  }
+
+  describe("effectiveSampleSize") {
+    it("should return the effective sample size") {
+      results.effectiveSampleSize(v1) shouldBe 2
+    }
+  }
+
+  describe("mcse") {
+    it("returns the mcse") {
+      results.mcse(v1) shouldBe 0.5
+    }
+  }
+
+  describe("summary") {
+    it("should return a line for each parameter") {
+      val sw = new StringWriter
+      val pw = new PrintWriter(sw)
+      results.summary(pw)
+      pw.close()
+      val summary = sw.toString.split("\n").toSeq
+
+      Seq("lp__", s"${v1.emit}", s"${v2.emit}", s"${v3.emit}").foreach { name =>
+        withClue(s"$name in $summary") {
+          summary.exists(_.startsWith(name)) shouldBe true
+        }
+      }
     }
   }
 }

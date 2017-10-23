@@ -1,6 +1,6 @@
 package com.cibo.scalastan
 
-import java.io.PrintStream
+import java.io.{PrintWriter, PrintStream}
 
 import scala.util.Try
 
@@ -101,7 +101,7 @@ case class StanResults private (private val chains: Seq[Seq[Map[String, String]]
   )(implicit ev: R =:= T#SUMMARY_TYPE): R = combineSingle(decl)(sd)
 
   private def quantile(frac: Double)(values: Seq[Double]): Double = {
-    val index = (values.size.toDouble * frac).round.toInt
+    val index = math.min((values.size.toDouble * frac).round.toInt, values.size - 1)
     values.sorted.apply(index)
   }
 
@@ -183,6 +183,10 @@ case class StanResults private (private val chains: Seq[Seq[Map[String, String]]
   }
 
   def summary(ps: PrintStream)(implicit ss: ScalaStan): Unit = {
+    summary(new PrintWriter(ps))
+  }
+
+  def summary(pw: PrintWriter)(implicit ss: ScalaStan): Unit = {
 
     val fieldWidth = 8
 
@@ -216,28 +220,28 @@ case class StanResults private (private val chains: Seq[Seq[Map[String, String]]
       name -> stats.map { case (_, stat) => stat(values) }
     }.seq
 
-    ps.println()
-    ps.println(s"$chainCount chains with $iterationsPerChain iterations each, $iterationsTotal total")
-    ps.println()
+    pw.println()
+    pw.println(s"$chainCount chains with $iterationsPerChain iterations each, $iterationsTotal total")
+    pw.println()
 
     // Write the header.
     val padding = "  "
     val maxNameLength = data.map(_._1.length).max
-    ps.print("Name" + " " * (maxNameLength - 4) + padding)
+    pw.print("Name" + " " * (maxNameLength - 4) + padding)
     stats.foreach { case (name, _) =>
       val spaceCount = fieldWidth - name.length
-      ps.print(" " * spaceCount + name + padding)
+      pw.print(" " * spaceCount + name + padding)
     }
-    ps.println()
+    pw.println()
 
     // Write the data.
     data.foreach { case (name, values) =>
       val namePadding = " " * (maxNameLength + padding.length - name.length)
-      ps.print(s"$name$namePadding")
+      pw.print(s"$name$namePadding")
       values.foreach { value =>
-        ps.print(String.format(s"%${fieldWidth}.4g", Double.box(value)) + padding)
+        pw.print(String.format(s"%${fieldWidth}.4g", Double.box(value)) + padding)
       }
-      ps.println()
+      pw.println()
     }
 
   }

@@ -47,5 +47,57 @@ class ScalaStanSpec extends ScalaStanBaseSpec with ScalaStan {
         checkCode(model, "model { real v#; v# ~ normal(0,1); }")
       }
     }
+
+    describe("break") {
+      it("is generated in for loops") {
+        val model = new Model {
+          for (_ <- range(1, 2)) {
+            break
+          }
+        }
+        checkCode(model, "model { for(v# in 1:2) { break; } }")
+      }
+
+      it ("is generated in while loops") {
+        val model = new Model {
+          loop(1) {
+            break
+          }
+        }
+        checkCode(model, "model { while(1) { break; } }")
+      }
+
+      it("is generated nested under an if") {
+        val model = new Model {
+          loop(1) {
+            when(1) {
+              break
+            }
+          }
+        }
+        checkCode(model, "model { while(1) { if(1) { break; } } }")
+      }
+
+      it("is not allowed without a loop") {
+        an[Exception] should be thrownBy {
+          new Model {
+            when(1) {
+              break
+            }
+          }
+        }
+      }
+    }
+
+    describe("continue") {
+      it("is generated in loops") {
+        val model = new Model {
+          loop(1) {
+            continue
+          }
+        }
+        checkCode(model, "model { while(1) { continue; } }")
+      }
+    }
   }
 }

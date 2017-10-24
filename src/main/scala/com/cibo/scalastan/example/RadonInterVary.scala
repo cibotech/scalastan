@@ -1,6 +1,6 @@
 package com.cibo.scalastan.example
 
-import com.cibo.scalastan.{OptimizeMethod, ScalaStan}
+import com.cibo.scalastan.ScalaStan
 
 object RadonInterVary extends App with ScalaStan {
 

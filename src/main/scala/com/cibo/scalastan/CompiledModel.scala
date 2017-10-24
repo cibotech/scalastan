@@ -36,9 +36,13 @@ case class CompiledModel private[scalastan] (
     val reader = new BufferedReader(new FileReader(s"$dir/$fileName"))
     try {
       val lines = reader.lines.iterator.asScala.filterNot(_.startsWith("#")).toVector
-      val header: Seq[String] = lines.head.split(",")
-      lines.tail.map { sample =>
-        header.zip(sample.split(",")).toMap
+      if (lines.nonEmpty) {
+        val header: Seq[String] = lines.head.split(",")
+        lines.tail.map { sample =>
+          header.zip(sample.split(",")).toMap
+        }
+      } else {
+        Seq.empty
       }
     } finally {
       reader.close()
@@ -47,7 +51,7 @@ case class CompiledModel private[scalastan] (
 
   private def processOutput(fileNames: Seq[String]): StanResults = StanResults(fileNames.par.map(readIterations).seq)
 
-  def run(chains: Int = 1, method: RunMethod = SampleMethod()): StanResults = {
+  def run(chains: Int = 1, method: StanConfig.Method = StanConfig.Sample()): StanResults = {
     require(chains > 0, s"Must run at least one chain")
 
     code.dataValues.filterNot(v => dataMapping.contains(v.emit)).foreach { v =>

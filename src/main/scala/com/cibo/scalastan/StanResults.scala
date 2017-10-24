@@ -196,7 +196,7 @@ case class StanResults private (private val chains: Seq[Seq[Map[String, String]]
     val mapping = ss.parameters.map(p => p.emit -> p.name).toMap
 
     // Build a mapping of name -> chain -> iteration -> value
-    val names = chains.head.head.keys
+    val names = chains.head.headOption.map(_.keys).getOrElse(Seq.empty)
     val results: Map[String, Seq[Seq[Double]]] = names.par.map { name =>
       cleanName(name, mapping) -> chains.map { chain =>
         chain.map { iteration =>
@@ -228,7 +228,7 @@ case class StanResults private (private val chains: Seq[Seq[Map[String, String]]
 
     // Write the header.
     val padding = "  "
-    val maxNameLength = data.map(_._1.length).max
+    val maxNameLength = if (data.nonEmpty) data.map(_._1.length).max else 0
     pw.print("Name" + " " * (maxNameLength - 4) + padding)
     stats.foreach { case (name, _) =>
       val spaceCount = fieldWidth - name.length

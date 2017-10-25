@@ -8,12 +8,16 @@ case class StanResults private (private val chains: Seq[Seq[Map[String, String]]
 
   private val lpName = "lp__"
   private val divergentName = "divergent__"
+  private val treeDepthName = "treedepth__"
+  private val energyName = "energy__"
 
   lazy val bestChain: Int = chains.zipWithIndex.maxBy(_._1.map(_.apply(lpName).toDouble).max)._2
   lazy val bestIndex: Int = chains(bestChain).zipWithIndex.maxBy(_._1.apply(lpName).toDouble)._2
 
-  lazy val logProbabilities: Seq[Seq[Double]] = chains.map(c => c.map(v => v(lpName).toDouble))
-  lazy val divergent: Seq[Seq[Double]] = chains.map(c => c.map(v => v(divergentName).toDouble))
+  lazy val logProbabilities: Seq[Seq[Double]] = chains.map(_.map(_.apply(lpName).toDouble))
+  lazy val divergent: Seq[Seq[Double]] = chains.map(_.flatMap(_.get(divergentName).map(_.toDouble)))
+  lazy val treeDepth: Seq[Seq[Double]] = chains.map(_.flatMap(_.get(treeDepthName).map(_.toDouble)))
+  lazy val energy: Seq[Seq[Double]] = chains.map(_.flatMap(_.get(energyName).map(_.toDouble)))
 
   val chainCount: Int = chains.size
   val iterationsPerChain: Int = chains.head.size
@@ -180,6 +184,27 @@ case class StanResults private (private val chains: Seq[Seq[Map[String, String]]
     } else {
       first
     }
+  }
+
+  def checkTreeDepth(maxDepth: Int = 10): Boolean = {
+    val count = treeDepth.map(_.count(_ > maxDepth)).sum
+    val p = (100 * count) / iterationsTotal
+    println(s"$count of $iterationsTotal iterations saturated the maximum tree depth of $maxDepth ($p%)")
+    count > 0
+  }
+
+  def checkEnergy(threshold: Double = 0.2): Boolean = {
+    val count = energy.map(_.count(_ > threshold)).sum
+    val p = (100 * count) / iterationsTotal
+    println(s"$count of $iterationsTotal iterations exceeded the energy threshold of $threshold ($p%)")
+    count > 0
+  }
+
+  def checkDivergence(): Int = {
+    val count = divergent.map(_.count(_ > 0.0)).sum
+    val p = (100 * count) / iterationsTotal
+    println(s"$count of $iterationsTotal iterations ended with a divergence ($p%)")
+    count
   }
 
   def summary(ps: PrintStream)(implicit ss: ScalaStan): Unit = {

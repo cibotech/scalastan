@@ -23,5 +23,9 @@ object Bernoulli extends App with ScalaStan {
   println(s"mean(${theta.name}) = ${results.mean(theta)}")
   println(s"N_Eff(${theta.name}) = ${results.effectiveSampleSize(theta)}")
 
+  results.checkTreeDepth()
+  results.checkEnergy()
+  results.checkDivergence()
+
   results.summary(System.out)
 }

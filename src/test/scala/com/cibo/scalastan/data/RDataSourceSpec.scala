@@ -23,6 +23,12 @@ class RDataSourceSpec extends FunSpec with Matchers with ScalaStan {
       ds.read(decl, "x") shouldBe 2.5
     }
 
+    it("handles semicolons") {
+      val ds = RDataSource.fromString("x = 2.5;")
+      val decl = StanDataDeclaration[StanReal](StanReal())
+      ds.read(decl, "x") shouldBe 2.5
+    }
+
     it("handles quotes") {
       val ds = RDataSource.fromString("\"what\" = 2.5")
       val decl = StanDataDeclaration[StanReal](StanReal())

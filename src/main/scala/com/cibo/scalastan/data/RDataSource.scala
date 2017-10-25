@@ -55,7 +55,7 @@ object RDataSource {
       Value(name, v._1, v._2)
     }
 
-    private def value: Parser[Value] = scalarValue | vectorValue | structureValue
+    private def value: Parser[Value] = (scalarValue | vectorValue | structureValue) ~ opt(";") ^^ { case v ~ _ => v }
 
     private def values: Parser[Seq[Value]] = value.*
 

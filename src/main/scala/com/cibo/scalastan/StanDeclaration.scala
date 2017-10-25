@@ -5,6 +5,7 @@ sealed abstract class StanDeclaration[T <: StanType](implicit ss: ScalaStan) ext
 
   protected val internalNameFunc: Function0[Option[String]]
   protected def _userName: Option[String] = internalNameFunc().orElse(NameLookup.lookupName(this))
+  protected val _ss: ScalaStan = ss
 
   def emit: String = _internalName
   def emitDeclaration: String = typeConstructor.emitDeclaration(_internalName)

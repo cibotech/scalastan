@@ -70,6 +70,7 @@ case class StanResults private (private val chains: Seq[Seq[Map[String, String]]
     current
   }
 
+  /** Get the mean of all samples across all chains and iterations. */
   def mean[T <: StanType, R](
     decl: StanParameterDeclaration[T]
   )(implicit ev: R =:= T#SUMMARY_TYPE): R = combineSingle(decl)(mean)
@@ -78,6 +79,7 @@ case class StanResults private (private val chains: Seq[Seq[Map[String, String]]
     sd(values.flatten) / math.sqrt(effectiveSampleSize(values))
   }
 
+  /** Get the MCSE of a all samples across all chains and iterations. */
   def mcse[T <: StanType, R](
     decl: StanParameterDeclaration[T]
   )(implicit ev: R =:= T#SUMMARY_TYPE): R = combine(decl)(mcse)
@@ -96,12 +98,14 @@ case class StanResults private (private val chains: Seq[Seq[Map[String, String]]
     if (n < 2.0) Double.NaN else m2 / (n - 1.0)
   }
 
+  /** Get the variance of a all samples across all chains and iterations. */
   def variance[T <: StanType, R](
     decl: StanParameterDeclaration[T]
   )(implicit ev: R =:= T#SUMMARY_TYPE): R = combineSingle(decl)(variance)
 
   private def sd(values: Seq[Double]): Double = math.sqrt(variance(values))
 
+  /** Get the standard deviation of a all samples across all chains and iterations. */
   def sd[T <: StanType, R](
     decl: StanParameterDeclaration[T]
   )(implicit ev: R =:= T#SUMMARY_TYPE): R = combineSingle(decl)(sd)
@@ -111,6 +115,7 @@ case class StanResults private (private val chains: Seq[Seq[Map[String, String]]
     values.sorted.apply(index)
   }
 
+  /** Get the specified quantile of all samples across all chains and iterations. */
   def quantile[T <: StanType, R](
     decl: StanParameterDeclaration[T],
     prob: Double = 0.5
@@ -119,10 +124,12 @@ case class StanResults private (private val chains: Seq[Seq[Map[String, String]]
     combineSingle(decl)(quantile(prob))
   }
 
+  /** Get the minimum of all samples across all chains and iterations. */
   def min[T <: StanType, R](
     decl: StanParameterDeclaration[T]
   )(implicit ev: R =:= T#SUMMARY_TYPE): R = combineSingle(decl)(_.min)
 
+  /** Get the maximum of all samples across all chains and iterations. */
   def max[T <: StanType, R](
     decl: StanParameterDeclaration[T]
   )(implicit ev: R =:= T#SUMMARY_TYPE): R = combineSingle(decl)(_.max)
@@ -151,6 +158,7 @@ case class StanResults private (private val chains: Seq[Seq[Map[String, String]]
     (m * n) / (if (rho.size > 1) 1.0 + 2.0 * rho.sum else 1.0)
   }
 
+  /** Get the effective sample size of a parameter. */
   def effectiveSampleSize[T <: StanType, R](
     decl: StanParameterDeclaration[T]
   )(implicit ev: R =:= T#SUMMARY_TYPE): R = combine(decl)(effectiveSampleSize)
@@ -169,13 +177,18 @@ case class StanResults private (private val chains: Seq[Seq[Map[String, String]]
     values.map(variance).sum / m
   }
 
-  private def prsf(values: Seq[Seq[Double]]): Double = {
+  private def psrf(values: Seq[Seq[Double]]): Double = {
     val n = values.head.size.toDouble
     val w = withinSampleVariance(values)
     val b = betweenSampleVariance(values)
     val varPlus = ((n - 1.0) * w + b) / n
     math.sqrt(varPlus / w)
   }
+
+  /** Get the potential scale reduction factor for a parameter. */
+  def psrf[T <: StanType, R](
+    decl: StanParameterDeclaration[T]
+  )(implicit ev: R =:= T#SUMMARY_TYPE): R = combine(decl)(psrf)
 
   private def cleanName(name: String, mapping: Map[String, String]): String = {
     val parts = name.split("\\.")
@@ -196,7 +209,7 @@ case class StanResults private (private val chains: Seq[Seq[Map[String, String]]
   }
 
   def checkEnergy(threshold: Double = 0.2): Boolean = {
-    val count = energy.map(_.count(_ > threshold)).sum
+    val count = energy.map(_.count(_ < threshold)).sum
     val p = (100 * count) / iterationsTotal
     println(s"$count of $iterationsTotal iterations exceeded the energy threshold of $threshold ($p%)")
     count > 0
@@ -205,8 +218,16 @@ case class StanResults private (private val chains: Seq[Seq[Map[String, String]]
   def checkDivergence(): Int = {
     val count = divergent.map(_.count(_ > 0.0)).sum
     val p = (100 * count) / iterationsTotal
-    println(s"$count of $iterationsTotal iterations ended with a divergence ($p%)")
+    println(s"$count of $iterationsTotal iterations ended up with a divergence ($p%)")
     count
+  }
+
+  /** Partition iterations into (divergent, non-divergent) samples. */
+  def partitionByDivergence[T <: StanType, R](
+    decl: StanParameterDeclaration[T]
+  )(implicit ev: R =:= T#SUMMARY_TYPE): (Seq[R], Seq[R]) = {
+    val partitioned = samples(decl).flatten.zip(divergent.flatten).partition { case (_, d) => d > 0.0 }
+    (partitioned._1.map(_._1).asInstanceOf[Seq[R]], partitioned._2.map(_._1).asInstanceOf[Seq[R]])
   }
 
   def summary(ps: PrintStream)(implicit ss: ScalaStan): Unit = {
@@ -241,7 +262,7 @@ case class StanResults private (private val chains: Seq[Seq[Map[String, String]]
       "50%" -> (vs => quantile(0.5)(vs.flatten)),
       "95%" -> (vs => quantile(0.95)(vs.flatten)),
       "N_Eff" -> effectiveSampleSize,
-      "R_hat" -> prsf
+      "R_hat" -> psrf
     )
 
     // Compute the statistics.
@@ -272,6 +293,7 @@ case class StanResults private (private val chains: Seq[Seq[Map[String, String]]
       }
       pw.println()
     }
+    pw.println()
 
   }
 }

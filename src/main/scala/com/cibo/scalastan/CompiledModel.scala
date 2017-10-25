@@ -51,7 +51,7 @@ case class CompiledModel private[scalastan] (
 
   private def processOutput(fileNames: Seq[String]): StanResults = StanResults(fileNames.par.map(readIterations).seq)
 
-  def run(chains: Int = 1, seed: Int = -1, method: StanConfig.Method = StanConfig.Sample()): StanResults = {
+  def run(chains: Int = 1, seed: Int = -1, method: RunMethod.Method = RunMethod.Sample()): StanResults = {
     require(chains > 0, s"Must run at least one chain")
 
     code.dataValues.filterNot(v => dataMapping.contains(v.emit)).foreach { v =>
@@ -62,13 +62,15 @@ case class CompiledModel private[scalastan] (
     println(s"writing data to $dataFileName")
     emitData(dataFileName)
 
-    val outputFileNames = (0 until chains).par.map { _ =>
+    val baseSeed = if (seed < 0) (System.currentTimeMillis % Int.MaxValue).toInt else seed
+    val outputFileNames = (0 until chains).par.map { i =>
+      val chainSeed = baseSeed + i
       val name = CompiledModel.getNextOutputFileName
       val command = Vector(
         "./model",
         "data", s"file=$dataFileName",
         "output", s"file=$name",
-        "random", s"seed=$seed"
+        "random", s"seed=$chainSeed"
       ) ++ method.arguments
       println("Running " + command.mkString(" "))
       val pb = new ProcessBuilder(command: _*).directory(dir).inheritIO()

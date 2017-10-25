@@ -1,6 +1,6 @@
 package com.cibo.scalastan.example
 
-import com.cibo.scalastan.{StanConfig, ScalaStan}
+import com.cibo.scalastan.{RunMethod, ScalaStan}
 
 object Bernoulli extends App with ScalaStan {
 
@@ -19,7 +19,7 @@ object Bernoulli extends App with ScalaStan {
   val results = model
     .withData(N, dataset.length)
     .withData(y, dataset)
-    .run(chains = 5, method = StanConfig.Sample())
+    .run(chains = 5, method = RunMethod.Sample())
   println(s"mean(${theta.name}) = ${results.mean(theta)}")
   println(s"N_Eff(${theta.name}) = ${results.effectiveSampleSize(theta)}")
 

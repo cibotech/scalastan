@@ -1,6 +1,6 @@
 package com.cibo.scalastan
 
-object StanConfig {
+object RunMethod {
 
   sealed abstract class Subcommand(name: String) {
     protected val subValue: Option[String] = None

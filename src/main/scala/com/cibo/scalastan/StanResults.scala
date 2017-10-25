@@ -23,6 +23,7 @@ case class StanResults private (private val chains: Seq[Seq[Map[String, String]]
   val iterationsPerChain: Int = chains.head.size
   val iterationsTotal: Int = chains.map(_.size).sum
 
+  /** Get all samples by chain and iteration. */
   def samples[T <: StanType, R](
     decl: StanParameterDeclaration[T]
   )(implicit ev: T#SCALA_TYPE =:= R): Seq[Seq[R]] = {
@@ -34,6 +35,7 @@ case class StanResults private (private val chains: Seq[Seq[Map[String, String]]
     }.asInstanceOf[Seq[Seq[R]]]
   }
 
+  /** Get the best scoring sample. */
   def best[T <: StanType, R](
     decl: StanParameterDeclaration[T]
   )(implicit ev: T#SCALA_TYPE =:= R): R = samples(decl).apply(bestChain).apply(bestIndex)

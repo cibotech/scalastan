@@ -4,10 +4,12 @@ trait NameLookup {
   // Subclasses should override "_userName" and set it to the result of lookupName from the right context.
   protected def _userName: Option[String]
 
-  // Unique ID for identifiers.
-  protected val _id: Int = NameLookup.nextId
+  protected def _ss: ScalaStan
 
-  private val defaultName: String = s"v${_id}"
+  // Unique ID for identifiers.
+  protected lazy val _id: Int = _ss.nextId
+
+  private lazy val defaultName: String = s"v${_id}"
 
   // A user-facing name to use for this identifier.
   lazy val name: String = _userName.getOrElse(defaultName)
@@ -24,15 +26,6 @@ trait NameLookup {
 }
 
 object NameLookup {
-  private var counter: Int = 0
-
-  private def nextId: Int = {
-    synchronized {
-      counter += 1
-      counter
-    }
-  }
-
   private[scalastan] def lookupName(obj: NameLookup)(implicit ss: ScalaStan): Option[String] = {
     import scala.reflect.runtime.{universe => ru}
     val mirror = ru.runtimeMirror(ss.getClass.getClassLoader)

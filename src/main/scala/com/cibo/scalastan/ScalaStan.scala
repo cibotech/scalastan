@@ -14,12 +14,20 @@ trait ScalaStan extends Implicits { stan =>
 
   protected implicit val _scalaStan: ScalaStan = this
 
+  private var idCounter: Int = 0
   private[scalastan] val dataValues = ArrayBuffer[StanDataDeclaration[_]]()
   private val parameterValues = ArrayBuffer[StanParameterDeclaration[_]]()
   private val functions = ArrayBuffer[Function[_]]()
   private val dataTransforms = ArrayBuffer[DataTransform[_]]()
   private val parameterTransforms = ArrayBuffer[ParameterTransform[_]]()
   private val generatedQuantities = ArrayBuffer[GeneratedQuantity[_]]()
+
+  private[scalastan] def nextId: Int = {
+    synchronized {
+      idCounter += 1
+      idCounter
+    }
+  }
 
   private[scalastan] def parameters: Seq[StanParameterDeclaration[_]] =
     parameterValues ++ parameterTransforms.map(_.result) ++ generatedQuantities.map(_.result)
@@ -211,6 +219,7 @@ trait ScalaStan extends Implicits { stan =>
   abstract class TransformBase[T <: StanType, D <: StanDeclaration[T]] extends StanCode with NameLookup {
     val result: D
     protected def _userName: Option[String] = NameLookup.lookupName(this)(stan)
+    protected val _ss: ScalaStan = stan
   }
 
   abstract class DataTransform[T <: StanType](typeConstructor: T) extends TransformBase[T, StanLocalDeclaration[T]] {

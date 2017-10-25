@@ -1,29 +1,28 @@
 package com.cibo.scalastan.data
 
-import java.io.{BufferedReader, FileReader}
-import scala.collection.JavaConverters._
 import com.cibo.scalastan.{StanDataDeclaration, StanType}
 
-case class CsvDataSource(fileName: String) extends DataSource {
-
-  private lazy val data: Seq[Map[String, String]] = {
-    val reader = new BufferedReader(new FileReader(fileName))
-    try {
-      val lines = reader.lines.iterator.asScala.filterNot(_.startsWith("#")).toVector
-      val header: Seq[String] = lines.head.split(",")
-      lines.tail.map { line: String =>
-        header.zip(line.split(",")).toMap
-      }
-    } finally {
-      reader.close()
+object CsvDataSource {
+  private case class CsvDataSource(values: Seq[Map[String, String]]) extends DataSource {
+    def read[T <: StanType, R](
+      decl: StanDataDeclaration[T],
+      name: String
+    )(implicit ev: R =:= T#SCALA_TYPE): R = {
+      values.map(_.apply(name).toDouble).asInstanceOf[R]
     }
   }
 
-  def read[T <: StanType, R](
-    decl: StanDataDeclaration[T],
-    name: String
-  )(implicit ev: =:=[R, T#SCALA_TYPE]): R = {
-    ???
+  def fromString(content: String): DataSource = {
+    val lines = content.split("\n")
+    val header = lines.head.split(",").map(_.trim).map { str =>
+      val updated = if (str.head == '\"') str.tail else str
+      if (updated.last == '\"') updated.dropRight(1) else updated
+    }
+    CsvDataSource(lines.tail.map(line => header.zip(line.split(",")).toMap))
   }
 
+  def fromFile(fileName: String): DataSource = {
+    val content = scala.io.Source.fromFile(fileName).getLines.mkString("\n")
+    fromString(content)
+  }
 }

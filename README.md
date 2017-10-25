@@ -38,18 +38,15 @@ object MyModel extends App with ScalaStan {
     y ~ Normal(m * x + b, sigma)
   }
 
-  val xs: Vector[Double] = ???
-  val ys: Vector[Double] = ???
+  val xs: Seq[Double] = ???
+  val ys: Seq[Double] = ???
   val results = model
     .withData(n, xs.length)
     .withData(x, xs)
     .withData(y, ys)
-    .run()
+    .run(chains = 5)
 
-  println("y = mx + b")
-  println(s"m = ${results.best(m)}")
-  println(s"b = ${results.best(b)}")
-  println(s"sigma = ${results.best(sigma)}")
+  results.summary(System.out)
 }
 ```
 
@@ -253,14 +250,26 @@ model.withData(x, data)
 ```
 Note that `data` in the above must be the appropriate Scala type for the model.  For example, an `int()` in
 ScalaStan must be assigned an `Int` and a `real()` must be assigned a `Double`.  Vectors and higher
-dimensional objects are represented `Vector` in Scala, which each dimension adding another `Vector`.
+dimensional objects are represented `Seq` in Scala, which each dimension adding another `Seq`.
 Note that Scala is indexed from zero whereas Stan (and ScalaStan) is indexed from one.
 
-It is also possible to assign data from a `DataSource`.  For example, given a file (`data.R`) with _R_ formatted
-data, we can assign `x` from the value named `X` in the R data file:
+It is also possible to assign data from a `DataSource`.  The following data sources are available:
+
+ - `CsvDataSource`: A data source for parsing CSV.
+ - `RDataSource`: A data source for parsing R-formatted data.
+
+For example, given a file (`data.R`) with R-formatted
+data, we can assign `x` from the value named `X` in the R data file using the `apply` method:
 ```scala
 val source = com.cibo.scalastan.data.RDataSource.fromFile("data.R")
 model.withData(source(x, "X"))
+```
+
+Using data sources, it is also possible to load the data in Scala format for manipulation using
+the `read` method:
+```scala
+val source = com.cibo.scalastan.data.CsvDataSource.fromFile("data.csv")
+val data: Seq[Double] = source.read(x, "X")
 ```
 
 Before the model can be run, all inputs must be assigned.  However, the model may be run multiple times
@@ -268,14 +277,22 @@ with different inputs by using `withData` and replacing previously assigned data
 
 Running the Model
 -----------------
-Once all inputs are assigned, the model can be run using the `run` method.  This method takes an optional
-parameter to determine what strategy to use (sample, optimize, etc.).  The return value of the `run` method
-is a results object that can be used to extract values from the run.
+Once all inputs are assigned, the model can be run using the `run` method.  This method takes the following
+optional parameters:
 
-Note that the first run of a model will take a long time since the Stan code will need to be built.  However,
+ - chains: An integer specifying the number of chains to run in parallel.  This defaults to 1.
+ - seed: An integer specifying the first random number seed to use or `-1` to use system time to select one.
+   With multiple chains, the chain index is added to the seed to ensure each chain gets a different, but
+   deterministic seed.
+ - method: The method to use (`RunMethod.Sample()`, `RunMethod.Optimize()`, `RunMethod.Variational()`,
+   or `RunMethod.Diagnose()`).  This defaults to `RunMethod.Sample()`.
+   Note that each `RunMethod` is a case class that can accept additional parameters.
+
+The return value of the `run` method is a results object that can be used to extract values from the run.
+
+The first run of a model will take a long time since the Stan code will need to be built.  However,
 the generated Stan executable is cached and reused, so additional runs will be fast. The SHA1 hash of the
 generated code from ScalaStan is used to determine if the code has changed and needs to be rebuilt.
-
 
 Getting Results
 ----------------
@@ -290,3 +307,8 @@ val m = results.mean(y)
 
 This will return the mean with the same shape as the input parameter.  Note that the Scala data structure
 is indexed from zero (instead of one as it is in Stan).
+
+The results object also has a `summary` method to output a summary of results like the `stansummary` program:
+```scala
+results.summary(System.out)
+```

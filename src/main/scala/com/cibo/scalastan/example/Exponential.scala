@@ -4,8 +4,8 @@ import com.cibo.scalastan.ScalaStan
 
 object Exponential extends App with ScalaStan {
 
-  val len = data(int())
-  val y = data(vector(len))
+  val n = data(int(lower = 0))
+  val y = data(vector(n))
   val lambda = parameter(real(lower = 0))
 
   val model = new Model {

@@ -9,6 +9,12 @@ sealed abstract class StanDeclaration[T <: StanType](implicit ss: ScalaStan) ext
 
   def emit: String = _internalName
   def emitDeclaration: String = typeConstructor.emitDeclaration(_internalName)
+
+  def size(implicit ev: T <:< StanCompoundType): StanValue[StanInt] = dims.head
+
+  def range(implicit ev: T <:< StanCompoundType): ValueRange = ValueRange(1, size)
+
+  def dims: Seq[StanValue[StanInt]] = typeConstructor.getIndices
 }
 
 case class StanDataDeclaration[T <: StanType] private[scalastan] (

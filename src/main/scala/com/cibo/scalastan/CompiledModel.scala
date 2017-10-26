@@ -37,11 +37,11 @@ case class CompiledModel private[scalastan] (
     }
 
     // Look up and set the size parameters.
-    val (withDecls, _) = decl.typeConstructor.getIndices.foldLeft((this, conv: Any)) { case ((oldMapping, d), dim) =>
+    val (withDecls, _) = decl.typeConstructor.getIndices.foldLeft((this, conv: Any)) { case ((old, d), dim) =>
       val ds = d.asInstanceOf[Seq[_]]
       dim match {
-        case indexDecl: StanDataDeclaration[StanInt] => (withData(indexDecl, ds.size), ds.head)
-        case _                                       => (oldMapping, ds.head)
+        case indexDecl: StanDataDeclaration[StanInt] => (old.withData(indexDecl, ds.size), ds.head)
+        case _                                       => (old, ds.head)
       }
     }
 

@@ -25,8 +25,6 @@ object Horseshoe extends App with ScalaStan {
   val xSource = TextDataSource.fromFile("x.dat")
   val ySource = TextDataSource.fromFile("y.dat")
   val results = model
-    .withData(n, xSource.read(x).size)
-    .withData(p, xSource.read(x).head.size)
     .withData(xSource(x))
     .withData(ySource(y))
     .run(chains = 4)

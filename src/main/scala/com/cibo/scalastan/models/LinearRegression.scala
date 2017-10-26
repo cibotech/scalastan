@@ -20,7 +20,6 @@ case class LinearRegression(xs: Seq[Double], ys: Seq[Double]) extends ScalaStan 
   }
 
   private lazy val results = model
-    .withData(n, xs.length)
     .withData(x, xs.toVector)
     .withData(y, ys.toVector)
     .run()

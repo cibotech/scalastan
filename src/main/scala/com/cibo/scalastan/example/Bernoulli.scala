@@ -17,7 +17,6 @@ object Bernoulli extends App with ScalaStan {
 
   val dataset = Seq(0, 1, 0, 0, 0, 0, 0, 0, 0, 1)
   val results = model
-    .withData(N, dataset.length)
     .withData(y, dataset)
     .run(chains = 5, method = RunMethod.Sample())
   println(s"mean(${theta.name}) = ${results.mean(theta)}")

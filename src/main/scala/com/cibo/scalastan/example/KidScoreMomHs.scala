@@ -21,7 +21,6 @@ object KidScoreMomHs extends App with ScalaStan {
     (58, 1), (84, 1), (78, 1), (102, 1)
   )
   val results = model
-    .withData(N, dataset.length)
     .withData(kidScore, dataset.map(_._1))
     .withData(momHs, dataset.map(_._2))
     .run()

@@ -20,12 +20,33 @@ case class CompiledModel private[scalastan] (
     dataWriter.close()
   }
 
+  def reset: CompiledModel = copy(dataMapping = Map.empty)
+
   def withData[T <: StanType, V](
     decl: StanDataDeclaration[T],
     data: V
   )(implicit ev: V <:< T#SCALA_TYPE): CompiledModel = {
     val conv = data.asInstanceOf[T#SCALA_TYPE]
-    copy(dataMapping = dataMapping.updated(decl.emit, DataMapping[T](decl, conv)))
+
+    // Check if this parameter has already been assigned and throw an exception if the values are conflicting.
+    dataMapping.get(decl.emit) match {
+      case Some(s) if s.values != data =>
+        throw new IllegalStateException(s"conflicting values assigned to ${decl.name}")
+      case Some(s) => println(s"what: $s")
+      case _                           => ()
+    }
+
+    // Look up and set the size parameters.
+    val (withDecls, _) = decl.typeConstructor.getIndices.foldLeft((this, conv: Any)) { case ((oldMapping, d), dim) =>
+      val ds = d.asInstanceOf[Seq[_]]
+      dim match {
+        case indexDecl: StanDataDeclaration[StanInt] => (withData(indexDecl, ds.size), ds.head)
+        case _                                       => (oldMapping, ds.head)
+      }
+    }
+
+    // Insert the binding.
+    withDecls.copy(dataMapping = withDecls.dataMapping.updated(decl.emit, DataMapping[T](decl, conv)))
   }
 
   def withData[T <: StanType, V](
@@ -55,7 +76,7 @@ case class CompiledModel private[scalastan] (
     require(chains > 0, s"Must run at least one chain")
 
     code.dataValues.filterNot(v => dataMapping.contains(v.emit)).foreach { v =>
-      throw new IllegalStateException(s"data not supplied for ${v.emit}")
+      throw new IllegalStateException(s"data not supplied for ${v.name}")
     }
 
     val dataFileName = CompiledModel.getNextDataFileName

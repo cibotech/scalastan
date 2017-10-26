@@ -22,7 +22,6 @@ object EightSchools extends App with ScalaStan {
   val ys = Seq[Double](28, 8, -3, 7, -1, 1, 18, 12)
   val sigmas = Seq[Double](15, 10, 16, 11, 9, 11, 10, 18)
   val result = model
-    .withData(j, ys.length)
     .withData(y, ys)
     .withData(sigma, sigmas)
     .run(

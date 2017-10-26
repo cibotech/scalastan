@@ -21,7 +21,6 @@ object Exponential extends App with ScalaStan {
 
   val dataset = Vector(1.0, 2.0, 3.0)
   val results = model
-    .withData(len, dataset.length)
     .withData(y, dataset)
     .run()
   println(s"lambda = ${results.best(lambda)}")

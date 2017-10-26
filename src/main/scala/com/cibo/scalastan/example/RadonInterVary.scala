@@ -510,10 +510,7 @@ object RadonInterVary extends App with ScalaStan {
     -0.090024275, -0.090024275, 0.355286981, 0.355286981
   )
 
-  val nData = 919
-
   val result = model
-    .withData(N, nData)
     .withData(x, xData)
     .withData(y, yData)
     .withData(u, uData)

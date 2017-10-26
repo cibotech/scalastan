@@ -55,7 +55,7 @@ trait ScalaStan extends Implicits { stan =>
   ): StanReal = StanReal(lower, upper)
 
   def vector(
-    dim: StanValue[StanInt],
+    dim: StanValue[StanInt] = StanParameterDeclaration(StanInt(lower = 0)),
     lower: Option[StanValue[StanReal]] = None,
     upper: Option[StanValue[StanReal]] = None
   ): StanVector = StanVector(dim, lower, upper)
@@ -67,8 +67,8 @@ trait ScalaStan extends Implicits { stan =>
   ): StanRowVector = StanRowVector(dim, lower, upper)
 
   def matrix(
-    rows: StanValue[StanInt],
-    cols: StanValue[StanInt],
+    rows: StanValue[StanInt] = StanParameterDeclaration(StanInt(lower = 0)),
+    cols: StanValue[StanInt] = StanParameterDeclaration(StanInt(lower = 0)),
     lower: Option[StanValue[StanReal]] = None,
     upper: Option[StanValue[StanReal]] = None
   ): StanMatrix = StanMatrix(rows, cols, lower, upper)

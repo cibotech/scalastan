@@ -32,7 +32,6 @@ case class CompiledModel private[scalastan] (
     dataMapping.get(decl.emit) match {
       case Some(s) if s.values != data =>
         throw new IllegalStateException(s"conflicting values assigned to ${decl.name}")
-      case Some(s) => println(s"what: $s")
       case _                           => ()
     }
 
@@ -53,24 +52,24 @@ case class CompiledModel private[scalastan] (
     value: (StanDataDeclaration[T], V)
   )(implicit ev: V <:< T#SCALA_TYPE): CompiledModel = withData(value._1, value._2)
 
-  private def readIterations(fileName: String): Seq[Map[String, String]] = {
+  private def readIterations(fileName: String): Vector[Map[String, String]] = {
     val reader = new BufferedReader(new FileReader(s"$dir/$fileName"))
     try {
       val lines = reader.lines.iterator.asScala.filterNot(_.startsWith("#")).toVector
       if (lines.nonEmpty) {
-        val header: Seq[String] = lines.head.split(",")
+        val header: Seq[String] = lines.head.split(',')
         lines.tail.map { sample =>
-          header.zip(sample.split(",")).toMap
+          header.zip(sample.split(',')).toMap
         }
       } else {
-        Seq.empty
+        Vector.empty
       }
     } finally {
       reader.close()
     }
   }
 
-  private def processOutput(fileNames: Seq[String]): StanResults = StanResults(fileNames.par.map(readIterations).seq)
+  private def processOutput(fileNames: Seq[String]): StanResults = StanResults(fileNames.par.map(readIterations).toVector)
 
   def run(chains: Int = 1, seed: Int = -1, method: RunMethod.Method = RunMethod.Sample()): StanResults = {
     require(chains > 0, s"Must run at least one chain")

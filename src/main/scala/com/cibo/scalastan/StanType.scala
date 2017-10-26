@@ -24,6 +24,9 @@ sealed trait StanType {
   // matrix[2, 3] name[this, and_this]
   def emitDims: Seq[String] = Seq.empty
 
+  // Get declarations for indices.
+  def getIndices: Seq[StanValue[StanInt]] = Seq.empty
+
   // Lower bound on each element.
   val lower: Option[StanValue[ELEMENT_TYPE]]
 
@@ -177,6 +180,7 @@ case class StanArray[CONTAINED <: StanType] private[scalastan] (
   val upper: Option[StanValue[CONTAINED#ELEMENT_TYPE]] = inner.upper.asInstanceOf[Option[StanValue[CONTAINED#ELEMENT_TYPE]]]
 
   override def emitDims: Seq[String] = dim.emit +: inner.emitDims
+  override def getIndices: Seq[StanValue[StanInt]] = dim +: inner.getIndices
   def typeName: String = inner.typeName
   def getData(data: SCALA_TYPE): Seq[String] = data.flatMap(d => inner.getData(d.asInstanceOf[inner.SCALA_TYPE]))
   def getDims(data: SCALA_TYPE): Seq[Int] = data.length +: inner.getDims(data.head.asInstanceOf[inner.SCALA_TYPE])
@@ -237,6 +241,10 @@ trait StanVectorLike extends StanVectorOrMatrix {
   type SCALA_TYPE = Seq[Double]
   type SUMMARY_TYPE = Seq[Double]
 
+  val dim: StanValue[StanInt]
+
+  override def getIndices: Seq[StanValue[StanInt]] = Seq(dim)
+
   def getData(data: Seq[Double]): Seq[String] = data.map(_.toString)
   def getDims(data: Seq[Double]): Seq[Int] = Seq(data.length)
 
@@ -289,6 +297,8 @@ case class StanMatrix private[scalastan] (
   def typeName: String = s"matrix$emitBounds[${rows.emit},${cols.emit}]"
   def getData(data: Seq[Seq[Double]]): Seq[String] = data.flatMap(_.map(_.toString))
   def getDims(data: Seq[Seq[Double]]): Seq[Int] = Seq(data.length, data.head.length)
+
+  override def getIndices: Seq[StanValue[StanInt]] = Seq(rows, cols)
 
   def parse(name: String, values: Map[String, String]): Seq[Seq[Double]] ={
     // Determine the size of the matrix.

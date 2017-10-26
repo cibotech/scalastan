@@ -41,7 +41,6 @@ object MyModel extends App with ScalaStan {
   val xs: Seq[Double] = ???
   val ys: Seq[Double] = ???
   val results = model
-    .withData(n, xs.length)
     .withData(x, xs)
     .withData(y, ys)
     .run(chains = 5)

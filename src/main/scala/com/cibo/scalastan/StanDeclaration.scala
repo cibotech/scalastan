@@ -13,17 +13,17 @@ sealed abstract class StanDeclaration[T <: StanType](implicit ss: ScalaStan) ext
 
 case class StanDataDeclaration[T <: StanType] private[scalastan] (
   typeConstructor: T,
-  protected val internalNameFunc: Function0[Option[String]] = () => None
+  protected val internalNameFunc: () => Option[String] = () => None
 )(implicit ss: ScalaStan) extends StanDeclaration[T] with ReadOnlyIndex[T]
 
 case class StanParameterDeclaration[T <: StanType] private[scalastan] (
   typeConstructor: T,
-  protected val internalNameFunc: Function0[Option[String]] = () => None
+  protected val internalNameFunc: () => Option[String] = () => None
 )(implicit ss: ScalaStan) extends StanDeclaration[T] with Assignable[T] with Updatable[T]
 
 case class StanLocalDeclaration[T <: StanType] private[scalastan] (
   typeConstructor: T,
-  protected val internalNameFunc: Function0[Option[String]] = () => None
+  protected val internalNameFunc: () => Option[String] = () => None
 )(implicit ss: ScalaStan) extends StanDeclaration[T] with Assignable[T] with Updatable[T]
 
 case class StanInlineDeclaration[T <: StanType](

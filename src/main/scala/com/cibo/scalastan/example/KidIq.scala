@@ -180,7 +180,6 @@ object KidIq extends App with ScalaStan {
   )
 
   val results = model
-    .withData(N, kidScoreData.length)
     .withData(kidScore, kidScoreData)
     .withData(momHs, momHsData)
     .withData(momIq, momIqData)

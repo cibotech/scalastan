@@ -15,13 +15,13 @@ case class LinearRegression(xs: Seq[Double], ys: Seq[Double]) extends ScalaStan 
   private val sig = parameter(real(lower = 0))
 
   private val model = new Model {
-    sig ~ Gamma(100.0, 100.0)
+    sig ~ InvGamma(0.01, 0.01)
     y ~ Normal(m * x + b, sig)
   }
 
   private lazy val results = model
-    .withData(x, xs.toVector)
-    .withData(y, ys.toVector)
+    .withData(x, xs)
+    .withData(y, ys)
     .run()
 
   def bhat: Double = results.mean(b)

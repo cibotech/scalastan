@@ -99,7 +99,9 @@ case class StanContinuousDistribution[T <: StanType](
 }
 
 abstract class StanDiscreteDistribution[T <: StanType] extends StanDistribution[T] {
-  def lpmf(y: StanValue[T]): StanValue[T] = DistributionFunctionNode(s"${name}_lpmf", y, "|", args)
+  def lpmf[R <: StanType](
+    y: StanValue[T]
+  )(implicit ev: R =:= T#REAL_TYPE): StanValue[R] = DistributionFunctionNode(s"${name}_lpmf", y, "|", args)
 }
 
 case class StanDiscreteDistributionWithoutCdf[T <: StanType](
@@ -111,9 +113,12 @@ case class StanDiscreteDistributionWithCdf[T <: StanType](
   name: String,
   args: StanValue[_]*
 ) extends StanDiscreteDistribution[T] {
-  def cdf(y: StanValue[T]): StanValue[T] = DistributionFunctionNode(s"${name}_cdf", y, ",", args)
-  def lcdf(y: StanValue[T]): StanValue[T] = DistributionFunctionNode(s"${name}_lcdf", y, "|", args)
-  def lccdf(y: StanValue[T]): StanValue[T] = DistributionFunctionNode(s"${name}_lccdf", y, "|", args)
+  def cdf[R <: StanType](y: StanValue[T])(implicit ev: R =:= T#REAL_TYPE): StanValue[R] =
+    DistributionFunctionNode(s"${name}_cdf", y, ",", args)
+  def lcdf[R <: StanType](y: StanValue[T])(implicit ev: R =:= T#REAL_TYPE): StanValue[R] =
+    DistributionFunctionNode(s"${name}_lcdf", y, "|", args)
+  def lccdf[R <: StanType](y: StanValue[T])(implicit ev: R =:= T#REAL_TYPE): StanValue[R] =
+    DistributionFunctionNode(s"${name}_lccdf", y, "|", args)
 }
 
 // A return (or output) statement.

@@ -3,6 +3,7 @@ package com.cibo.scalastan
 import java.io._
 import java.nio.file.{Files, Path, Paths}
 
+import scala.annotation.implicitNotFound
 import scala.language.implicitConversions
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.JavaConverters._
@@ -38,7 +39,9 @@ trait ScalaStan extends Implicits { stan =>
     v
   }
 
-  def parameter[T <: StanType](typeConstructor: T): StanParameterDeclaration[T] = {
+  def parameter[T <: StanType](
+    typeConstructor: T
+  )(implicit ev: T#ELEMENT_TYPE =:= StanReal): StanParameterDeclaration[T] = {
     val v = StanParameterDeclaration[T](typeConstructor)
     parameterValues += v
     v
@@ -48,6 +51,8 @@ trait ScalaStan extends Implicits { stan =>
     lower: Option[StanValue[StanInt]] = None,
     upper: Option[StanValue[StanInt]] = None
   ): StanInt = StanInt(lower, upper)
+
+  def categorical(): StanCategorical = StanCategorical()
 
   def real(
     lower: Option[StanValue[StanReal]] = None,

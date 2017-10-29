@@ -11,9 +11,9 @@ class ScalaStanSpec extends ScalaStanBaseSpec with ScalaStan {
 
   describe("parameter") {
     it("causes a parameter declaration to be generated") {
-      parameter(int())
+      parameter(real())
       val model = new Model { }
-      checkCode(model, "parameters { int v#; // v# }")
+      checkCode(model, "parameters { real v#; // v# }")
     }
   }
 

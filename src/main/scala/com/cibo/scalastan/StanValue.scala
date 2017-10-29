@@ -196,12 +196,12 @@ case class TargetValue() extends StanValue[StanReal] with Updatable[StanReal] {
   def apply(): TargetFunction = TargetFunction()
 }
 
-case class DistributionFunctionNode[T <: StanType](
+case class DistributionFunctionNode[T <: StanType, R <: StanType](
   name: String,
   y: StanValue[T],
   sep: String,
   args: Seq[StanValue[_]]
-) extends StanValue[T] with ReadOnlyIndex[T] {
+) extends StanValue[R] with ReadOnlyIndex[R] {
   def emit: String = {
     val argStr = args.map(_.emit).mkString(",")
     s"$name(${y.emit} $sep $argStr)"

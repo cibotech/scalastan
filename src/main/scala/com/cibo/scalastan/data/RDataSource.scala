@@ -8,7 +8,7 @@ import scala.util.parsing.combinator.JavaTokenParsers
 
 object RDataSource {
 
-  private case class Value(name: String, dims: Vector[Int], values: Vector[Double])
+  private case class Value(name: String, dims: Vector[Int], values: Vector[String])
 
   private class RDataSource(values: Seq[Value]) extends DataSource {
     def read[T <: StanType, R](
@@ -26,24 +26,24 @@ object RDataSource {
 
     override protected val whiteSpace = """(\s|#.*)+""".r
 
-    private def number: Parser[Double] = floatingPointNumber ^^ { s => s.toDouble }
+    private def value: Parser[String] = floatingPointNumber | (stringLiteral ^^ { s => s.tail.dropRight(1) })
 
-    private def numberList: Parser[Vector[Double]] =
-      (number ~ "," ~ numberList ^^ { case (n ~ "," ~ ns) => n +: ns }) |
-        (number ^^ { n => Vector(n) })
+    private def valueList: Parser[Vector[String]] =
+      (value ~ "," ~ valueList ^^ { case (n ~ "," ~ ns) => n +: ns }) |
+        (value ^^ { n => Vector(n) })
 
     private def label: Parser[String] = (stringLiteral ^^ { s => s.tail.dropRight(1) }) | ident
 
-    private def vector: Parser[Vector[Double]] = "c" ~ "(" ~ numberList ~ ")" ^^ { case "c" ~ "(" ~ ns ~ ")" => ns }
+    private def vector: Parser[Vector[String]] = "c" ~ "(" ~ valueList ~ ")" ^^ { case "c" ~ "(" ~ ns ~ ")" => ns }
 
-    private def structure: Parser[(Vector[Int], Vector[Double])] =
+    private def structure: Parser[(Vector[Int], Vector[String])] =
       "structure" ~ "(" ~ vector ~ "," ~ ".Dim" ~ "=" ~ vector ~ ")" ^^ { case _ ~ _ ~ vs ~ _ ~ _ ~ _ ~ ds ~ _ =>
         (ds.map(_.toInt), vs)
       }
 
     private def assignment: Parser[String] = "<-" | "="
 
-    private def scalarValue: Parser[Value] = label ~ assignment ~ number ^^ { case name ~ _ ~ v =>
+    private def scalarValue: Parser[Value] = label ~ assignment ~ value ^^ { case name ~ _ ~ v =>
       Value(name, Vector.empty, Vector(v))
     }
 
@@ -55,13 +55,14 @@ object RDataSource {
       Value(name, v._1, v._2)
     }
 
-    private def value: Parser[Value] = (scalarValue | vectorValue | structureValue) ~ opt(";") ^^ { case v ~ _ => v }
+    private def statement: Parser[Value] =
+      (scalarValue | vectorValue | structureValue) ~ opt(";") ^^ { case v ~ _ => v }
 
-    private def values: Parser[Seq[Value]] = value.*
+    private def statements: Parser[Seq[Value]] = statement.*
 
-    def parse(s: String): ParseResult[Seq[Value]] = parseAll(values, s)
+    def parse(s: String): ParseResult[Seq[Value]] = parseAll(statements, s)
 
-    def parseFile(fileName: String): ParseResult[Seq[Value]] = parseAll(values, new FileReader(fileName))
+    def parseFile(fileName: String): ParseResult[Seq[Value]] = parseAll(statements, new FileReader(fileName))
   }
 
   def fromString(content: String): DataSource = {

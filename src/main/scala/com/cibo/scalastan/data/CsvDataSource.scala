@@ -29,7 +29,7 @@ object CsvDataSource {
       val updated = if (str.head == '\"') str.tail else str
       if (updated.last == '\"') updated.dropRight(1) else updated
     }
-    CsvDataSource(lines.tail.map(line => header.zip(line.split(",")).toMap))
+    CsvDataSource(lines.tail.map(line => header.zip(line.split(',')).toMap))
   }
 
   def fromFile(fileName: String, separator: Char = ','): DataSource = {

@@ -43,5 +43,33 @@ class CsvDataSourceSpec extends ScalaStanBaseSpec {
 
       src.read(decl, "one") shouldBe Seq(1.5, 2.5)
     }
+
+    it("returns column names") {
+      val data = "one,two\n1,2\n"
+      val src = CsvDataSource.fromString(data)
+
+      src.columns shouldBe Set("one", "two")
+    }
+
+    it("returns row counts") {
+      val data = "one\n1\n2\n3\n"
+      val src = CsvDataSource.fromString(data)
+
+      src.rows shouldBe 3
+    }
+
+    it("reads matrices") {
+      val data = "one,two\n1,2\n3,4\n"
+      val src = CsvDataSource.fromString(data)
+
+      src.readMatrix(Seq("one", "two")) shouldBe Vector(Vector(1.0, 2.0), Vector(3.0, 4.0))
+    }
+
+    it("reads vectors") {
+      val data = "one,two\n1,2\n3,4\n"
+      val src = CsvDataSource.fromString(data)
+
+      src.readVector("one") shouldBe Vector(1.0, 3.0)
+    }
   }
 }

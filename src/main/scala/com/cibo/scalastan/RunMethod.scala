@@ -178,8 +178,7 @@ object RunMethod {
     tolRelObj: Double = 1e4,
     tolGrad: Double = 1e-8,
     tolRelGrad: Double = 1e7,
-    tolParam: Double = 1e-8,
-    historySize: Int = 5
+    tolParam: Double = 1e-8
   ) extends OptimizeAlgorithm("bfgs") {
     require(initAlpha >= 0.0, s"initAlpha out of range: $initAlpha")
     require(tolObj >= 0.0, s"tolObj out of range: $tolObj")
@@ -187,15 +186,13 @@ object RunMethod {
     require(tolGrad >= 0.0, s"tolGrad out of range: $tolGrad")
     require(tolRelGrad >= 0.0, s"tolRelGrad out of range: $tolRelGrad")
     require(tolParam >= 0.0, s"tolParam out of range: $tolParam")
-    require(historySize > 0, s"historySize out of range: $historySize")
     def arguments: Seq[String] = build(
       ("init_alpha", initAlpha, BFGS().initAlpha),
       ("tol_obj", tolObj, BFGS().tolObj),
       ("tol_rel_obj", tolRelObj, BFGS().tolRelObj),
       ("tol_grad", tolGrad, BFGS().tolGrad),
       ("tol_rel_grad", tolRelGrad, BFGS().tolRelGrad),
-      ("tol_param", tolParam, BFGS().tolParam),
-      ("history_size", historySize, BFGS().historySize)
+      ("tol_param", tolParam, BFGS().tolParam)
     )
   }
   case class LBFGS(

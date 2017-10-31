@@ -215,7 +215,7 @@ case class StanArray[CONTAINED <: StanType] private[scalastan] (
   override private[scalastan] def getIndices: Seq[StanValue[StanInt]] = dim +: inner.getIndices
   private[scalastan] def typeName: String = inner.typeName
   private[scalastan] def getData(data: SCALA_TYPE): Seq[String] =
-    data.flatMap(d => inner.getData(d.asInstanceOf[inner.SCALA_TYPE]))
+    data.map(d => inner.getData(d.asInstanceOf[inner.SCALA_TYPE])).transpose.flatten
   private[scalastan] def getDims(data: SCALA_TYPE): Seq[Int] =
     data.length +: inner.getDims(data.head.asInstanceOf[inner.SCALA_TYPE])
   private[scalastan] def parse(name: String, values: Map[String, String]): SCALA_TYPE = {

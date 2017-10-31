@@ -1,10 +1,10 @@
 package com.cibo.scalastan
 
-sealed trait TemporaryValue[T <: StanType] {
+private sealed trait TemporaryValue[T <: StanType] {
   def create(args: StanValue[StanInt]*): T
 }
 
-object TemporaryValue {
+private object TemporaryValue {
 
   implicit val intTemporary: TemporaryValue[StanInt] = new TemporaryValue[StanInt] {
     def create(args: StanValue[StanInt]*): StanInt = StanInt()

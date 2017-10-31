@@ -177,9 +177,9 @@ trait Updatable[T <: StanType] { self: StanValue[T] =>
   }
 }
 
-case class FunctionNode[T <: StanType](
-  name: String,
-  args: StanValue[_]*
+case class FunctionNode[T <: StanType] private[scalastan] (
+  private val name: String,
+  private val args: StanValue[_]*
 ) extends StanValue[T] with ReadOnlyIndex[T] {
   def emit: String = {
     val argStr = args.map(_.emit).mkString(",")
@@ -187,47 +187,47 @@ case class FunctionNode[T <: StanType](
   }
 }
 
-case class TargetFunction() extends StanValue[StanReal] {
-  def emit: String = "target()"
+case class TargetFunction private[scalastan] () extends StanValue[StanReal] {
+  private[scalastan] def emit: String = "target()"
 }
 
-case class TargetValue() extends StanValue[StanReal] with Updatable[StanReal] {
-  def emit: String = "target"
+case class TargetValue private[scalastan] () extends StanValue[StanReal] with Updatable[StanReal] {
+  private[scalastan] def emit: String = "target"
   def apply(): TargetFunction = TargetFunction()
 }
 
-case class DistributionFunctionNode[T <: StanType, R <: StanType](
-  name: String,
-  y: StanValue[T],
-  sep: String,
-  args: Seq[StanValue[_]]
+case class DistributionFunctionNode[T <: StanType, R <: StanType] private[scalastan] (
+  private val name: String,
+  private val y: StanValue[T],
+  private val sep: String,
+  private val args: Seq[StanValue[_]]
 ) extends StanValue[R] with ReadOnlyIndex[R] {
-  def emit: String = {
+  private[scalastan] def emit: String = {
     val argStr = args.map(_.emit).mkString(",")
     s"$name(${y.emit} $sep $argStr)"
   }
 }
 
-case class ImplicitConversion[FROM <: StanType, TO <: StanType](
-  value: StanValue[FROM]
+case class ImplicitConversion[FROM <: StanType, TO <: StanType] private[scalastan] (
+  private val value: StanValue[FROM]
 ) extends StanValue[TO] with ReadOnlyIndex[TO] {
-  def emit: String = value.emit
+  private[scalastan] def emit: String = value.emit
 }
 
-case class UnaryOperator[T <: StanType, R <: StanType](
-  symbol: String,
-  right: StanValue[T]
+case class UnaryOperator[T <: StanType, R <: StanType] private[scalastan] (
+  private val symbol: String,
+  private val right: StanValue[T]
 ) extends StanValue[R] with ReadOnlyIndex[R] {
-  def emit: String = s"$symbol (${right.emit})"
+  private[scalastan] def emit: String = s"$symbol (${right.emit})"
 }
 
-case class BinaryOperator[T <: StanType, L <: StanType, R <: StanType](
-  symbol: String,
-  left: StanValue[L],
-  right: StanValue[R],
-  parens: Boolean = true
+case class BinaryOperator[T <: StanType, L <: StanType, R <: StanType] private[scalastan] (
+  private val symbol: String,
+  private val left: StanValue[L],
+  private val right: StanValue[R],
+  private val parens: Boolean = true
 ) extends StanValue[T] with ReadOnlyIndex[T] {
-  def emit: String =
+  private[scalastan] def emit: String =
     if (parens) {
       s"(${left.emit}) $symbol (${right.emit})"
     } else {
@@ -235,34 +235,40 @@ case class BinaryOperator[T <: StanType, L <: StanType, R <: StanType](
     }
 }
 
-case class IndexOperator[T <: StanType, N <: StanType](
-  value: StanValue[T],
-  indices: StanValue[StanInt]*
+case class IndexOperator[T <: StanType, N <: StanType] private[scalastan] (
+  private val value: StanValue[T],
+  private val indices: StanValue[StanInt]*
 ) extends StanValue[N] with ReadOnlyIndex[N] {
-  def emit: String = value.emit + indices.map(_.emit).mkString("[", ",", "]")
+  private[scalastan] def emit: String = value.emit + indices.map(_.emit).mkString("[", ",", "]")
 }
 
-case class IndexOperatorWithAssignment[T <: StanType, N <: StanType](
-  value: StanValue[T],
-  indices: StanValue[StanInt]*
+case class IndexOperatorWithAssignment[T <: StanType, N <: StanType] private[scalastan] (
+  private val value: StanValue[T],
+  private val indices: StanValue[StanInt]*
 ) extends StanValue[N] with Assignable[N] {
-  def emit: String = value.emit + indices.map(_.emit).mkString("[", ",", "]")
+  private[scalastan] def emit: String = value.emit + indices.map(_.emit).mkString("[", ",", "]")
 }
 
-case class TransposeOperator[T <: StanType, R <: StanType](
-  value: StanValue[T]
+case class TransposeOperator[T <: StanType, R <: StanType] private[scalastan] (
+  private val value: StanValue[T]
 ) extends StanValue[R] with ReadOnlyIndex[R] {
-  def emit: String = s"(${value.emit})'"
+  private[scalastan] def emit: String = s"(${value.emit})'"
 }
 
-case class StanConstant[T <: StanType](value: T#SCALA_TYPE) extends StanValue[T] with ReadOnlyIndex[T] {
-  def emit: String = value.toString
+case class StanConstant[T <: StanType] private[scalastan] (
+  private val value: T#SCALA_TYPE
+) extends StanValue[T] with ReadOnlyIndex[T] {
+  private[scalastan] def emit: String = value.toString
 }
 
-case class StanStringLiteral(value: String) extends StanValue[StanString] {
-  def emit: String = s""""$value""""
+case class StanStringLiteral private[scalastan] (
+  private val value: String
+) extends StanValue[StanString] {
+  private[scalastan] def emit: String = s""""$value""""
 }
 
-case class LiteralNode(value: String) extends StanValue[StanVoid] {
-  def emit: String = value.toString
+case class LiteralNode private[scalastan] (
+  private val value: String
+) extends StanValue[StanVoid] {
+  private[scalastan] def emit: String = value.toString
 }

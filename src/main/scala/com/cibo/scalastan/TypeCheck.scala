@@ -2,26 +2,26 @@ package com.cibo.scalastan
 
 import scala.annotation.implicitNotFound
 
-sealed trait TypeCheck
+protected sealed trait TypeCheck
 
 @implicitNotFound("${T} not a array/vector/matrix type")
-sealed class IsCompoundType[T <: StanType]
+protected sealed class IsCompoundType[T <: StanType]
 
-object IsCompoundType {
+protected object IsCompoundType {
   implicit def isCompound[T <: StanCompoundType] = new IsCompoundType[T]
 }
 
 @implicitNotFound("${T} not an int/real type")
-sealed class IsScalarType[T <: StanType]
+protected sealed class IsScalarType[T <: StanType]
 
-object IsScalarType {
+protected object IsScalarType {
   implicit def IsScalarType[T <: StanScalarType] = new IsScalarType[T]
 }
 
 @implicitNotFound("multiplication not allowed for ${R} = ${A} * ${B}")
-sealed class MultiplicationAllowed[R <: StanType, A <: StanType, B <: StanType] extends TypeCheck
+protected sealed class MultiplicationAllowed[R <: StanType, A <: StanType, B <: StanType] extends TypeCheck
 
-object MultiplicationAllowed {
+protected object MultiplicationAllowed {
   implicit val riMultiplication = new MultiplicationAllowed[StanReal, StanReal, StanInt]
   implicit val irMultiplication = new MultiplicationAllowed[StanReal, StanInt, StanReal]
   implicit def scalarMultiplication[T <: StanScalarType] = new MultiplicationAllowed[T, T, T]
@@ -34,9 +34,9 @@ object MultiplicationAllowed {
 }
 
 @implicitNotFound("division not allowed for ${R} = ${A} * ${B}")
-sealed class DivisionAllowed[R <: StanType, A <: StanType, B <: StanType] extends TypeCheck
+protected sealed class DivisionAllowed[R <: StanType, A <: StanType, B <: StanType] extends TypeCheck
 
-object DivisionAllowed {
+protected object DivisionAllowed {
   implicit val riDivision = new DivisionAllowed[StanReal, StanReal, StanInt]
   implicit val irDivision = new DivisionAllowed[StanReal, StanInt, StanReal]
   implicit def scalarDivision[T <: StanScalarType] = new DivisionAllowed[T, T, T]
@@ -47,26 +47,26 @@ object DivisionAllowed {
 }
 
 @implicitNotFound("left division not allowed for ${R} = ${A} * ${B}")
-sealed class LeftDivisionAllowed[R <: StanType, A <: StanType, B <: StanType] extends TypeCheck
+protected sealed class LeftDivisionAllowed[R <: StanType, A <: StanType, B <: StanType] extends TypeCheck
 
-object LeftDivisionAllowed {
+protected object LeftDivisionAllowed {
   implicit val matVecDivision = new LeftDivisionAllowed[StanVector, StanMatrix, StanVector]
   implicit val matMatDivision = new LeftDivisionAllowed[StanMatrix, StanMatrix, StanMatrix]
 }
 
 @implicitNotFound("element-wise division not allowed for ${R} = ${A} :/ ${B}")
-sealed class ElementWiseDivisionAllowed[R <: StanType, A <: StanType, B <: StanType] extends TypeCheck
+protected sealed class ElementWiseDivisionAllowed[R <: StanType, A <: StanType, B <: StanType] extends TypeCheck
 
-object ElementWiseDivisionAllowed {
+protected object ElementWiseDivisionAllowed {
   implicit def sameTypeDivision[T <: StanType] = new ElementWiseDivisionAllowed[T, T, T]
   implicit def csDivision[C <: StanCompoundType, S <: StanScalarType] = new ElementWiseDivisionAllowed[C, C, S]
   implicit def scDivision[C <: StanCompoundType, S <: StanScalarType] = new ElementWiseDivisionAllowed[C, S, C]
 }
 
 @implicitNotFound("addition not allowed for ${R} = ${A} + ${B}")
-sealed class AdditionAllowed[R <: StanType, A <: StanType, B <: StanType] extends TypeCheck
+protected sealed class AdditionAllowed[R <: StanType, A <: StanType, B <: StanType] extends TypeCheck
 
-object AdditionAllowed {
+protected object AdditionAllowed {
   implicit val riAddition = new AdditionAllowed[StanReal, StanReal, StanInt]
   implicit val irAddition = new AdditionAllowed[StanReal, StanInt, StanReal]
   implicit def sameTypeAddition[T <: StanType] = new AdditionAllowed[T, T, T]
@@ -75,24 +75,24 @@ object AdditionAllowed {
 }
 
 @implicitNotFound("modulus not allowed for ${T} (only int)")
-sealed class ModulusAllowed[T <: StanType] extends TypeCheck
+protected sealed class ModulusAllowed[T <: StanType] extends TypeCheck
 
-object ModulusAllowed {
+protected object ModulusAllowed {
   implicit def intModulus[T <: StanInt] = new ModulusAllowed[T]
 }
 
 @implicitNotFound("logical not allowed for type ${T}")
-sealed class LogicalAllowed[T <: StanType] extends TypeCheck
+protected sealed class LogicalAllowed[T <: StanType] extends TypeCheck
 
-object LogicalAllowed {
+protected object LogicalAllowed {
   implicit def intLogical[T <: StanInt] = new LogicalAllowed[T]
   implicit def realLogical[T <: StanReal] = new LogicalAllowed[T]
 }
 
 @implicitNotFound("distance not allowed between types ${A} and ${B}")
-sealed class DistanceAllowed[A <: StanType, B <: StanType] extends TypeCheck
+protected sealed class DistanceAllowed[A <: StanType, B <: StanType] extends TypeCheck
 
-object DistanceAllowed {
+protected object DistanceAllowed {
   implicit val vvDistance = new DistanceAllowed[StanVector, StanVector]
   implicit val vrDistance = new DistanceAllowed[StanVector, StanRowVector]
   implicit val rvDistance = new DistanceAllowed[StanRowVector, StanVector]
@@ -100,23 +100,23 @@ object DistanceAllowed {
 }
 
 @implicitNotFound("transpose not allowed for ${R} = ${T}.t")
-sealed class TransposeAllowed[T <: StanType, R <: StanType] extends TypeCheck
+protected sealed class TransposeAllowed[T <: StanType, R <: StanType] extends TypeCheck
 
-object TransposeAllowed {
+protected object TransposeAllowed {
   implicit val matrixTranspose = new TransposeAllowed[StanMatrix, StanMatrix]
   implicit val vectorTranspose = new TransposeAllowed[StanRowVector, StanVector]
   implicit val rowVectorTranspose = new TransposeAllowed[StanVector, StanRowVector]
 }
 
 @implicitNotFound("function only allowed in a GeneratedQuantity")
-sealed trait InGeneratedQuantityBlock extends TypeCheck
+protected sealed trait InGeneratedQuantityBlock extends TypeCheck
 
-object InGeneratedQuantityBlock extends InGeneratedQuantityBlock
+protected object InGeneratedQuantityBlock extends InGeneratedQuantityBlock
 
 @implicitNotFound("continuous type required, got ${T}")
-sealed class ContinuousType[T <: StanType] extends TypeCheck
+protected sealed class ContinuousType[T <: StanType] extends TypeCheck
 
-object ContinuousType {
+protected object ContinuousType {
   implicit def hasRealElement[T <: StanType](implicit ev: T#ELEMENT_TYPE =:= StanReal) = new ContinuousType[T]
 
   // Because Stan auto-converts ints to reals, we allow bare ints to be treated as continuous.
@@ -124,50 +124,50 @@ object ContinuousType {
 }
 
 @implicitNotFound("discrete type required, got ${T}")
-sealed class DiscreteType[T <: StanType] extends TypeCheck
+protected sealed class DiscreteType[T <: StanType] extends TypeCheck
 
-object DiscreteType {
+protected object DiscreteType {
   implicit def hasIntElement[T <: StanType](implicit ev: T#ELEMENT_TYPE =:= StanInt) = new DiscreteType[T]
 }
 
 @implicitNotFound("${T} not a vector, row vector, or array")
-sealed class IsVectorLikeOrArray[T <: StanType] extends TypeCheck
+protected sealed class IsVectorLikeOrArray[T <: StanType] extends TypeCheck
 
-object IsVectorLikeOrArray {
+protected object IsVectorLikeOrArray {
   implicit val isVector = new IsVectorLikeOrArray[StanVector]
   implicit val isRowVector = new IsVectorLikeOrArray[StanRowVector]
   implicit def isArray[T <: StanType] = new IsVectorLikeOrArray[StanArray[T]]
 }
 
 @implicitNotFound("${T} not a vector or matrix")
-sealed class IsVectorOrMatrix[T <: StanType] extends TypeCheck
+protected sealed class IsVectorOrMatrix[T <: StanType] extends TypeCheck
 
-object IsVectorOrMatrix {
+protected object IsVectorOrMatrix {
   implicit val isVector = new IsVectorOrMatrix[StanVector]
   implicit val isMatrix = new IsVectorOrMatrix[StanMatrix]
 }
 
 @implicitNotFound("${T} not a row vector or matrix")
-sealed class IsRowVectorOrMatrix[T <: StanType] extends TypeCheck
+protected sealed class IsRowVectorOrMatrix[T <: StanType] extends TypeCheck
 
-object IsRowVectorOrMatrix {
+protected object IsRowVectorOrMatrix {
   implicit val isRowVector = new IsRowVectorOrMatrix[StanRowVector]
   implicit val isMatrix = new IsRowVectorOrMatrix[StanMatrix]
 }
 
 @implicitNotFound("${T} not a vector, row vector, or matrix")
-sealed class IsVectorLikeOrMatrix[T <: StanType] extends TypeCheck
+protected sealed class IsVectorLikeOrMatrix[T <: StanType] extends TypeCheck
 
-object IsVectorLikeOrMatrix {
+protected object IsVectorLikeOrMatrix {
   implicit val isVector = new IsVectorLikeOrMatrix[StanVector]
   implicit val isRowVector = new IsVectorLikeOrMatrix[StanRowVector]
   implicit val isMatrix = new IsVectorLikeOrMatrix[StanMatrix]
 }
 
 @implicitNotFound("toMatrix not supported for type ${T}")
-sealed class ToMatrixAllowed[T <: StanType] extends TypeCheck
+protected sealed class ToMatrixAllowed[T <: StanType] extends TypeCheck
 
-object ToMatrixAllowed {
+protected object ToMatrixAllowed {
   implicit val isVector = new ToMatrixAllowed[StanVector]
   implicit val isRowVector = new ToMatrixAllowed[StanRowVector]
   implicit val isMatrix = new ToMatrixAllowed[StanMatrix]
@@ -176,9 +176,9 @@ object ToMatrixAllowed {
 }
 
 @implicitNotFound("toVector not supported for type ${T}")
-sealed class ToVectorAllowed[T <: StanType] extends TypeCheck
+protected sealed class ToVectorAllowed[T <: StanType] extends TypeCheck
 
-object ToVectorAllowed {
+protected object ToVectorAllowed {
   implicit val isVector = new ToVectorAllowed[StanVector]
   implicit val isRowVector = new ToVectorAllowed[StanRowVector]
   implicit val isMatrix = new ToVectorAllowed[StanMatrix]
@@ -187,9 +187,9 @@ object ToVectorAllowed {
 }
 
 @implicitNotFound("appendCol not allowed for ${R} = appendCol(${X}, ${Y})")
-sealed class AppendColAllowed[X <: StanType, Y <: StanType, R <: StanType]
+protected sealed class AppendColAllowed[X <: StanType, Y <: StanType, R <: StanType]
 
-object AppendColAllowed {
+protected object AppendColAllowed {
   implicit val appendColMM = new AppendColAllowed[StanMatrix, StanMatrix, StanMatrix]
   implicit val appendColMV = new AppendColAllowed[StanMatrix, StanVector, StanMatrix]
   implicit val appendColVM = new AppendColAllowed[StanVector, StanMatrix, StanMatrix]
@@ -200,9 +200,9 @@ object AppendColAllowed {
 }
 
 @implicitNotFound("appendRow not allowed for ${R} = appendCol(${X}, ${Y})")
-sealed class AppendRowAllowed[X <: StanType, Y <: StanType, R <: StanType]
+protected sealed class AppendRowAllowed[X <: StanType, Y <: StanType, R <: StanType]
 
-object AppendRowAllowed {
+protected object AppendRowAllowed {
   implicit val appendRowMM = new AppendRowAllowed[StanMatrix, StanMatrix, StanMatrix]
   implicit val appendRowMR = new AppendRowAllowed[StanMatrix, StanRowVector, StanMatrix]
   implicit val appendRowRM = new AppendRowAllowed[StanRowVector, StanMatrix, StanMatrix]

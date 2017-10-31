@@ -69,8 +69,6 @@ case class CompiledModel private[scalastan] (
     }
   }
 
-  private def processOutput(fileNames: Seq[String]): StanResults = StanResults(fileNames.par.map(readIterations).toVector)
-
   def run(chains: Int = 1, seed: Int = -1, method: RunMethod.Method = RunMethod.Sample()): StanResults = {
     require(chains > 0, s"Must run at least one chain")
 
@@ -83,7 +81,7 @@ case class CompiledModel private[scalastan] (
     emitData(dataFileName)
 
     val baseSeed = if (seed < 0) (System.currentTimeMillis % Int.MaxValue).toInt else seed
-    val outputFileNames = (0 until chains).par.map { i =>
+    val results = (0 until chains).par.map { i =>
       val chainSeed = baseSeed + i
       val name = CompiledModel.getNextOutputFileName
       val command = Vector(
@@ -98,10 +96,10 @@ case class CompiledModel private[scalastan] (
       if (rc != 0) {
         throw new IllegalStateException(s"model returned $rc")
       }
-      name
-    }.seq
+      readIterations(name)
+    }.seq.toVector
 
-    processOutput(outputFileNames)
+    StanResults(results)
   }
 }
 

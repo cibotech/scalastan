@@ -3,7 +3,6 @@ package com.cibo.scalastan
 import java.io._
 import java.nio.file.{Files, Path, Paths}
 
-import scala.annotation.implicitNotFound
 import scala.language.implicitConversions
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.JavaConverters._
@@ -126,7 +125,7 @@ trait ScalaStan extends Implicits { stan =>
       }
 
       def otherwise(otherBlock: => Unit): Unit = {
-        _codeBuffer += ElseStatement
+        _codeBuffer += ElseStatement()
         otherBlock
         _codeBuffer += LeaveScope()
       }

@@ -18,6 +18,7 @@ object Horseshoe extends App with ScalaStan {
   val model = new Model {
     lambda ~ Cauchy(0, 1)
     tau ~ Cauchy(0, 1)
+    sigma ~ InvGamma(0.5, 0.5)
     beta ~ Normal(0, lambda * tau)
     y ~ Normal(x * beta, sigma)
   }

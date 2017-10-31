@@ -4,9 +4,9 @@ import java.io.{BufferedReader, File, FileReader, PrintWriter}
 import scala.collection.JavaConverters._
 
 case class CompiledModel private[scalastan] (
-  dir: File,
-  code: ScalaStan,
-  dataMapping: Map[String, DataMapping[_]] = Map.empty
+  private val dir: File,
+  private val code: ScalaStan,
+  private val dataMapping: Map[String, DataMapping[_]] = Map.empty
 ) {
   private def emitData(fileName: String): Unit = {
     val dataFile = new File(s"$dir/$fileName")

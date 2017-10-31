@@ -1,6 +1,6 @@
 package com.cibo.scalastan
 
-trait NameLookup {
+protected trait NameLookup {
   // Subclasses should override "_userName" and set it to the result of lookupName from the right context.
   protected def _userName: Option[String]
 
@@ -25,7 +25,7 @@ trait NameLookup {
   }.getOrElse(defaultName)
 }
 
-object NameLookup {
+protected object NameLookup {
   private[scalastan] def lookupName(obj: NameLookup)(implicit ss: ScalaStan): Option[String] = {
     import scala.reflect.runtime.{universe => ru}
     val mirror = ru.runtimeMirror(ss.getClass.getClassLoader)

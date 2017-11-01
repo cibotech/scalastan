@@ -18,8 +18,8 @@ protected trait StanBuiltInFunctions {
   def intStep[T <: StanScalarType](x: StanValue[T]): StanValue[StanInt] = FunctionNode("int_step", x)
 
   // Bound functions (39.3).
-  def min[T <: StanScalarType](x: StanValue[T], y: StanValue[T]): StanValue[T] = FunctionNode("min", x, y)
-  def max[T <: StanScalarType](x: StanValue[T], y: StanValue[T]): StanValue[T] = FunctionNode("max", x, y)
+  def min(x: StanValue[StanInt], y: StanValue[StanInt]): StanValue[StanInt] = FunctionNode("min", x, y)
+  def max(x: StanValue[StanInt], y: StanValue[StanInt]): StanValue[StanInt] = FunctionNode("max", x, y)
 
   // Mathematical constants (40.2).
   def pi: StanValue[StanReal] = FunctionNode("pi")

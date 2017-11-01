@@ -81,7 +81,7 @@ case class CompiledModel private[scalastan] (
     emitData(dataFileName)
 
     val baseSeed = if (seed < 0) (System.currentTimeMillis % Int.MaxValue).toInt else seed
-    val results = (0 until chains).par.map { i =>
+    val results = (0 until chains).par.flatMap { i =>
       val chainSeed = baseSeed + i
       val name = CompiledModel.getNextOutputFileName
       val command = Vector(
@@ -94,9 +94,11 @@ case class CompiledModel private[scalastan] (
       val pb = new ProcessBuilder(command: _*).directory(dir).inheritIO()
       val rc = pb.start().waitFor()
       if (rc != 0) {
-        throw new IllegalStateException(s"model returned $rc")
+        println(s"ERROR: model returned $rc")
+        None
+      } else {
+        Some(readIterations(name))
       }
-      readIterations(name)
     }.seq.toVector
 
     StanResults(results)

@@ -61,4 +61,19 @@ class StanValueSpec extends ScalaStanBaseSpec {
       }
     }
   }
+
+  describe("^") {
+    it("can pow ints") {
+      val r = StanConstant[StanInt](1) ^ StanConstant[StanInt](2)
+      r.emit shouldBe "(1) ^ (2)"
+    }
+    it("can pow real / int") {
+      val r = StanConstant[StanReal](1.0) ^ StanConstant[StanInt](2)
+      r.emit shouldBe "(1.0) ^ (2)"
+    }
+    it("can pow reals") {
+      val r = StanConstant[StanReal](1.0) ^ StanConstant[StanReal](2.0)
+      r.emit shouldBe "(1.0) ^ (2.0)"
+    }
+  }
 }

@@ -63,7 +63,7 @@ abstract class StanValue[T <: StanType] extends StanNode with Implicits {
   def ^[R <: StanScalarType](
     right: StanValue[R]
   )(
-    implicit ev: IsScalarType[R], ev2: T =:= StanReal
+    implicit ev: IsScalarType[R]
   ): StanValue[T] = BinaryOperator("^", this, right)
 
   // Element-wise operators.

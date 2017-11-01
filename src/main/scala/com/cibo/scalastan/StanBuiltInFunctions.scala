@@ -39,7 +39,7 @@ protected trait StanBuiltInFunctions {
   def isInf[T <: StanScalarType](x: StanValue[T]): StanValue[StanInt] = FunctionNode("is_inf", x)
   def isNan[T <: StanScalarType](x: StanValue[T]): StanValue[StanInt] = FunctionNode("is_nan", x)
   def fabs[T <: StanType](x: StanValue[T]): StanValue[T] = FunctionNode("fabs", x)
-  def abs[T <: StanType](x: StanValue[T]): StanValue[T] = FunctionNode("abs", x)
+  def abs(x: StanValue[StanInt]): StanValue[StanInt] = FunctionNode("abs", x)
   def fdim(x: StanValue[StanReal], y: StanValue[StanReal]): StanValue[StanReal] = FunctionNode("fdim", x, y)
   def fmin(x: StanValue[StanReal], y: StanValue[StanReal]): StanValue[StanReal] = FunctionNode("fmin", x, y)
   def fmax(x: StanValue[StanReal], y: StanValue[StanReal]): StanValue[StanReal] = FunctionNode("fmax", x, y)

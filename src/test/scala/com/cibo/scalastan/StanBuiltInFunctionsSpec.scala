@@ -51,5 +51,30 @@ class StanBuiltInFunctionsSpec extends ScalaStanBaseSpec {
         checkCode(model, "v# = min(v#);")
       }
     }
+
+    describe("abs") {
+      it("can abs ints") {
+        val model = new Model {
+          local(int()) := abs(local(int()))
+        }
+        checkCode(model, "v# = abs(v#);")
+      }
+    }
+
+    describe("pow") {
+      it("can pow ints") {
+        val model = new Model {
+          local(real()) := pow(local(int()), local(int()))
+        }
+        checkCode(model, "v# = pow(v#,v#);")
+      }
+
+      it("can pow reals") {
+        val model = new Model {
+          local(real()) := pow(local(real()), local(real()))
+        }
+        checkCode(model, "v# = pow(v#,v#);")
+      }
+    }
   }
 }

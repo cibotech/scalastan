@@ -40,10 +40,18 @@ protected trait StanBuiltInFunctions {
   def isNan[T <: StanScalarType](x: StanValue[T]): StanValue[StanInt] = FunctionNode("is_nan", x)
   def fabs[T <: StanType](x: StanValue[T]): StanValue[T] = FunctionNode("fabs", x)
   def abs(x: StanValue[StanInt]): StanValue[StanInt] = FunctionNode("abs", x)
-  def fdim(x: StanValue[StanReal], y: StanValue[StanReal]): StanValue[StanReal] = FunctionNode("fdim", x, y)
-  def fmin(x: StanValue[StanReal], y: StanValue[StanReal]): StanValue[StanReal] = FunctionNode("fmin", x, y)
-  def fmax(x: StanValue[StanReal], y: StanValue[StanReal]): StanValue[StanReal] = FunctionNode("fmax", x, y)
-  def fmod(x: StanValue[StanReal], y: StanValue[StanReal]): StanValue[StanReal] = FunctionNode("fmod", x, y)
+  def fdim[A <: StanScalarType, B <: StanScalarType](
+    x: StanValue[A], y: StanValue[B]
+  ): StanValue[StanReal] = FunctionNode("fdim", x, y)
+  def fmin[A <: StanScalarType, B <: StanScalarType](
+    x: StanValue[A], y: StanValue[B]
+  ): StanValue[StanReal] = FunctionNode("fmin", x, y)
+  def fmax[A <: StanScalarType, B <: StanScalarType](
+    x: StanValue[A], y: StanValue[B]
+  ): StanValue[StanReal] = FunctionNode("fmax", x, y)
+  def fmod[A <: StanScalarType, B <: StanScalarType](
+    x: StanValue[A], y: StanValue[B]
+  ): StanValue[StanReal] = FunctionNode("fmod", x, y)
   def floor[T <: StanType](x: StanValue[T]): StanValue[T] = FunctionNode("floor", x)
   def ceil[T <: StanType](x: StanValue[T]): StanValue[T] = FunctionNode("ceil", x)
   def round[T <: StanType](x: StanValue[T]): StanValue[T] = FunctionNode("round", x)
@@ -58,7 +66,9 @@ protected trait StanBuiltInFunctions {
   def log[T <: StanType](x: StanValue[T]): StanValue[T] = FunctionNode("log", x)
   def log2[T <: StanType](x: StanValue[T]): StanValue[T] = FunctionNode("log2", x)
   def log10[T <: StanType](x: StanValue[T]): StanValue[T] = FunctionNode("log10", x)
-  def pow[T <: StanScalarType](x: StanValue[T], y: StanValue[T]): StanValue[StanReal] = FunctionNode("pow", x, y)
+  def pow[A <: StanScalarType, B <: StanScalarType](
+    x: StanValue[A], y: StanValue[B]
+  ): StanValue[StanReal] = FunctionNode("pow", x, y)
   def inv[T <: StanType](x: StanValue[T]): StanValue[T] = FunctionNode("inv", x)
   def invSqrt[T <: StanType](x: StanValue[T]): StanValue[T] = FunctionNode("inv_sqrt", x)
   def invSquare[T <: StanType](x: StanValue[T]): StanValue[T] = FunctionNode("inv_square", x)
@@ -71,7 +81,9 @@ protected trait StanBuiltInFunctions {
   def acos[T <: StanType](x: StanValue[T]): StanValue[T] = FunctionNode("acos", x)
   def asin[T <: StanType](x: StanValue[T]): StanValue[T] = FunctionNode("asin", x)
   def atan[T <: StanType](x: StanValue[T]): StanValue[T] = FunctionNode("atan", x)
-  def atan2(x: StanValue[StanReal], y: StanValue[StanReal]): StanValue[StanReal] = FunctionNode("atan2", x, y)
+  def atan2[X <: StanScalarType, Y <: StanScalarType](
+    x: StanValue[X], y: StanValue[Y]
+  ): StanValue[StanReal] = FunctionNode("atan2", x, y)
 
   // Hyperbolic Trigonometric functions (40.10).
   def cosh[T <: StanType](x: StanValue[T]): StanValue[T] = FunctionNode("cosh", x)
@@ -94,25 +106,32 @@ protected trait StanBuiltInFunctions {
   def phiApprox[T <: StanType](x: StanValue[T]): StanValue[T] = FunctionNode("Phi_approx", x)
   def binaryLogLoss[T <: StanScalarType](x: StanValue[StanInt], y: StanValue[T]): StanValue[StanReal] =
     FunctionNode("binary_log_loss", x, y)
-  def owensT[T <: StanScalarType](h: StanValue[T], a: StanValue[T]): StanValue[StanReal] = FunctionNode("owens_t", h, a)
+  def owensT[H <: StanScalarType, A <: StanScalarType](
+    h: StanValue[H], a: StanValue[A]
+  ): StanValue[StanReal] = FunctionNode("owens_t", h, a)
 
   // Combinatorial functions (40.13).
-  def incBeta(alpha: StanValue[StanReal], beta: StanValue[StanReal], x: StanValue[StanReal]): StanValue[StanReal] =
-    FunctionNode("inc_beta", alpha, beta, x)
-  def lbeta(alpha: StanValue[StanReal], beta: StanValue[StanReal]): StanValue[StanReal] =
-    FunctionNode("lbeta", alpha, beta)
+  def incBeta[A <: StanScalarType, B <: StanScalarType, X <: StanScalarType](
+    alpha: StanValue[A], beta: StanValue[B], x: StanValue[X]
+  ): StanValue[StanReal] = FunctionNode("inc_beta", alpha, beta, x)
+  def lbeta[A <: StanScalarType, B <: StanScalarType](
+    alpha: StanValue[A], beta: StanValue[B]
+  ): StanValue[StanReal] = FunctionNode("lbeta", alpha, beta)
   def tgamma[T <: StanType](x: StanValue[T]): StanValue[T] = FunctionNode("tgamma", x)
   def lgamma[T <: StanType](x: StanValue[T]): StanValue[T] = FunctionNode("lgamma", x)
   def digamma[T <: StanType](x: StanValue[T]): StanValue[T] = FunctionNode("digamma", x)
   def trigamma[T <: StanType](x: StanValue[T]): StanValue[T] = FunctionNode("trigamma", x)
   def lmgamma[T <: StanScalarType](n: StanValue[StanInt], x: StanValue[T]): StanValue[StanReal] =
     FunctionNode("lmgamma", n, x)
-  def gammaP[T <: StanScalarType](a: StanValue[T], z: StanValue[T]): StanValue[StanReal] =
-    FunctionNode("gamma_p", a, z)
-  def gammaQ[T <: StanScalarType](a: StanValue[T], z: StanValue[T]): StanValue[StanReal] =
-    FunctionNode("gamma_q", a, z)
-  def binomialCoefficientLog[T <: StanScalarType](x: StanValue[T], y: StanValue[T]): StanValue[StanReal] =
-    FunctionNode("binomial_coefficient_log", x, y)
+  def gammaP[A <: StanScalarType, Z <: StanScalarType](
+    a: StanValue[A], z: StanValue[Z]
+  ): StanValue[StanReal] = FunctionNode("gamma_p", a, z)
+  def gammaQ[A <: StanScalarType, Z <: StanScalarType](
+    a: StanValue[A], z: StanValue[Z]
+  ): StanValue[StanReal] = FunctionNode("gamma_q", a, z)
+  def binomialCoefficientLog[X <: StanScalarType, Y <: StanScalarType](
+    x: StanValue[X], y: StanValue[Y]
+  ): StanValue[StanReal] = FunctionNode("binomial_coefficient_log", x, y)
   def choose(x: StanValue[StanInt], y: StanValue[StanInt]): StanValue[StanInt] = FunctionNode("choose", x, y)
   def besselFirstKind[T <: StanScalarType](v: StanValue[StanInt], x: StanValue[T]): StanValue[StanReal] =
     FunctionNode("bessel_first_kind", v, x)
@@ -122,33 +141,42 @@ protected trait StanBuiltInFunctions {
     FunctionNode("modified_bessel_first_kind", v, z)
   def modifiedBesselSecondKind[T <: StanScalarType](v: StanValue[StanInt], z: StanValue[T]): StanValue[StanReal] =
     FunctionNode("modified_bessel_second_kind", v, z)
-  def fallingFactorial[T <: StanScalarType](x: StanValue[T], n: StanValue[T]): StanValue[StanReal] =
-    FunctionNode("falling_factorial", x, n)
-  def lchoose[T <: StanScalarType](x: StanValue[T], y: StanValue[T]): StanValue[StanReal] =
-    FunctionNode("lchoose", x, y)
+  def fallingFactorial[X <: StanScalarType, N <: StanScalarType](
+    x: StanValue[X], n: StanValue[N]
+  ): StanValue[StanReal] = FunctionNode("falling_factorial", x, n)
+  def lchoose[X <: StanScalarType, Y <: StanScalarType](
+    x: StanValue[X], y: StanValue[Y]
+  ): StanValue[StanReal] = FunctionNode("lchoose", x, y)
   def logFallingFactorial[T <: StanScalarType](x: StanValue[T], n: StanValue[T]): StanValue[StanReal] =
     FunctionNode("log_falling_factorial", x, n)
-  def risingFactorial[T <: StanScalarType](x: StanValue[T], n: StanValue[T]): StanValue[StanReal] =
-    FunctionNode("rising_factorial", x, n)
-  def logRisingFactorial[T <: StanScalarType](x: StanValue[T], n: StanValue[T]): StanValue[StanReal] =
-    FunctionNode("log_rising_factorial", x, n)
+  def risingFactorial[X <: StanScalarType, N <: StanScalarType](
+    x: StanValue[X], n: StanValue[N]
+  ): StanValue[StanReal] = FunctionNode("rising_factorial", x, n)
+  def logRisingFactorial[X <: StanScalarType, N <: StanScalarType](
+    x: StanValue[X], n: StanValue[N]
+  ): StanValue[StanReal] = FunctionNode("log_rising_factorial", x, n)
 
   // Composed functions (40.14).
   def expm1[T <: StanType](x: StanValue[T]): StanValue[T] = FunctionNode("expm1", x)
-  def fma[T <: StanScalarType](x: StanValue[T], y: StanValue[T], z: StanValue[T]): StanValue[StanReal] =
-    FunctionNode("fma", x, y, z)
-  def lmultiply[T <: StanScalarType](x: StanValue[T], y: StanValue[T]): StanValue[StanReal] =
-    FunctionNode("lmultiply", x, y)
+  def fma[X <: StanScalarType, Y <: StanScalarType, Z <: StanScalarType](
+    x: StanValue[X], y: StanValue[Y], z: StanValue[Z]
+  ): StanValue[StanReal] = FunctionNode("fma", x, y, z)
+  def lmultiply[X <: StanScalarType, Y <: StanScalarType](
+    x: StanValue[X], y: StanValue[Y]
+  ): StanValue[StanReal] = FunctionNode("lmultiply", x, y)
   def log1p[T <: StanType](x: StanValue[T]): StanValue[T] = FunctionNode("log1p", x)
   def log1m[T <: StanType](x: StanValue[T]): StanValue[T] = FunctionNode("log1m", x)
   def log1pExp[T <: StanType](x: StanValue[T]): StanValue[T] = FunctionNode("log1p_exp", x)
   def log1mExp[T <: StanType](x: StanValue[T]): StanValue[T] = FunctionNode("log1m_exp", x)
-  def logDiffExp[T <: StanScalarType](x: StanValue[T], y: StanValue[T]): StanValue[StanReal] =
-    FunctionNode("log_diff_exp", x, y)
-  def logMix[T <: StanScalarType](theta: StanValue[T], lp1: StanValue[T], lp2: StanValue[T]): StanValue[StanReal] =
-    FunctionNode("log_mix", theta, lp1, lp2)
-  def logSumExp[T <: StanScalarType](x: StanValue[T], y: StanValue[T]): StanValue[StanReal] =
-    FunctionNode("log_sum_exp", x, y)
+  def logDiffExp[X <: StanScalarType, Y <: StanScalarType](
+    x: StanValue[X], y: StanValue[Y]
+  ): StanValue[StanReal] = FunctionNode("log_diff_exp", x, y)
+  def logMix[T <: StanScalarType, A <: StanScalarType, B <: StanScalarType](
+    theta: StanValue[T], lp1: StanValue[A], lp2: StanValue[B]
+  ): StanValue[StanReal] = FunctionNode("log_mix", theta, lp1, lp2)
+  def logSumExp[X <: StanScalarType, Y <: StanScalarType](
+    x: StanValue[X], y: StanValue[Y]
+  ): StanValue[StanReal] = FunctionNode("log_sum_exp", x, y)
   def logInvLogit[T <: StanType](x: StanValue[T]): StanValue[T] = FunctionNode("log_inv_logit", x)
   def log1mInvLogit[T <: StanType](x: StanValue[T]): StanValue[T] = FunctionNode("log1m_inv_logit", x)
 

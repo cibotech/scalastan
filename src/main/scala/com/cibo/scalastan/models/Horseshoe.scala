@@ -26,7 +26,7 @@ case class Horseshoe(
   // Juho Piironen and Aki Vehtari, "On the Hyperprior Choice for the Global Shrinkage Parameter in the Horseshoe
   // Prior", in Proc of 20th Int'l Conf on Artificial Intelligence and Statistics, Vol 54, 2017.
   private val tau0 = new DataTransform(real(lower = 0)) {
-    result := fmin(p0, p - 1.0) / ((p - fmin(p0, p - 1.0)) * (n ^ 0.5))
+    result := fmin(p0, p - 1) / ((p - fmin(p0, p - 1)) * (n ^ 0.5))
   }
 
   // Regularization from:
@@ -34,7 +34,7 @@ case class Horseshoe(
   // Shrinkage Priors", 2017.
   private val lambdaTilde = new ParameterTransform(vector(p)) {
     for (i <- lambda.range) {
-      result(i) := sqrt(cSquared * pow(lambda(i), 2.0)) / (cSquared + pow(tau * lambda(i), 2.0))
+      result(i) := sqrt(cSquared * pow(lambda(i), 2)) / (cSquared + pow(tau * lambda(i), 2))
     }
   }
 

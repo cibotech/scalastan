@@ -337,12 +337,7 @@ trait ScalaStan extends Implicits { stan =>
       println("code:")
       println(str)
 
-      val md = java.security.MessageDigest.getInstance("SHA-1")
-      val hashBytes = md.digest(str.getBytes).flatMap { b =>
-        val digits = "0123456789abcdef"
-        digits((b.toInt & 255) >> 4).toString + digits(b.toInt & 15).toString
-      }
-      val hash = new String(hashBytes)
+      val hash = SHA.hash(str)
       val base = getBasePath
       cleanOldModels(base, hash)
       val dir = base.resolve(hash).toFile

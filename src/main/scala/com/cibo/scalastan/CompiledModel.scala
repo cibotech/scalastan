@@ -8,9 +8,10 @@ case class CompiledModel private[scalastan] (
   private val code: ScalaStan,
   private val dataMapping: Map[String, DataMapping[_]] = Map.empty
 ) {
-  private def emitData(fileName: String): Unit = {
+
+  private def emitData(fileName: String): SHA = {
     val dataFile = new File(s"$dir/$fileName")
-    val dataWriter = new PrintWriter(dataFile)
+    val dataWriter = ShaWriter(new PrintWriter(dataFile))
     code.dataValues.foreach { value =>
       val mapping = dataMapping.getOrElse(value.emit,
         throw new IllegalStateException(s"no data provided for ${value.emit}")
@@ -18,6 +19,7 @@ case class CompiledModel private[scalastan] (
       dataWriter.println(mapping.emit)
     }
     dataWriter.close()
+    dataWriter.sha
   }
 
   def reset: CompiledModel = copy(dataMapping = Map.empty)
@@ -69,35 +71,48 @@ case class CompiledModel private[scalastan] (
     }
   }
 
-  def run(chains: Int = 1, seed: Int = -1, method: RunMethod.Method = RunMethod.Sample()): StanResults = {
+  def run(
+    chains: Int = 1,
+    seed: Int = -1,
+    cache: Boolean = true,
+    method: RunMethod.Method = RunMethod.Sample()
+  ): StanResults = {
     require(chains > 0, s"Must run at least one chain")
 
+    // Make sure all the necessary data is provided.
     code.dataValues.filterNot(v => dataMapping.contains(v.emit)).foreach { v =>
       throw new IllegalStateException(s"data not supplied for ${v.name}")
     }
 
+    // Emit the data file.
     val dataFileName = CompiledModel.getNextDataFileName
     println(s"writing data to $dataFileName")
-    emitData(dataFileName)
+    val runSha = emitData(dataFileName)
+    val runHash = runSha.update(method.toString).digest
 
     val baseSeed = if (seed < 0) (System.currentTimeMillis % Int.MaxValue).toInt else seed
     val results = (0 until chains).par.flatMap { i =>
       val chainSeed = baseSeed + i
-      val name = CompiledModel.getNextOutputFileName
-      val command = Vector(
-        "./model",
-        "data", s"file=$dataFileName",
-        "output", s"file=$name",
-        "random", s"seed=$chainSeed"
-      ) ++ method.arguments
-      println("Running " + command.mkString(" "))
-      val pb = new ProcessBuilder(command: _*).directory(dir).inheritIO()
-      val rc = pb.start().waitFor()
-      if (rc != 0) {
-        println(s"ERROR: model returned $rc")
-        None
-      } else {
+      val name = s"$runHash-$seed-$i.csv"
+      if (cache && new File(s"$dir/$name").exists) {
+        println(s"Found cached results: $name")
         Some(readIterations(name))
+      } else {
+        val command = Vector(
+          "./model",
+          "data", s"file=$dataFileName",
+          "output", s"file=$name",
+          "random", s"seed=$chainSeed"
+        ) ++ method.arguments
+        println("Running " + command.mkString(" "))
+        val pb = new ProcessBuilder(command: _*).directory(dir).inheritIO()
+        val rc = pb.start().waitFor()
+        if (rc != 0) {
+          println(s"ERROR: model returned $rc")
+          None
+        } else {
+          Some(readIterations(name))
+        }
       }
     }.seq.toVector
 
@@ -107,19 +122,11 @@ case class CompiledModel private[scalastan] (
 
 object CompiledModel {
   private var dataFileIndex: Int = 0
-  private var outputFileIndex: Int = 0
 
   private def getNextDataFileName: String = {
     synchronized {
       dataFileIndex += 1
       s"data$dataFileIndex.R"
-    }
-  }
-
-  private def getNextOutputFileName: String = {
-    synchronized {
-      outputFileIndex += 1
-      s"output$outputFileIndex.csv"
     }
   }
 }

@@ -4,7 +4,10 @@ import java.io.{PrintWriter, PrintStream}
 
 import scala.util.Try
 
-case class StanResults private (private val chains: Vector[Vector[Map[String, String]]]) {
+case class StanResults private (
+  private val chains: Vector[Vector[Map[String, String]]],
+  private val ss: ScalaStan
+) {
 
   private val lpName = "lp__"
   private val divergentName = "divergent__"
@@ -246,7 +249,7 @@ case class StanResults private (private val chains: Vector[Vector[Map[String, St
     (partitioned._1.map(_._1).asInstanceOf[Seq[R]], partitioned._2.map(_._1).asInstanceOf[Seq[R]])
   }
 
-  def summary(ps: PrintStream)(implicit ss: ScalaStan): Unit = {
+  def summary(ps: PrintStream): Unit = {
     val pw = new PrintWriter(ps)
     summary(pw)
     pw.flush()
@@ -264,7 +267,7 @@ case class StanResults private (private val chains: Vector[Vector[Map[String, St
     val psrfResult: Double = psrf(values)
   }
 
-  def summary(pw: PrintWriter)(implicit ss: ScalaStan): Unit = {
+  def summary(pw: PrintWriter): Unit = {
 
     val fieldWidth = 8
 

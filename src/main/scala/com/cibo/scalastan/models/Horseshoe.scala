@@ -3,8 +3,17 @@ package com.cibo.scalastan.models
 import com.cibo.scalastan._
 
 case class Horseshoe(
-  p0: Double = 3.0  // Expected number of relevant parameters.
+  p0: Double = 3.0,
+  scaleInterceptPrior: Double = 10.0,
+  nuLocalPrior: Double = 1.0,
+  nuGlobalPrior: Double = 1.0,
+  slabScalePrior: Double = 1.0,
+  slabDfPrior: Double = 1.0
 ) extends ScalaStan {
+
+  // Horsehoe prior from:
+  // Juho Piironen and Aki Vehtari, "Sparsity Information and Regularization in the Horseshoe and Other
+  // Shrinkage Priors", 2017.
 
   private val n = data(int(lower = 0))    // Number of observations
   private val p = data(int(lower = 0))    // Number of parameters
@@ -13,51 +22,76 @@ case class Horseshoe(
   val x: StanDataDeclaration[StanMatrix] = data(matrix(n, p))
   val y: StanDataDeclaration[StanVector] = data(vector(n))
 
-  // Output
-  val beta: StanParameterDeclaration[StanVector] = parameter(vector(p))
+  // Priors
+  private val scaleIntercept = data(real(lower = 0))
+  private val nuLocal = data(real(lower = 1))
+  private val nuGlobal = data(real(lower = 1))
+  private val slabScale = data(real(lower = 0))
+  private val slabDf = data(real(lower = 0))
 
-  private val cSquared = parameter(real(lower = 0))
-  private val nu = parameter(real(lower = 1))
-  private val lambda = parameter(vector(p, lower = 0))
-  private val tau = parameter(real(lower = 0))
+  val beta0: StanParameterDeclaration[StanReal] = parameter(real())
+
   private val sigma = parameter(real(lower = 0))
+  private val z = parameter(vector(p))
+  private val aux1Global = parameter(real(lower = 0))
+  private val aux2Global = parameter(real(lower = 0))
+  private val aux1Local = parameter(vector(p, lower = 0))
+  private val aux2Local = parameter(vector(p, lower = 0))
+  private val caux = parameter(real(lower = 0))
 
-  // Prior for Tau from:
-  // Juho Piironen and Aki Vehtari, "On the Hyperprior Choice for the Global Shrinkage Parameter in the Horseshoe
-  // Prior", in Proc of 20th Int'l Conf on Artificial Intelligence and Statistics, Vol 54, 2017.
   private val tau0 = new DataTransform(real(lower = 0)) {
-    result := fmin(p0, p - 1) / ((p - fmin(p0, p - 1)) * (n ^ 0.5))
+    result := fmin(p0, p - 1) / (p - fmin(p0, p - 1)) / pow(n, 0.5)
   }
 
-  // Regularization from:
-  // Juho Piironen and Aki Vehtari, "Sparsity Information and Regularization in the Horseshoe and Other
-  // Shrinkage Priors", 2017.
-  private val lambdaTilde = new ParameterTransform(vector(p)) {
-    for (i <- lambda.range) {
-      result(i) := sqrt(cSquared * pow(lambda(i), 2)) / (cSquared + pow(tau * lambda(i), 2))
-    }
+  private val tau = new ParameterTransform(real(lower = 0)) {
+    result := aux1Global * sqrt(aux2Global) * tau0 * sigma
   }
 
-  // Horseshoe Prior from:
-  // Carlos M. Carvalho, Nicholas G. Polson, and James G. Scott, "Handling Sparsity via the Horseshoe",
-  // in Proc. of 12th Int'l Conf on Artificial Intelligence and Statistics, Vol 5, 2009.
+  private val c = new ParameterTransform(real(lower = 0)) {
+    result := slabScale * sqrt(caux)
+  }
+
+  private val lambda = new ParameterTransform(vector(p, lower = 0)) {
+    result := aux1Local :* sqrt(aux2Local)
+  }
+
+  private val lambdaTilde = new ParameterTransform(vector(p, lower = 0)) {
+    result := sqrt((c ^ 2) * square(lambda) :/ ((c ^ 2) + (tau ^ 2) * square(lambda)))
+  }
+
+  val beta: StanParameterDeclaration[StanVector] = new ParameterTransform(vector(p)) {
+    result := z :* lambdaTilde * tau
+  }
+
+  private val f = new ParameterTransform(vector(n)) {
+    result := beta0 + x * beta
+  }
+
   private val model = new Model {
-    nu ~ Gamma(2, 0.1)
-    cSquared ~ InvGamma(nu / 2.0, nu * 1.0 / 2.0)
     sigma ~ Cauchy(0, 1)
-    tau ~ Cauchy(0, pow(tau0 * sigma, 2.0))
-    lambda ~ Cauchy(0, 1)
-    beta ~ Normal(0, tau * lambdaTilde)
-    y ~ Normal(x * beta, sigma)
+    z ~ Normal(0, 1)
+    aux1Local ~ Normal(0, 1)
+    aux2Local ~ InvGamma(0.5 * nuLocal, 0.5 * nuLocal)
+    aux1Global ~ Normal(0, 1)
+    aux2Global ~ InvGamma(0.5 * nuGlobal, 0.5 * nuGlobal)
+    caux ~ InvGamma(0.5 * slabDf, 0.5 * slabDf)
+    beta0 ~ Normal(0, scaleIntercept)
+    y ~ Normal(f, sigma)
   }
 
   def compile: CompiledModel = model.compile
+    .withData(scaleIntercept, scaleInterceptPrior)
+    .withData(nuGlobal, nuGlobalPrior)
+    .withData(nuLocal, nuLocalPrior)
+    .withData(slabScale, slabScalePrior)
+    .withData(slabDf, slabDfPrior)
 
   def predictions(data: Seq[Seq[Double]], results: StanResults): Seq[Double] = {
     val bestBeta = results.best(beta)
+    val bestOffset = results.best(beta0)
     data.map { xs =>
       require(xs.length == bestBeta.length)
-      xs.zip(bestBeta).map { case (v, b) => v * b }.sum
+      xs.zip(bestBeta).map { case (v, b) => v * b }.sum + bestOffset
     }
   }
 }

@@ -116,7 +116,7 @@ case class CompiledModel private[scalastan] (
       }
     }.seq.toVector
 
-    StanResults(results)
+    StanResults(results, code)
   }
 }
 

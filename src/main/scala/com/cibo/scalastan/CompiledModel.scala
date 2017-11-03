@@ -40,9 +40,10 @@ case class CompiledModel private[scalastan] (
     // Look up and set the size parameters.
     val (withDecls, _) = decl.typeConstructor.getIndices.foldLeft((this, conv: Any)) { case ((old, d), dim) =>
       val ds = d.asInstanceOf[Seq[_]]
+      val next = if (ds.nonEmpty) ds.head else Seq.empty
       dim match {
-        case indexDecl: StanDataDeclaration[StanInt] => (old.withData(indexDecl, ds.size), ds.head)
-        case _                                       => (old, ds.head)
+        case indexDecl: StanDataDeclaration[StanInt] => (old.withData(indexDecl, ds.size), next)
+        case _                                       => (old, next)
       }
     }
 

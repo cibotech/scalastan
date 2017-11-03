@@ -123,8 +123,8 @@ trait StanCompoundType extends StanType
 trait StanVectorOrMatrix extends StanCompoundType
 
 case class StanVoid private[scalastan] (
-  private[scalastan] lower: Option[StanValue[StanVoid]] = None,
-  private[scalastan] upper: Option[StanValue[StanVoid]] = None
+  private[scalastan] val lower: Option[StanValue[StanVoid]] = None,
+  private[scalastan] val upper: Option[StanValue[StanVoid]] = None
 ) extends StanType {
   protected type THIS_TYPE = StanVoid
   private[scalastan] type ELEMENT_TYPE = StanVoid
@@ -149,7 +149,7 @@ case class StanString private[scalastan] () extends StanType {
   private[scalastan] val lower: Option[StanValue[StanString]] = None
   private[scalastan] val upper: Option[StanValue[StanString]] = None
   private[scalastan] def typeName: String = "string"
-  private[scalastan] def getData(data: String): Seq[String] = Seq(data)
+  private[scalastan] def getData(data: String): Seq[String] = Seq(s""""$data"""")
   private[scalastan] def getDims(data: String): Seq[Int] = Seq.empty
   private[scalastan] def parse(name: String, values: Map[String, String]): String = values(name)
   private[scalastan] def parse(dims: Seq[Int], values: Seq[String]): String = ""
@@ -216,8 +216,15 @@ case class StanArray[CONTAINED <: StanType] private[scalastan] (
   private[scalastan] def typeName: String = inner.typeName
   private[scalastan] def getData(data: SCALA_TYPE): Seq[String] =
     data.map(d => inner.getData(d.asInstanceOf[inner.SCALA_TYPE])).transpose.flatten
-  private[scalastan] def getDims(data: SCALA_TYPE): Seq[Int] =
-    data.length +: inner.getDims(data.head.asInstanceOf[inner.SCALA_TYPE])
+  private[scalastan] def getDims(data: SCALA_TYPE): Seq[Int] = {
+    if (data.nonEmpty) {
+      data.length +: inner.getDims(data.head.asInstanceOf[inner.SCALA_TYPE])
+    } else if (inner.isInstanceOf[StanScalarType]) {
+      Seq(data.length)
+    } else {
+      data.length +: inner.getDims(Seq.empty.asInstanceOf[inner.SCALA_TYPE])
+    }
+  }
   private[scalastan] def parse(name: String, values: Map[String, String]): SCALA_TYPE = {
     // The name will be the prefix up to the number we need to parse.
     val prefix = s"$name."
@@ -332,7 +339,13 @@ case class StanMatrix private[scalastan] (
 
   private[scalastan] def typeName: String = s"matrix$emitBounds[${rows.emit},${cols.emit}]"
   private[scalastan] def getData(data: Seq[Seq[Double]]): Seq[String] = data.transpose.flatMap(_.map(_.toString))
-  private[scalastan] def getDims(data: Seq[Seq[Double]]): Seq[Int] = Seq(data.length, data.head.length)
+  private[scalastan] def getDims(data: Seq[Seq[Double]]): Seq[Int] = {
+    if (data.nonEmpty) {
+      Seq(data.length, data.head.length)
+    } else {
+      Seq(0, 0)
+    }
+  }
 
   override private[scalastan] def getIndices: Seq[StanValue[StanInt]] = Seq(rows, cols)
 

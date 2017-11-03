@@ -1,6 +1,6 @@
 package com.cibo.scalastan
 
-import java.io.{PrintWriter, Writer}
+import java.io.Writer
 
 private case class SHA() {
 
@@ -27,7 +27,7 @@ private case class ShaWriter(writer: Writer) extends Writer {
   val sha = SHA()
 
   override def write(cbuf: Array[Char], off: Int, len: Int): Unit = {
-    sha.update(new String(cbuf).getBytes)
+    sha.update(new String(cbuf.slice(off, len)).getBytes)
     writer.write(cbuf, off, len)
   }
 
@@ -35,10 +35,7 @@ private case class ShaWriter(writer: Writer) extends Writer {
 
   override def close(): Unit = writer.close()
 
-  def println(str: String): Unit = {
-    write(str)
-    write('\n')
-  }
+  def println(str: String): Unit = write(s"$str\n")
 }
 
 private object SHA {

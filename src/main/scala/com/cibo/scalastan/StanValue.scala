@@ -218,7 +218,7 @@ case class UnaryOperator[T <: StanType, R <: StanType] private[scalastan] (
   private val symbol: String,
   private val right: StanValue[T]
 ) extends StanValue[R] with ReadOnlyIndex[R] {
-  private[scalastan] def emit: String = s"$symbol (${right.emit})"
+  private[scalastan] def emit: String = s"$symbol(${right.emit})"
 }
 
 case class BinaryOperator[T <: StanType, L <: StanType, R <: StanType] private[scalastan] (

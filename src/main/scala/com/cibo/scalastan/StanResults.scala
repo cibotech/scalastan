@@ -9,6 +9,8 @@ case class StanResults private (
   private val ss: ScalaStan
 ) {
 
+  require(chains.nonEmpty, "No results")
+
   private val lpName = "lp__"
   private val divergentName = "divergent__"
   private val treeDepthName = "treedepth__"

@@ -76,4 +76,11 @@ class StanValueSpec extends ScalaStanBaseSpec {
       r.emit shouldBe "(1.0) ^ (2.0)"
     }
   }
+
+  describe("unary -") {
+    it("can negate ints") {
+      val r = -StanConstant[StanInt](1)
+      r.emit shouldBe "-(1)"
+    }
+  }
 }

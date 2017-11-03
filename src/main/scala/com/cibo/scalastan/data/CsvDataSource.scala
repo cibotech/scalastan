@@ -38,13 +38,18 @@ case class CsvDataSource private (values: Seq[Map[String, String]]) extends Data
 }
 
 object CsvDataSource {
+
+  private def strip(str: String): String = {
+    val str1 = str.trim
+    val str2 = if (str1.nonEmpty && str1.head == '\"') str1.tail else str1
+    val str3 = if (str2.nonEmpty && str2.last == '\"') str2.dropRight(1) else str2
+    str3.trim
+  }
+
   def fromString(content: String, separator: Char = ','): CsvDataSource = {
     val lines = content.split('\n')
-    val header = lines.head.split(separator).map(_.trim).map { str =>
-      val updated = if (str.head == '\"') str.tail else str
-      if (updated.last == '\"') updated.dropRight(1) else updated
-    }
-    CsvDataSource(lines.tail.map(line => header.zip(line.split(',')).toMap))
+    val header = lines.head.split(separator).map(strip)
+    CsvDataSource(lines.tail.map(line => header.zip(line.split(',').map(strip)).toMap))
   }
 
   def fromFile(fileName: String, separator: Char = ','): CsvDataSource = {

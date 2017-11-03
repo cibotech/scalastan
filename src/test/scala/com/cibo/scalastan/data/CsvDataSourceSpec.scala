@@ -71,5 +71,20 @@ class CsvDataSourceSpec extends ScalaStanBaseSpec {
 
       src.readVector("one") shouldBe Vector(1.0, 3.0)
     }
+
+    it("strips whitespace from column names") {
+      val data = "\"one  \",\" two \"\n1,2\n"
+      val src = CsvDataSource.fromString(data)
+
+      src.readVector("one") shouldBe Vector(1.0)
+      src.readVector("two") shouldBe Vector(2.0)
+    }
+
+    it("removes quotes from values") {
+      val data = "one\n\"1\"\n"
+      val src = CsvDataSource.fromString(data)
+
+      src.readVector("one") shouldBe Vector(1.0)
+    }
   }
 }

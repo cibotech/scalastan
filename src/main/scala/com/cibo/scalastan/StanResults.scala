@@ -6,7 +6,8 @@ import scala.util.Try
 
 case class StanResults private (
   private val chains: Vector[Vector[Map[String, String]]],
-  private val ss: ScalaStan
+  private val ss: ScalaStan,
+  private val model: CompiledModel
 ) {
 
   require(chains.nonEmpty, "No results")
@@ -27,6 +28,11 @@ case class StanResults private (
   val chainCount: Int = chains.size
   val iterationsPerChain: Int = chains.head.size
   val iterationsTotal: Int = chains.map(_.size).sum
+
+  /** Get the specified input data. */
+  def get[T <: StanType, R](
+    decl: StanDataDeclaration[T]
+  ): T#SCALA_TYPE = model.get(decl)
 
   /** Get all samples by chain and iteration. */
   def samples[T <: StanType, R](

@@ -1,6 +1,9 @@
 package com.cibo.scalastan
 
 class StanValueSpec extends ScalaStanBaseSpec {
+
+  private implicit val ss = new ScalaStan {}
+
   describe("+") {
     describe("ints") {
       it("can add int + const_int") {

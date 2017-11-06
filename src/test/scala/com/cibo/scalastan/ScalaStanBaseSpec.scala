@@ -2,7 +2,7 @@ package com.cibo.scalastan
 
 import org.scalatest.{FunSpec, Matchers}
 
-trait ScalaStanBaseSpec extends FunSpec with Matchers with ScalaStan {
+trait ScalaStanBaseSpec extends FunSpec with Matchers {
 
   private def removeSpaces(str: String): String = str.replaceAllLiterally(" ", "").replaceAllLiterally("\n", "")
 

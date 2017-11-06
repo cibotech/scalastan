@@ -101,12 +101,22 @@ trait ScalaStan extends Implicits { stan =>
       }
 
       // Local declarations need to go at the top of the block.
-      // Here we insert after the last EnterScope, the last declaration, or at the beginning.
+      // Here we insert after the last EnterScope, the last declaration, or at the beginning making sure
+      // to insert at the current scope level.
+      val levels = _codeBuffer.scanLeft(0) { (level, node) =>
+        node match {
+          case _: EnterScope => level + 1
+          case _: LeaveScope => level - 1
+          case _             => level
+        }
+      }
       val decl = StanLocalDeclaration[T](typeConstructor)
-      val insertionPoint = _codeBuffer.lastIndexWhere {
-        case _: EnterScope               => true
-        case _: StanInlineDeclaration[_] => true
-        case _                           => false
+      val insertionPoint = _codeBuffer.zip(levels).lastIndexWhere { case (node, level) =>
+        node match {
+          case _: EnterScope               => level + 1 == levels.last
+          case _: StanInlineDeclaration[_] => level == levels.last
+          case _                           => false
+        }
       }
       _codeBuffer.insert(insertionPoint + 1, StanInlineDeclaration(decl))
       decl

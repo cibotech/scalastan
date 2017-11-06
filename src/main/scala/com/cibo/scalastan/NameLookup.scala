@@ -1,5 +1,7 @@
 package com.cibo.scalastan
 
+import scala.util.Try
+
 protected trait NameLookup {
   // Subclasses should override "_userName" and set it to the result of lookupName from the right context.
   protected def _userName: Option[String]
@@ -27,16 +29,18 @@ protected trait NameLookup {
 
 protected object NameLookup {
   private[scalastan] def lookupName(obj: NameLookup)(implicit ss: ScalaStan): Option[String] = {
-    import scala.reflect.runtime.{universe => ru}
-    val mirror = ru.runtimeMirror(ss.getClass.getClassLoader)
-    val ssMirror = mirror.reflect(ss)
-    ssMirror.symbol.typeSignature.decls.find { decl =>
-      if (decl.isMethod && decl.asMethod.isGetter && decl.asMethod.returnType <:< ru.typeOf[NameLookup]) {
-        ssMirror.reflectMethod(decl.asMethod).apply().asInstanceOf[NameLookup]._id == obj._id
-      } else {
-        false
+    Try {
+      import scala.reflect.runtime.{universe => ru}
+      val mirror = ru.runtimeMirror(ss.getClass.getClassLoader)
+      val ssMirror = mirror.reflect(ss)
+      ssMirror.symbol.typeSignature.decls.find { decl =>
+        if (decl.isMethod && decl.asMethod.isGetter && decl.asMethod.returnType <:< ru.typeOf[NameLookup]) {
+          ssMirror.reflectMethod(decl.asMethod).apply().asInstanceOf[NameLookup]._id == obj._id
+        } else {
+          false
+        }
       }
-    }.map { decl =>
+    }.toOption.flatten.map { decl =>
       decl.name.decodedName.toString
     }
   }

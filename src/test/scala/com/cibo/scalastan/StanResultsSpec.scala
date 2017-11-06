@@ -4,6 +4,8 @@ import java.io._
 
 class StanResultsSpec extends ScalaStanBaseSpec {
 
+  private implicit val ss = new ScalaStan {}
+
   private val v1 = StanParameterDeclaration[StanInt](StanInt())
   private val v2 = StanParameterDeclaration[StanVector](StanVector(v1))
   private val v3 = StanParameterDeclaration[StanArray[StanVector]](StanArray(v1, StanVector(v1)))
@@ -36,7 +38,7 @@ class StanResultsSpec extends ScalaStanBaseSpec {
     s"${v3.emit}.3.2" -> 332
   ).mapValues(_.toString)
 
-  val results = StanResults(Vector(Vector(testData1, testData2)), this)
+  val results = StanResults(Vector(Vector(testData1, testData2)), ss)
 
   describe("samples") {
     it("returns all scalar samples") {

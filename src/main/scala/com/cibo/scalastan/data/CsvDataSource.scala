@@ -35,6 +35,10 @@ case class CsvDataSource private (values: Seq[Map[String, String]]) extends Data
         throw new IllegalStateException(s"unsupported type for CsvDataSource: ${decl.typeConstructor}")
     }
   }
+
+  def sortBy[A: Ordering](f: Map[String, String] => A): CsvDataSource = CsvDataSource(values.sortBy(f))
+
+  def reverse: CsvDataSource = CsvDataSource(values.reverse)
 }
 
 object CsvDataSource {

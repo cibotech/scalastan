@@ -340,7 +340,7 @@ protected trait StanBuiltInFunctions {
     v: StanValue[T],
     i: StanValue[StanInt],
     n: StanValue[StanInt]
-  ): StanValue[T] = FunctionNode("segment", i, n)
+  ): StanValue[T] = FunctionNode("segment", v, i, n)
 
   // Matrix concatenation (42.10).
   def appendCol[X <: StanType, Y <: StanType, R <: StanType](

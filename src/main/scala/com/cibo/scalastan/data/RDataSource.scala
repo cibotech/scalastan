@@ -34,7 +34,7 @@ object RDataSource {
 
     private def label: Parser[String] = (stringLiteral ^^ { s => s.tail.dropRight(1) }) | ident
 
-    private def vector: Parser[Vector[String]] = "c" ~ "(" ~ valueList ~ ")" ^^ { case "c" ~ "(" ~ ns ~ ")" => ns }
+    private def vector: Parser[Vector[String]] = "c" ~ "(" ~ valueList ~ ")" ^^ { case _ ~ _ ~ ns ~ _ => ns }
 
     private def structure: Parser[(Vector[Int], Vector[String])] =
       "structure" ~ "(" ~ vector ~ "," ~ ".Dim" ~ "=" ~ vector ~ ")" ^^ { case _ ~ _ ~ vs ~ _ ~ _ ~ _ ~ ds ~ _ =>

@@ -1,4 +1,4 @@
-package com.cibo.scalastan.example
+package com.cibo.scalastan.examples
 
 import com.cibo.scalastan.ScalaStan
 import com.cibo.scalastan.data.RDataSource

@@ -8,6 +8,7 @@ ScalaStan depends on [Scala](http://www.scala-lang.org), [SBT](http://www.scala-
 [CmdStan](http://mc-stan.org/users/interfaces/cmdstan).
 On macOS, these can be installed via [Homebrew](https://brew.sh):
 ```
+brew tap homebrew/science
 brew install cmdstan sbt
 ```
 

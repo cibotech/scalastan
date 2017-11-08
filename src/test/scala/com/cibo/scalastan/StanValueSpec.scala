@@ -86,4 +86,41 @@ class StanValueSpec extends ScalaStanBaseSpec {
       r.emit shouldBe "-(1)"
     }
   }
+
+  describe("index") {
+    it("can be read 1d") {
+      val i = StanConstant[StanInt](1)
+      val d = StanLocalDeclaration(StanReal()(i)).apply(i)
+      d.emit should fullyMatch regex "v[0-9]+\\[1\\]"
+    }
+
+    it("can be read vector") {
+      val i = StanConstant[StanInt](1)
+      val d = StanLocalDeclaration(StanVector(i)).apply(i)
+      d.emit should fullyMatch regex "v[0-9]+\\[1\\]"
+    }
+
+    it("can be read 2d") {
+      val i1 = StanConstant[StanInt](1)
+      val i2 = StanConstant[StanInt](2)
+      val d = StanLocalDeclaration(StanReal()(i1, i2)).apply(i1, i2)
+      d.emit should fullyMatch regex "v[0-9]+\\[1,2\\]"
+    }
+
+    it("can be read matrix") {
+      val i1 = StanConstant[StanInt](1)
+      val i2 = StanConstant[StanInt](2)
+      val d = StanLocalDeclaration(StanMatrix(i1, i2)).apply(i1, i2)
+      d.emit should fullyMatch regex "v[0-9]+\\[1,2\\]"
+    }
+  }
+
+  describe("slice") {
+    it("can be read") {
+      val i1 = StanConstant[StanInt](1)
+      val i2 = StanConstant[StanInt](2)
+      val d = StanLocalDeclaration(StanVector(i1)).apply(ValueRange(i1, i2))
+      d.emit should fullyMatch regex "v[0-9]+\\[1:2\\]"
+    }
+  }
 }

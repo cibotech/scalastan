@@ -110,6 +110,8 @@ trait ReadOnlyIndex[T <: StanType] { self: StanValue[T] =>
   )(implicit ev: N =:= T#NEXT_TYPE#NEXT_TYPE#NEXT_TYPE#NEXT_TYPE): IndexOperator[T, N] = {
     IndexOperator(this, index1, index2, index3, index4)
   }
+
+  def apply(slice: ValueRange): SliceOperator[T] = SliceOperator(this, slice)
 }
 
 trait Assignable[T <: StanType] { self: StanValue[T] =>
@@ -148,6 +150,8 @@ trait Assignable[T <: StanType] { self: StanValue[T] =>
   )(implicit ev: N =:= T#NEXT_TYPE#NEXT_TYPE#NEXT_TYPE#NEXT_TYPE): IndexOperatorWithAssignment[T, N] = {
     IndexOperatorWithAssignment(this, index1, index2, index3, index4)
   }
+
+  def apply(slice: ValueRange): SliceOperatorWithAssignment[T] = SliceOperatorWithAssignment(this, slice)
 }
 
 trait Updatable[T <: StanType] { self: StanValue[T] =>
@@ -242,11 +246,25 @@ case class IndexOperator[T <: StanType, N <: StanType] private[scalastan] (
   private[scalastan] def emit: String = value.emit + indices.map(_.emit).mkString("[", ",", "]")
 }
 
+case class SliceOperator[T <: StanType] private[scalastan] (
+  private val value: StanValue[T],
+  private val slice: ValueRange
+) extends StanValue[T] with ReadOnlyIndex[T] {
+  private[scalastan] def emit: String = s"${value.emit}[${slice.start.emit}:${slice.end.emit}]"
+}
+
 case class IndexOperatorWithAssignment[T <: StanType, N <: StanType] private[scalastan] (
   private val value: StanValue[T],
   private val indices: StanValue[StanInt]*
 ) extends StanValue[N] with Assignable[N] {
   private[scalastan] def emit: String = value.emit + indices.map(_.emit).mkString("[", ",", "]")
+}
+
+case class SliceOperatorWithAssignment[T <: StanType] private[scalastan] (
+  private val value: StanValue[T],
+  private val slice: ValueRange
+) extends StanValue[T] with Assignable[T] {
+  private[scalastan] def emit: String = s"${value.emit}[${slice.start.emit}:${slice.end.emit}]"
 }
 
 case class TransposeOperator[T <: StanType, R <: StanType] private[scalastan] (

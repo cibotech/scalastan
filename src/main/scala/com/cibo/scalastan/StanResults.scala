@@ -242,11 +242,12 @@ case class StanResults private (
     count > 0
   }
 
+  private lazy val divergentCount: Int = divergent.map(_.count(_ > 0.0)).sum
+  private lazy val percentDiverged: Int = (100 * divergentCount) / iterationsTotal
+
   def checkDivergence(): Int = {
-    val count = divergent.map(_.count(_ > 0.0)).sum
-    val p = (100 * count) / iterationsTotal
-    println(s"$count of $iterationsTotal iterations ended up with a divergence ($p%)")
-    count
+    println(s"$divergentCount of $iterationsTotal iterations ended up with a divergence ($percentDiverged%)")
+    divergentCount
   }
 
   /** Partition iterations into (divergent, non-divergent) samples. */

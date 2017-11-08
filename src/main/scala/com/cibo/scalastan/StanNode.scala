@@ -131,8 +131,8 @@ case class ReturnNode[T <: StanType](
 
 // A range (x:n in Stan), used with for loops.
 case class ValueRange(
-  protected val start: StanValue[StanInt],
-  protected val end: StanValue[StanInt]
+  private[scalastan] val start: StanValue[StanInt],
+  private[scalastan] val end: StanValue[StanInt]
 )(implicit ss: ScalaStan) extends StanNode {
 
   // This foreach will get called automatically when a for comprehension is used with ValueRange.

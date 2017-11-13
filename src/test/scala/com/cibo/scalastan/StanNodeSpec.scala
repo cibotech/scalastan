@@ -30,5 +30,13 @@ class StanNodeSpec extends ScalaStanBaseSpec with ScalaStan with StanDistributio
       }
       checkCode(model, "model { v#_v2 = normal_cdf(v#_y , v#_v1,v#_v2); }")
     }
+
+    it("should allow rng in a generated quantity") {
+      val gen = new GeneratedQuantity(real()) { continuous.rng }
+    }
+
+    it("should not allow rng in a model") {
+      "val model = new Model { continuous.rng }" shouldNot compile
+    }
   }
 }

@@ -22,6 +22,8 @@ case class CompiledModel private[scalastan] (
     dataWriter.sha
   }
 
+  def resultsDirectory: File = dir
+
   def get[T <: StanType, R](
     decl: StanDataDeclaration[T]
   ): T#SCALA_TYPE = dataMapping(decl.emit).values.asInstanceOf[T#SCALA_TYPE]

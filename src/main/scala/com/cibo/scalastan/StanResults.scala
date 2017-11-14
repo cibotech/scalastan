@@ -1,6 +1,6 @@
 package com.cibo.scalastan
 
-import java.io.{PrintWriter, PrintStream}
+import java.io.{File, PrintStream, PrintWriter}
 
 import scala.util.Try
 
@@ -28,6 +28,9 @@ case class StanResults private (
   val chainCount: Int = chains.size
   val iterationsPerChain: Int = chains.head.size
   val iterationsTotal: Int = chains.map(_.size).sum
+
+  /** The directory containing the model and results. */
+  def resultsDirectory: File = model.resultsDirectory
 
   /** Get the specified input data. */
   def get[T <: StanType, R](

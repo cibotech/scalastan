@@ -91,6 +91,8 @@ the following data types:
  - `vector(length, [lower], [upper])` // A (column) vector of reals
  - `rowVector(length, [lower], [upper])` // A row vector of reals
  - `matrix(rows, cols, [lower], [upper])` // A matrix of reals
+ - `categorical()` // A categorical type (this is a ScalaStan extension to handle categorical data
+   that turns into an `int`).
 
 Arrays can be created for any data type with multiple dimensions by calling `apply` on the type.
 For example, to create a 2-dimensional array of `int`:
@@ -113,7 +115,7 @@ Using ScalaStan, this is encoded as:
 val y = parameter(real())
 ```
 
-The types for parameters are the same as those for data.
+The types for parameters are the same as those for data, however, Stan does not allow integral parameters.
 
 The Model
 ---------
@@ -142,7 +144,7 @@ The transpose operator is `.t` (for example, `x.t` to transpose `x`).
 #### Assignment
 The assignment operator is `:=` (instead of `=`).
 
-#### For Loops
+#### For Loops and Slices
 For loops use the standard Scala syntax, but using the `range` function as a generator.  For example:
 ```scala
 for (i <- range(1, n)) {
@@ -151,6 +153,11 @@ for (i <- range(1, n)) {
 ```
 This will cause `i` to take on the values `1` through `n` inclusive.
 Note that arrays are indexed starting from one in Stan.
+
+The `range` function can also be used for array slicing, for example:
+```scala
+x(range(1, 5)) := y(range(2, 6))
+```
 
 #### Conditionals
 Conditions take the form `when` and `otherwise` to avoid conflicting with the Scala `if` and `else` statements.
@@ -175,8 +182,9 @@ when(x > 1) {
 ```
 
 #### Distributions
-Most of the built-in Stan distributions are available in ScalaStan.  The naming convention uses an initial
-upper-case letter (for example, the Beta distribution is `Beta`).
+The built-in Stan distributions are available in ScalaStan (see `StanDistributions` for a list).
+The naming convention uses an initial upper-case letter and camel-case
+(for example, the Beta distribution is `Beta`).
 
 To indicate that a value is sampled from a distribution, the `~` operator is used, for example:
 ```scala
@@ -189,8 +197,9 @@ target += Normal(0.0, 1.0).lpdf(y)
 ```
 
 #### Other Functions
-Most of the built-in Stan functions are available in ScalaStan.  The naming convention uses camel-case instead
-of underscores.
+The built-in Stan functions are available in ScalaStan (see `StanBuiltInFunctions`).
+The naming convention uses camel-case with leading lower-case instead of underscores.
+For example, the `dot_product` function in Stan is `dotProduct` in ScalaStan.
 
 
 Data and Parameter Transforms
@@ -208,7 +217,7 @@ val xPlusOne = new ParameterTransform(vector(n)) {
 }
 ```
 
-Now, the transformed parameter can be referenced instead of the actual parameter.
+The transformed parameter can now be referenced instead of the actual parameter in the model.
 
 User-Defined Functions
 ----------------------
@@ -258,6 +267,7 @@ It is also possible to assign data from a `DataSource`.  The following data sour
 
  - `CsvDataSource`: A data source for parsing CSV.
  - `RDataSource`: A data source for parsing R-formatted data.
+ - `TextDataSource`: A data source for parsing a text file with an array of values.
 
 For example, given a file (`data.R`) with R-formatted
 data, we can assign `x` from the value named `X` in the R data file using the `apply` method:
@@ -273,8 +283,9 @@ val source = com.cibo.scalastan.data.CsvDataSource.fromFile("data.csv")
 val data: Seq[Double] = source.read(x, "X")
 ```
 
-Before the model can be run, all inputs must be assigned.  However, the model may be run multiple times
-with different inputs by using `withData` and replacing previously assigned data.
+Before the model can be run, all inputs must be assigned.  To assign different inputs, the `reset` method
+must be called.  Using the `reset` method will clear all assigned inputs, allowing the model to be run
+multiple times with different inputs.
 
 Running the Model
 -----------------
@@ -285,6 +296,9 @@ optional parameters:
  - seed: An integer specifying the first random number seed to use or `-1` to use system time to select one.
    With multiple chains, the chain index is added to the seed to ensure each chain gets a different, but
    deterministic seed.
+ - cache: A boolean specifying whether results should be cached.  This defaults to `true`.  When the
+   results are cached, re-running the model with the same data set and seed as before will cause the results
+   from the previous run to be returned rather than re-executing the model.
  - method: The method to use (`RunMethod.Sample()`, `RunMethod.Optimize()`, `RunMethod.Variational()`,
    or `RunMethod.Diagnose()`).  This defaults to `RunMethod.Sample()`.
    Note that each `RunMethod` is a case class that can accept additional parameters.
@@ -293,7 +307,9 @@ The return value of the `run` method is a results object that can be used to ext
 
 The first run of a model will take a long time since the Stan code will need to be built.  However,
 the generated Stan executable is cached and reused, so additional runs will be fast. The SHA1 hash of the
-generated code from ScalaStan is used to determine if the code has changed and needs to be rebuilt.
+generated code from ScalaStan is used to determine if the code has changed and needs to be rebuilt.  The
+cached models and results are stored in `$HOME/.scalastan`.  Old models and results are removed in a
+least-recently used fashion.
 
 Getting Results
 ----------------
@@ -308,6 +324,8 @@ val m = results.mean(y)
 
 This will return the mean with the same shape as the input parameter.  Note that the Scala data structure
 is indexed from zero (instead of one as it is in Stan).
+
+For convenience, there is also a `get` method on `StanResults` to access the input data.
 
 The results object also has a `summary` method to output a summary of results like the `stansummary` program:
 ```scala

@@ -20,17 +20,23 @@ sealed abstract class StanDeclaration[T <: StanType](implicit ss: ScalaStan) ext
 case class StanDataDeclaration[T <: StanType] private[scalastan] (
   private[scalastan] val typeConstructor: T,
   protected val internalNameFunc: () => Option[String] = () => None
-)(implicit ss: ScalaStan) extends StanDeclaration[T] with ReadOnlyIndex[T]
+)(implicit ss: ScalaStan) extends StanDeclaration[T] with ReadOnlyIndex[T] {
+  type DECL_TYPE = StanDataDeclaration[T]
+}
 
 case class StanParameterDeclaration[T <: StanType] private[scalastan] (
   private[scalastan] val typeConstructor: T,
   protected val internalNameFunc: () => Option[String] = () => None
-)(implicit ss: ScalaStan) extends StanDeclaration[T] with Assignable[T] with Updatable[T]
+)(implicit ss: ScalaStan) extends StanDeclaration[T] with Assignable[T] with Updatable[T] {
+  type DECL_TYPE = StanParameterDeclaration[T]
+}
 
 case class StanLocalDeclaration[T <: StanType] private[scalastan] (
   private[scalastan] val typeConstructor: T,
   protected val internalNameFunc: () => Option[String] = () => None
-)(implicit ss: ScalaStan) extends StanDeclaration[T] with Assignable[T] with Updatable[T]
+)(implicit ss: ScalaStan) extends StanDeclaration[T] with Assignable[T] with Updatable[T] {
+  type DECL_TYPE = StanLocalDeclaration[T]
+}
 
 case class StanInlineDeclaration[T <: StanType](
   protected val decl: StanLocalDeclaration[T]

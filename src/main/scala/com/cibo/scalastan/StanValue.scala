@@ -1,9 +1,14 @@
 package com.cibo.scalastan
 
 import scala.collection.mutable.ArrayBuffer
+import scala.language.existentials
 
 // Base class for value types.
 abstract class StanValue[T <: StanType] extends StanNode with Implicits {
+
+  // The declaration type used to declare this value.
+  // This is used to determine if assignment is allowed.
+  type DECL_TYPE <: StanDeclaration[_]
 
   def unary_-(): StanValue[T] = UnaryOperator("-", this)
 
@@ -116,21 +121,21 @@ trait ReadOnlyIndex[T <: StanType] { self: StanValue[T] =>
 
 trait Assignable[T <: StanType] { self: StanValue[T] =>
   def :=(right: StanValue[T])(
-    implicit code: ArrayBuffer[StanNode]
+    implicit code: ArrayBuffer[StanNode], ev: AssignmentAllowed[DECL_TYPE]
   ): Unit = {
     code += BinaryOperator[T, T, T]("=", this, right, parens = false)
   }
 
   def apply[N <: StanType](
     index: StanValue[StanInt]
-  )(implicit ev: N =:= T#NEXT_TYPE): IndexOperatorWithAssignment[T, N] = {
+  )(implicit ev: N =:= T#NEXT_TYPE): IndexOperatorWithAssignment[T, N, DECL_TYPE] = {
     IndexOperatorWithAssignment(this, index)
   }
 
   def apply[N <: StanType](
     index1: StanValue[StanInt],
     index2: StanValue[StanInt]
-  )(implicit ev: N =:= T#NEXT_TYPE#NEXT_TYPE): IndexOperatorWithAssignment[T, N] = {
+  )(implicit ev: N =:= T#NEXT_TYPE#NEXT_TYPE): IndexOperatorWithAssignment[T, N, DECL_TYPE] = {
     IndexOperatorWithAssignment(this, index1, index2)
   }
 
@@ -138,7 +143,7 @@ trait Assignable[T <: StanType] { self: StanValue[T] =>
     index1: StanValue[StanInt],
     index2: StanValue[StanInt],
     index3: StanValue[StanInt]
-  )(implicit ev: N =:= T#NEXT_TYPE#NEXT_TYPE#NEXT_TYPE): IndexOperatorWithAssignment[T, N] = {
+  )(implicit ev: N =:= T#NEXT_TYPE#NEXT_TYPE#NEXT_TYPE): IndexOperatorWithAssignment[T, N, DECL_TYPE] = {
     IndexOperatorWithAssignment(this, index1, index2, index3)
   }
 
@@ -147,11 +152,11 @@ trait Assignable[T <: StanType] { self: StanValue[T] =>
     index2: StanValue[StanInt],
     index3: StanValue[StanInt],
     index4: StanValue[StanInt]
-  )(implicit ev: N =:= T#NEXT_TYPE#NEXT_TYPE#NEXT_TYPE#NEXT_TYPE): IndexOperatorWithAssignment[T, N] = {
+  )(implicit ev: N =:= T#NEXT_TYPE#NEXT_TYPE#NEXT_TYPE#NEXT_TYPE): IndexOperatorWithAssignment[T, N, DECL_TYPE] = {
     IndexOperatorWithAssignment(this, index1, index2, index3, index4)
   }
 
-  def apply(slice: ValueRange): SliceOperatorWithAssignment[T] = SliceOperatorWithAssignment(this, slice)
+  def apply(slice: ValueRange): SliceOperatorWithAssignment[T, DECL_TYPE] = SliceOperatorWithAssignment(this, slice)
 }
 
 trait Updatable[T <: StanType] { self: StanValue[T] =>
@@ -212,12 +217,6 @@ case class DistributionFunctionNode[T <: StanType, R <: StanType] private[scalas
   }
 }
 
-case class ImplicitConversion[FROM <: StanType, TO <: StanType] private[scalastan] (
-  private val value: StanValue[FROM]
-) extends StanValue[TO] with ReadOnlyIndex[TO] {
-  private[scalastan] def emit: String = value.emit
-}
-
 case class UnaryOperator[T <: StanType, R <: StanType] private[scalastan] (
   private val symbol: String,
   private val right: StanValue[T]
@@ -253,17 +252,19 @@ case class SliceOperator[T <: StanType] private[scalastan] (
   private[scalastan] def emit: String = s"${value.emit}[${slice.start.emit}:${slice.end.emit}]"
 }
 
-case class IndexOperatorWithAssignment[T <: StanType, N <: StanType] private[scalastan] (
+case class IndexOperatorWithAssignment[T <: StanType, N <: StanType, D <: StanDeclaration[_]] private[scalastan] (
   private val value: StanValue[T],
   private val indices: StanValue[StanInt]*
 ) extends StanValue[N] with Assignable[N] {
+  type DECL_TYPE = D
   private[scalastan] def emit: String = value.emit + indices.map(_.emit).mkString("[", ",", "]")
 }
 
-case class SliceOperatorWithAssignment[T <: StanType] private[scalastan] (
+case class SliceOperatorWithAssignment[T <: StanType, D <: StanDeclaration[_]] private[scalastan] (
   private val value: StanValue[T],
   private val slice: ValueRange
 ) extends StanValue[T] with Assignable[T] {
+  type DECL_TYPE = D
   private[scalastan] def emit: String = s"${value.emit}[${slice.start.emit}:${slice.end.emit}]"
 }
 

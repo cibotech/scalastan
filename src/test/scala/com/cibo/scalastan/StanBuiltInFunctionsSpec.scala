@@ -95,4 +95,40 @@ class StanBuiltInFunctionsSpec extends ScalaStanBaseSpec {
       }
     }
   }
+
+  describe("distance") {
+    it("does not compile for scalars") {
+      "new ScalaStan { new Model { distance(local(real()), local(real())) } }" shouldNot compile
+    }
+
+    it("works with vectors") {
+      new ScalaStan {
+        val model = new Model {
+          val n = local(int())
+          local(real()) := distance(local(vector(n)), local(vector(n)))
+        }
+        checkCode(model, "v# = distance(v#,v#);")
+      }
+    }
+
+    it("works with vector x row_vector") {
+      new ScalaStan {
+        val model = new Model {
+          val n = local(int())
+          local(real()) := distance(local(vector(n)), local(rowVector(n)))
+        }
+        checkCode(model, "v# = distance(v#,v#);")
+      }
+    }
+
+    it("works with row_vector x vector") {
+      new ScalaStan {
+        val model = new Model {
+          val n = local(int())
+          local(real()) := distance(local(rowVector(n)), local(vector(n)))
+        }
+        checkCode(model, "v# = distance(v#,v#);")
+      }
+    }
+  }
 }

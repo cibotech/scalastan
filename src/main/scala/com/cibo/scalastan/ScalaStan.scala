@@ -246,6 +246,7 @@ trait ScalaStan extends Implicits { stan =>
 
   abstract class ParameterTransform[T <: StanType](typeConstructor: T) extends TransformBase[T, StanParameterDeclaration[T]] {
     lazy val result: StanParameterDeclaration[T] = StanParameterDeclaration[T](typeConstructor, () => _userName)
+    protected implicit val _parameterTransform: InParameterTransform = InParameterTransform
 
     if (!parameterTransforms.exists(_._id == _id)) {
       parameterTransforms += this

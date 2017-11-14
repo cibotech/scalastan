@@ -4,6 +4,53 @@ import org.scalatest.{FunSpec, Matchers}
 
 trait ScalaStanBaseSpec extends FunSpec with Matchers {
 
+  case class MockStanCompiledModel(
+    private[scalastan] val ss: ScalaStan,
+    private[scalastan] val code: String,
+    private[scalastan] val data: Vector[Map[String, String]] = Vector.empty,
+    protected val dataMapping: Map[String, DataMapping[_]] = Map.empty
+  ) extends CompiledModel {
+
+    private def set(prefix: String, values: Any, mapping: Map[String, String]): Map[String, String] = {
+      values match {
+        case s: Seq[_] =>
+          s.zipWithIndex.foldLeft(mapping) { case (m, (v, i)) =>
+            set(s"$prefix.${i + 1}", v, m)
+          }
+        case _ => mapping + (prefix -> values.toString)
+      }
+    }
+
+    def set[T <: StanType](decl: StanParameterDeclaration[T], values: Seq[T#SCALA_TYPE]): MockStanCompiledModel = {
+      require(data.isEmpty || data.length == values.length)
+      val dataBefore = if (data.isEmpty) values.map(_ => Map[String, String]("lp__" -> "1")) else data
+      val prefix = decl.emit
+      val newData = values.zip(dataBefore).map { case (v, d) => set(prefix, v, d) }
+      copy(data = newData.toVector)
+    }
+
+    protected def replaceMapping(newMapping: Map[String, DataMapping[_]]): CompiledModel =
+      copy(dataMapping = newMapping)
+    protected def runChecked(chains: Int, seed: Int, cache: Boolean, method: RunMethod.Method): StanResults =
+      MockStanRunner.run(this, chains, seed, cache, method)
+  }
+
+  implicit object MockStanRunner extends StanRunner[MockStanCompiledModel] {
+    def compile(ss: ScalaStan, model: ScalaStan#Model): CompiledModel = MockStanCompiledModel(
+      ss = ss,
+      code = model.getCode
+    )
+    def run(
+      model: MockStanCompiledModel,
+      chains: Int,
+      seed: Int,
+      cache: Boolean,
+      method: RunMethod.Method
+    ): StanResults = {
+      StanResults((0 until chains).map(_ => model.data).toVector, model)
+    }
+  }
+
   private def removeSpaces(str: String): String = str.replaceAllLiterally(" ", "").replaceAllLiterally("\n", "")
 
   private def removeNumbers(str: String): String = str.replaceAll("[0-9]+", "#")

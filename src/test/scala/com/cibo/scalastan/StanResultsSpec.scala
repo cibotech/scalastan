@@ -5,7 +5,7 @@ import java.io._
 class StanResultsSpec extends ScalaStanBaseSpec {
 
   private implicit val ss = new ScalaStan {}
-  private val model = CompiledModel(new File("."), ss)
+  private val model = CmdStanCompiledModel(new File("."), ss)
 
   private val v1 = StanParameterDeclaration[StanInt](StanInt())
   private val v2 = StanParameterDeclaration[StanVector](StanVector(v1))

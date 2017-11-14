@@ -23,7 +23,7 @@ case class LinearRegression(
     y ~ Normal(x * beta + beta0, sigma)
   }
 
-  def compile: CompiledModel = model.compile
+  def compile[M <: CompiledModel](implicit runner: StanRunner[M]): CompiledModel = model.compile
     .withData(x, xs)
     .withData(y, ys)
 

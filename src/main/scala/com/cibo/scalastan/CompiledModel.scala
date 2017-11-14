@@ -1,35 +1,34 @@
 package com.cibo.scalastan
 
-import java.io.{File, PrintWriter}
+import java.io.{File, Writer}
 
-case class CompiledModel private[scalastan] (
-  private val dir: File,
-  private[scalastan] val ss: ScalaStan,
-  private val dataMapping: Map[String, DataMapping[_]] = Map.empty
-) {
+abstract class CompiledModel {
+  private[scalastan] val ss: ScalaStan
+  protected val dataMapping: Map[String, DataMapping[_]]
 
-  private[scalastan] def emitData(fileName: String): SHA = {
-    val dataFile = new File(s"$dir/$fileName")
-    val dataWriter = ShaWriter(new PrintWriter(dataFile))
+  protected def replaceMapping(newMapping: Map[String, DataMapping[_]]): CompiledModel
+  protected def runChecked(chains: Int, seed: Int, cache: Boolean, method: RunMethod.Method): StanResults
+
+  private[scalastan] final def emitData(writer: Writer): Unit = {
     ss.dataValues.foreach { value =>
       val mapping = dataMapping.getOrElse(value.emit,
         throw new IllegalStateException(s"no data provided for ${value.emit}")
       )
-      dataWriter.println(mapping.emit)
+      writer.write(mapping.emit)
+      writer.write("\n")
     }
-    dataWriter.close()
-    dataWriter.sha
   }
 
-  def resultsDirectory: File = dir
-
-  def get[T <: StanType, R](
+  /** Get the specified input data. */
+  final def get[T <: StanType, R](
     decl: StanDataDeclaration[T]
   ): T#SCALA_TYPE = dataMapping(decl.emit).values.asInstanceOf[T#SCALA_TYPE]
 
-  def reset: CompiledModel = copy(dataMapping = Map.empty)
+  /** Reset all data bindings. */
+  final def reset: CompiledModel = replaceMapping(Map.empty)
 
-  def withData[T <: StanType, V](
+  /** Add a data binding. */
+  final def withData[T <: StanType, V](
     decl: StanDataDeclaration[T],
     data: V
   )(implicit ev: V <:< T#SCALA_TYPE): CompiledModel = {
@@ -53,19 +52,21 @@ case class CompiledModel private[scalastan] (
     }
 
     // Insert the binding.
-    withDecls.copy(dataMapping = withDecls.dataMapping.updated(decl.emit, DataMapping[T](decl, conv)))
+    withDecls.replaceMapping(withDecls.dataMapping.updated(decl.emit, DataMapping[T](decl, conv)))
   }
 
-  def withData[T <: StanType, V](
+  /** Add a binding from a data source. */
+  final def withData[T <: StanType, V](
     value: (StanDataDeclaration[T], V)
   )(implicit ev: V <:< T#SCALA_TYPE): CompiledModel = withData(value._1, value._2)
 
-  def run(
+  /** Run the model and get results. */
+  final def run(
     chains: Int = 1,
     seed: Int = -1,
     cache: Boolean = true,
     method: RunMethod.Method = RunMethod.Sample()
-  )(implicit runner: StanRunner): StanResults = {
+  ): StanResults = {
     require(chains > 0, s"Must run at least one chain")
 
     // Make sure all the necessary data is provided.
@@ -73,7 +74,20 @@ case class CompiledModel private[scalastan] (
       throw new IllegalStateException(s"data not supplied for ${v.name}")
     }
 
-    runner.run(
+    runChecked(chains, seed, cache, method)
+  }
+}
+
+/** A compiled model for CmdStan. */
+protected case class CmdStanCompiledModel private[scalastan] (
+  private[scalastan] val dir: File,
+  private[scalastan] val ss: ScalaStan,
+  protected val dataMapping: Map[String, DataMapping[_]] = Map.empty
+) extends CompiledModel {
+  protected def replaceMapping(newMapping: Map[String, DataMapping[_]]): CmdStanCompiledModel =
+    copy(dataMapping = newMapping)
+  protected def runChecked(chains: Int, seed: Int, cache: Boolean, method: RunMethod.Method): StanResults = {
+    StanRunner.CmdStanRunner.run(
       model = this,
       chains = chains,
       seed = seed,

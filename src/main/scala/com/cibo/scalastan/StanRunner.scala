@@ -1,18 +1,24 @@
 package com.cibo.scalastan
 
-import java.io.{BufferedReader, File, FileReader, InputStreamReader}
+import java.io._
 
 import scala.collection.JavaConverters._
 
-protected trait StanRunner {
+protected trait StanRunner[M <: CompiledModel] {
   def compile(ss: ScalaStan, model: ScalaStan#Model): CompiledModel
-  def run(model: CompiledModel, chains: Int, seed: Int, cache: Boolean, method: RunMethod.Method): StanResults
+  def run(
+    model: M,
+    chains: Int,
+    seed: Int,
+    cache: Boolean,
+    method: RunMethod.Method
+  ): StanResults
 }
 
 protected object StanRunner {
 
   // Use CmdStan to compile and run the model.
-  implicit object CmdStanRunner extends StanRunner {
+  implicit object CmdStanRunner extends StanRunner[CmdStanCompiledModel] {
 
     private val modelExecutable: String = "model"
     private val stanFileName: String = s"$modelExecutable.stan"
@@ -72,7 +78,7 @@ protected object StanRunner {
       }
     }
 
-    def compile(ss: ScalaStan, model: ScalaStan#Model): CompiledModel = {
+    def compile(ss: ScalaStan, model: ScalaStan#Model): CmdStanCompiledModel = {
       val stanDir = findStan
       println(s"found stan in $stanDir")
 
@@ -86,21 +92,29 @@ protected object StanRunner {
         make(dir, stanDir)
       }
 
-      CompiledModel(dir, ss)
+      CmdStanCompiledModel(dir, ss)
     }
 
-    def run(model: CompiledModel, chains: Int, seed: Int, cache: Boolean, method: RunMethod.Method): StanResults = {
+    def run(
+      model: CmdStanCompiledModel,
+      chains: Int,
+      seed: Int,
+      cache: Boolean,
+      method: RunMethod.Method
+    ): StanResults = {
       // Emit the data file.
       val dataFileName = getNextDataFileName
       println(s"writing data to $dataFileName")
-      val runSha = model.emitData(dataFileName)
-      val runHash = runSha.update(method.toString).digest
+      val dataWriter = ShaWriter(new PrintWriter(new File(s"${model.dir}/$dataFileName")))
+      model.emitData(dataWriter)
+      dataWriter.close()
+      val runHash = dataWriter.sha.update(method.toString).digest
 
       val baseSeed = if (seed < 0) (System.currentTimeMillis % Int.MaxValue).toInt else seed
       val results = (0 until chains).par.flatMap { i =>
         val chainSeed = baseSeed + i
         val name = s"$runHash-$seed-$i.csv"
-        val fileName = s"${model.resultsDirectory}/$name"
+        val fileName = s"${model.dir}/$name"
         if (cache && new File(fileName).exists) {
           println(s"Found cached results: $name")
           Some(readIterations(fileName))
@@ -112,7 +126,7 @@ protected object StanRunner {
             "random", s"seed=$chainSeed"
           ) ++ method.arguments
           println("Running " + command.mkString(" "))
-          val pb = new ProcessBuilder(command: _*).directory(model.resultsDirectory).inheritIO()
+          val pb = new ProcessBuilder(command: _*).directory(model.dir).inheritIO()
           val rc = pb.start().waitFor()
           if (rc != 0) {
             println(s"ERROR: model returned $rc")

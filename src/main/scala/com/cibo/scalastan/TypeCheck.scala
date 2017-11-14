@@ -58,7 +58,7 @@ protected object LeftDivisionAllowed {
 protected sealed class ElementWiseDivisionAllowed[R <: StanType, A <: StanType, B <: StanType] extends TypeCheck
 
 protected object ElementWiseDivisionAllowed {
-  implicit def sameTypeDivision[T <: StanType] = new ElementWiseDivisionAllowed[T, T, T]
+  implicit def sameTypeDivision[T <: StanCompoundType] = new ElementWiseDivisionAllowed[T, T, T]
   implicit def csDivision[C <: StanCompoundType, S <: StanScalarType] = new ElementWiseDivisionAllowed[C, C, S]
   implicit def scDivision[C <: StanCompoundType, S <: StanScalarType] = new ElementWiseDivisionAllowed[C, S, C]
 }
@@ -108,10 +108,31 @@ protected object TransposeAllowed {
   implicit val rowVectorTranspose = new TransposeAllowed[StanVector, StanRowVector]
 }
 
-@implicitNotFound("function only allowed in a GeneratedQuantity")
+@implicitNotFound("only allowed in a GeneratedQuantity")
 protected sealed trait InGeneratedQuantityBlock extends TypeCheck
 
 protected object InGeneratedQuantityBlock extends InGeneratedQuantityBlock
+
+@implicitNotFound("only allowed in a ParameterTransform")
+protected sealed trait InParameterTransform extends TypeCheck
+
+protected object InParameterTransform extends InParameterTransform
+
+@implicitNotFound("assignment not allowed")
+protected sealed class AssignmentAllowed[N <: StanNode] extends TypeCheck
+
+protected object AssignmentAllowed {
+  implicit def paramAssignment[T <: StanType](
+    implicit ev: InParameterTransform
+  ): AssignmentAllowed[StanParameterDeclaration[T]] = new AssignmentAllowed[StanParameterDeclaration[T]]
+
+  implicit def localAssignment[T <: StanType]: AssignmentAllowed[StanLocalDeclaration[T]] =
+    new AssignmentAllowed[StanLocalDeclaration[T]]
+
+  implicit def generatedQuantityAssignment[T <: StanType](
+    implicit ev: InGeneratedQuantityBlock
+  ): AssignmentAllowed[StanParameterDeclaration[T]] = new AssignmentAllowed[StanParameterDeclaration[T]]
+}
 
 @implicitNotFound("continuous type required, got ${T}")
 protected sealed class ContinuousType[T <: StanType] extends TypeCheck

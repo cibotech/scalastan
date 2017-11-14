@@ -88,7 +88,7 @@ trait ScalaStan extends Implicits { stan =>
     quantity.result
   }
 
-  implicit def compile(model: Model)(implicit runner: StanRunner): CompiledModel = model.compile
+  implicit def compile[M <: CompiledModel](model: Model)(implicit runner: StanRunner[M]): CompiledModel = model.compile
 
   trait StanCode extends StanBuiltInFunctions with StanDistributions {
 
@@ -363,6 +363,6 @@ trait ScalaStan extends Implicits { stan =>
       dir
     }
 
-    def compile(implicit runner: StanRunner): CompiledModel = runner.compile(stan, this)
+    def compile[M <: CompiledModel](implicit runner: StanRunner[M]): CompiledModel = runner.compile(stan, this)
   }
 }

@@ -6,7 +6,6 @@ import scala.util.Try
 
 case class StanResults private (
   private val chains: Vector[Vector[Map[String, String]]],
-  private val ss: ScalaStan,
   private val model: CompiledModel
 ) {
 
@@ -284,7 +283,7 @@ case class StanResults private (
     val fieldWidth = 8
 
     // Get a mapping from Stan name to ScalaStan name.
-    val mapping = ss.parameters.map(p => p.emit -> p.name).toMap
+    val mapping = model.ss.parameters.map(p => p.emit -> p.name).toMap
 
     // Build a mapping of name -> chain -> iteration -> value
     val names = chains.head.headOption.map(_.keys).getOrElse(Seq.empty)

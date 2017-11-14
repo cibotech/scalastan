@@ -1,18 +1,17 @@
 package com.cibo.scalastan
 
-import java.io.{BufferedReader, File, FileReader, PrintWriter}
-import scala.collection.JavaConverters._
+import java.io.{File, PrintWriter}
 
 case class CompiledModel private[scalastan] (
   private val dir: File,
-  private val code: ScalaStan,
+  private[scalastan] val ss: ScalaStan,
   private val dataMapping: Map[String, DataMapping[_]] = Map.empty
 ) {
 
-  private def emitData(fileName: String): SHA = {
+  private[scalastan] def emitData(fileName: String): SHA = {
     val dataFile = new File(s"$dir/$fileName")
     val dataWriter = ShaWriter(new PrintWriter(dataFile))
-    code.dataValues.foreach { value =>
+    ss.dataValues.foreach { value =>
       val mapping = dataMapping.getOrElse(value.emit,
         throw new IllegalStateException(s"no data provided for ${value.emit}")
       )
@@ -61,79 +60,25 @@ case class CompiledModel private[scalastan] (
     value: (StanDataDeclaration[T], V)
   )(implicit ev: V <:< T#SCALA_TYPE): CompiledModel = withData(value._1, value._2)
 
-  private def readIterations(fileName: String): Vector[Map[String, String]] = {
-    val reader = new BufferedReader(new FileReader(s"$dir/$fileName"))
-    try {
-      val lines = reader.lines.iterator.asScala.filterNot(_.startsWith("#")).toVector
-      if (lines.nonEmpty) {
-        val header: Seq[String] = lines.head.split(',')
-        lines.tail.map { sample =>
-          header.zip(sample.split(',')).toMap
-        }
-      } else {
-        Vector.empty
-      }
-    } finally {
-      reader.close()
-    }
-  }
-
   def run(
     chains: Int = 1,
     seed: Int = -1,
     cache: Boolean = true,
     method: RunMethod.Method = RunMethod.Sample()
-  ): StanResults = {
+  )(implicit runner: StanRunner): StanResults = {
     require(chains > 0, s"Must run at least one chain")
 
     // Make sure all the necessary data is provided.
-    code.dataValues.filterNot(v => dataMapping.contains(v.emit)).foreach { v =>
+    ss.dataValues.filterNot(v => dataMapping.contains(v.emit)).foreach { v =>
       throw new IllegalStateException(s"data not supplied for ${v.name}")
     }
 
-    // Emit the data file.
-    val dataFileName = CompiledModel.getNextDataFileName
-    println(s"writing data to $dataFileName")
-    val runSha = emitData(dataFileName)
-    val runHash = runSha.update(method.toString).digest
-
-    val baseSeed = if (seed < 0) (System.currentTimeMillis % Int.MaxValue).toInt else seed
-    val results = (0 until chains).par.flatMap { i =>
-      val chainSeed = baseSeed + i
-      val name = s"$runHash-$seed-$i.csv"
-      if (cache && new File(s"$dir/$name").exists) {
-        println(s"Found cached results: $name")
-        Some(readIterations(name))
-      } else {
-        val command = Vector(
-          "./model",
-          "data", s"file=$dataFileName",
-          "output", s"file=$name",
-          "random", s"seed=$chainSeed"
-        ) ++ method.arguments
-        println("Running " + command.mkString(" "))
-        val pb = new ProcessBuilder(command: _*).directory(dir).inheritIO()
-        val rc = pb.start().waitFor()
-        if (rc != 0) {
-          println(s"ERROR: model returned $rc")
-          None
-        } else {
-          Some(readIterations(name))
-        }
-      }
-    }.seq.toVector
-
-    StanResults(results, code, this)
-  }
-}
-
-object CompiledModel {
-  private var dataFileIndex: Int = 0
-
-  private def getNextDataFileName: String = {
-    synchronized {
-      dataFileIndex += 1
-      s"data$dataFileIndex.R"
-    }
+    runner.run(
+      model = this,
+      chains = chains,
+      seed = seed,
+      cache = cache,
+      method = method
+    )
   }
 }

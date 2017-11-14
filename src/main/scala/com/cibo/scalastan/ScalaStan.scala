@@ -5,7 +5,6 @@ import java.nio.file.{Files, Path, Paths}
 
 import scala.language.implicitConversions
 import scala.collection.mutable.ArrayBuffer
-import scala.collection.JavaConverters._
 
 trait ScalaStan extends Implicits { stan =>
 
@@ -89,7 +88,7 @@ trait ScalaStan extends Implicits { stan =>
     quantity.result
   }
 
-  implicit def compile(model: Model): CompiledModel = model.compile
+  implicit def compile(model: Model)(implicit runner: StanRunner): CompiledModel = model.compile
 
   trait StanCode extends StanBuiltInFunctions with StanDistributions {
 
@@ -343,7 +342,7 @@ trait ScalaStan extends Implicits { stan =>
       }
     }
 
-    private def generate: File = {
+    private[scalastan] def generate: File = {
       val str = getCode
       println("code:")
       println(str)
@@ -364,50 +363,6 @@ trait ScalaStan extends Implicits { stan =>
       dir
     }
 
-    private def compile(dir: File): Unit = {
-      val pb = new ProcessBuilder("stanc", stanFileName).directory(dir).inheritIO()
-      val rc = pb.start().waitFor()
-      if (rc != 0) {
-        throw new IllegalStateException(s"stanc returned $rc")
-      }
-    }
-
-    private def build(dir: File, stanDir: String): Unit = {
-      val target = s"$dir/$modelExecutable"
-      val pb = new ProcessBuilder("make", target).directory(new File(stanDir)).inheritIO()
-      val rc = pb.start().waitFor()
-      if (rc != 0) {
-        throw new IllegalStateException(s"make returned $rc")
-      }
-    }
-
-    private def findStan: String = {
-      val pb = new ProcessBuilder("which", "stanc")
-      val process = pb.start()
-      val reader = new BufferedReader(new InputStreamReader(process.getInputStream))
-      val rc = process.waitFor()
-      if (rc != 0) {
-        throw new IllegalStateException("stanc not found")
-      }
-      val stancFile = new File(reader.lines.iterator.asScala.toStream.last).getCanonicalFile
-      stancFile.getParentFile.getParentFile.getAbsolutePath
-    }
-
-    def compile: CompiledModel = {
-      val stanDir = findStan
-      println(s"found stan in $stanDir")
-
-      // Generate the code.
-      val dir = generate
-
-      if (new File(s"${dir.getPath}/$modelExecutable").canExecute) {
-        println("found existing executable")
-      } else {
-        compile(dir)
-        build(dir, stanDir)
-      }
-
-      new CompiledModel(dir, stan)
-    }
+    def compile(implicit runner: StanRunner): CompiledModel = runner.compile(stan, this)
   }
 }

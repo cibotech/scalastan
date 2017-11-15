@@ -3,6 +3,8 @@ package com.cibo.scalastan.models
 import com.cibo.scalastan._
 
 case class Horseshoe(
+  xs: Seq[Seq[Double]],                 // Inputs
+  ys: Seq[Double],                      // Outputs
   p0: Double = 3.0,                     // Prior on the number of important parameters.
   scaleInterceptPrior: Double = 10.0,   // Prior standard deviation for the ntercept.
   nuLocalPrior: Double = 1.0,           // Prior on degrees of freedom for the half-t priors for lambda.
@@ -19,8 +21,8 @@ case class Horseshoe(
   private val n = data(int(lower = 0))    // Number of observations
   private val p = data(int(lower = 0))    // Number of parameters
 
-  val x: StanDataDeclaration[StanMatrix] = data(matrix(n, p))   // Inputs
-  val y: StanDataDeclaration[StanVector] = data(vector(n))      // Outputs
+  private val x: StanDataDeclaration[StanMatrix] = data(matrix(n, p))   // Inputs
+  private val y: StanDataDeclaration[StanVector] = data(vector(n))      // Outputs
 
   // Priors
   private val scaleIntercept = data(real(lower = 0))
@@ -58,7 +60,7 @@ case class Horseshoe(
     result := aux1Local :* sqrt(aux2Local)
   }
 
-  // "Truncated" local schrinkage parameter.
+  // "Truncated" local shrinkage parameter.
   private val lambdaTilde = new ParameterTransform(vector(p, lower = 0)) {
     result := sqrt((c ^ 2) * square(lambda) :/ ((c ^ 2) + (tau ^ 2) * square(lambda)))
   }
@@ -85,19 +87,21 @@ case class Horseshoe(
     y ~ Normal(f, sigma)
   }
 
-  def compile: CompiledModel = model.compile
+  def compile[M <: CompiledModel](implicit runner: StanRunner[M]): CompiledModel = model.compile
     .withData(scaleIntercept, scaleInterceptPrior)
     .withData(nuGlobal, nuGlobalPrior)
     .withData(nuLocal, nuLocalPrior)
     .withData(slabScale, slabScalePrior)
     .withData(slabDf, slabDfPrior)
+    .withData(x, xs)
+    .withData(y, ys)
 
-  def predictions(data: Seq[Seq[Double]], results: StanResults): Seq[Double] = {
+  def predict(data: Seq[Seq[Double]], results: StanResults): Seq[Double] = {
     val bestBeta = results.best(beta)
     val bestOffset = results.best(beta0)
-    data.map { xs =>
-      require(xs.length == bestBeta.length)
-      xs.zip(bestBeta).map { case (v, b) => v * b }.sum + bestOffset
+    data.map { vs =>
+      require(vs.length == bestBeta.length)
+      vs.zip(bestBeta).map { case (v, b) => v * b }.sum + bestOffset
     }
   }
 }

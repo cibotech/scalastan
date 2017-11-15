@@ -27,10 +27,12 @@ case class LinearRegression(
     .withData(x, xs)
     .withData(y, ys)
 
-  def predict(data: Seq[Double], results: StanResults): Double = {
+  def predict(data: Seq[Seq[Double]], results: StanResults): Seq[Double] = {
     val bestBeta0 = results.best(beta0)
     val bestBeta = results.best(beta)
-    require(data.length == bestBeta.length)
-    bestBeta0 + data.zip(bestBeta).map { case (d, b) => d * b }.sum
+    data.map { ds =>
+      require(ds.length == bestBeta.length)
+      bestBeta0 + ds.zip(bestBeta).map { case (d, b) => d * b }.sum
+    }
   }
 }

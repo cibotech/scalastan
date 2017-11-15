@@ -27,7 +27,7 @@ class LinearRegressionSpec extends ScalaStanBaseSpec {
         .set[StanVector](lr.beta, Seq(Seq(2.0)))
         .set[StanReal](lr.beta0, Seq(3.0))
         .run()
-      lr.predict(Seq(4.0), results) shouldBe (3.0 + 2.0 * 4.0)
+      lr.predict(Seq(Seq(4.0)), results) shouldBe Seq(3.0 + 2.0 * 4.0)
     }
   }
 }

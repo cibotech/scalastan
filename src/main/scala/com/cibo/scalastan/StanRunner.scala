@@ -132,7 +132,7 @@ protected object StanRunner {
             println(s"ERROR: model returned $rc")
             None
           } else {
-            Some(readIterations(name))
+            Some(readIterations(fileName))
           }
         }
       }.seq.toVector

@@ -51,14 +51,14 @@ class CsvDataSourceSpec extends ScalaStanBaseSpec {
       val data = "one,two\n1,2\n"
       val src = CsvDataSource.fromString(data)
 
-      src.columns shouldBe Set("one", "two")
+      src.names shouldBe Set("one", "two")
     }
 
     it("returns row counts") {
       val data = "one\n1\n2\n3\n"
       val src = CsvDataSource.fromString(data)
 
-      src.rows shouldBe 3
+      src.dims("one") shouldBe Seq(3)
     }
 
     it("reads matrices") {

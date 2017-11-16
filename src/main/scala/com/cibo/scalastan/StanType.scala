@@ -170,7 +170,10 @@ case class StanInt private[scalastan] (
   private[scalastan] def getDims(data: Int): Seq[Int] = Seq.empty
   private[scalastan] def getData(data: Int): Seq[String] = Seq(data.toString)
   private[scalastan] def parse(name: String, values: Map[String, String]): Int = values(name).toInt
-  private[scalastan] def parse(dims: Seq[Int], values: Seq[String]): Int = values.head.toInt
+  private[scalastan] def parse(dims: Seq[Int], values: Seq[String]): Int = {
+    require(dims.isEmpty, s"int must have a dimensionality of 0, got ${dims.length}")
+    values.head.toInt
+  }
   private[scalastan] def combine(values: Seq[Seq[Int]])(func: Seq[Seq[Double]] => Double): Double =
     func(values.map(_.map(_.toDouble)))
 }
@@ -190,7 +193,10 @@ case class StanCategorical private[scalastan] () extends StanDiscreteType {
   private[scalastan] def getDims(data: String): Seq[Int] = Seq.empty
   private[scalastan] def getData(data: String): Seq[String] = Seq(lookup(data).toString)
   private[scalastan] def parse(name: String, values: Map[String, String]): String = values(name)
-  private[scalastan] def parse(dims: Seq[Int], values: Seq[String]): String = values.head
+  private[scalastan] def parse(dims: Seq[Int], values: Seq[String]): String = {
+    require(dims.isEmpty, s"categorical must have a dimensionality of 0, got ${dims.length}")
+    values.head
+  }
   private[scalastan] def combine(values: Seq[Seq[String]])(func: Seq[Seq[Double]] => Double): Double =
     func(values.map(_.map(v => lookup(v).toDouble)))
 }
@@ -271,7 +277,10 @@ case class StanReal private[scalastan] (
   private[scalastan] def getData(data: Double): Seq[String] = Seq(data.toString)
   private[scalastan] def getDims(data: Double): Seq[Int] = Seq.empty
   private[scalastan] def parse(name: String, values: Map[String, String]): Double = values(name).toDouble
-  private[scalastan] def parse(dims: Seq[Int], values: Seq[String]): Double = values.head.toDouble
+  private[scalastan] def parse(dims: Seq[Int], values: Seq[String]): Double = {
+    require(dims.isEmpty, s"real must have a dimensionality of 0, got ${dims.length}")
+    values.head.toDouble
+  }
   private[scalastan] def combine(values: Seq[Seq[Double]])(func: Seq[Seq[Double]] => Double): Double = func(values)
 }
 
@@ -296,8 +305,10 @@ trait StanVectorLike extends StanVectorOrMatrix {
     }.sortBy(_._1).map(_._2.toDouble)
   }
 
-  private[scalastan] def parse(dims: Seq[Int], values: Seq[String]): Seq[Double] =
+  private[scalastan] def parse(dims: Seq[Int], values: Seq[String]): Seq[Double] = {
+    require(dims.length == 1, s"vector must have dimensionality of 1, got ${dims.length}")
     values.take(dims.head).map(_.toDouble).toVector
+  }
 
   private[scalastan] def combine(values: Seq[Seq[Seq[Double]]])(func: Seq[Seq[Double]] => Double): Seq[Double] = {
     values.map(_.transpose).transpose.map { v =>
@@ -369,6 +380,7 @@ case class StanMatrix private[scalastan] (
   }
 
   private[scalastan] def parse(dims: Seq[Int], values: Seq[String]): Seq[Seq[Double]] = {
+    require(dims.length == 2, s"matrix must have dimensionality of 2, got ${dims.length}")
     val innerSize = dims(1)
     Vector.tabulate[Vector[Double]](dims.head) { i =>
       values.slice(i * innerSize, i * innerSize + innerSize).map(_.toDouble).toVector

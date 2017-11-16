@@ -1,26 +1,9 @@
 package com.cibo.scalastan.data
 
 import java.io.FileReader
-
-import com.cibo.scalastan.{StanDataDeclaration, StanType}
-
 import scala.util.parsing.combinator.JavaTokenParsers
 
 object RDataSource {
-
-  private case class Value(name: String, dims: Vector[Int], values: Vector[String])
-
-  private class RDataSource(values: Seq[Value]) extends DataSource {
-    def read[T <: StanType, R](
-      decl: StanDataDeclaration[T],
-      name: String
-    )(implicit ev: R =:= T#SCALA_TYPE): R = {
-      values.find(_.name == name) match {
-        case Some(value) => decl.typeConstructor.parse(value.dims, value.values).asInstanceOf[R]
-        case None        => throw new IllegalArgumentException(s"$name not found")
-      }
-    }
-  }
 
   private object RDataParser extends JavaTokenParsers {
 
@@ -43,26 +26,26 @@ object RDataSource {
 
     private def assignment: Parser[String] = "<-" | "="
 
-    private def scalarValue: Parser[Value] = label ~ assignment ~ value ^^ { case name ~ _ ~ v =>
-      Value(name, Vector.empty, Vector(v))
+    private def scalarValue: Parser[DataValue] = label ~ assignment ~ value ^^ { case name ~ _ ~ v =>
+      DataValue(name, Vector.empty, Vector(v))
     }
 
-    private def vectorValue: Parser[Value] = label ~ assignment ~ vector ^^ { case name ~ _ ~ vs =>
-      Value(name, Vector(vs.length), vs)
+    private def vectorValue: Parser[DataValue] = label ~ assignment ~ vector ^^ { case name ~ _ ~ vs =>
+      DataValue(name, Vector(vs.length), vs)
     }
 
-    private def structureValue: Parser[Value] = label ~ assignment ~ structure ^^ { case name ~ _ ~ v =>
-      Value(name, v._1, v._2)
+    private def structureValue: Parser[DataValue] = label ~ assignment ~ structure ^^ { case name ~ _ ~ v =>
+      DataValue(name, v._1, v._2)
     }
 
-    private def statement: Parser[Value] =
+    private def statement: Parser[DataValue] =
       (scalarValue | vectorValue | structureValue) ~ opt(";") ^^ { case v ~ _ => v }
 
-    private def statements: Parser[Seq[Value]] = statement.*
+    private def statements: Parser[Seq[DataValue]] = statement.*
 
-    def parse(s: String): ParseResult[Seq[Value]] = parseAll(statements, s)
+    def parse(s: String): ParseResult[Seq[DataValue]] = parseAll(statements, s)
 
-    def parseFile(fileName: String): ParseResult[Seq[Value]] = parseAll(statements, new FileReader(fileName))
+    def parseFile(fileName: String): ParseResult[Seq[DataValue]] = parseAll(statements, new FileReader(fileName))
   }
 
   def fromString(content: String): DataSource = {
@@ -71,7 +54,7 @@ object RDataSource {
       case RDataParser.Error(msg, _)   => throw new IllegalArgumentException(s"error parsing string: $msg")
       case RDataParser.Failure(msg, _) => throw new IllegalArgumentException(s"error parsing string: $msg")
     }
-    new RDataSource(values)
+    DataSource(values)
   }
 
   def fromFile(fileName: String): DataSource = {
@@ -80,6 +63,6 @@ object RDataSource {
       case RDataParser.Error(msg, _)   => throw new IllegalArgumentException(s"error parsing $fileName: $msg")
       case RDataParser.Failure(msg, _) => throw new IllegalArgumentException(s"error parsing $fileName: $msg")
     }
-    new RDataSource(values)
+    DataSource(values)
   }
 }

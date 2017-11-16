@@ -24,7 +24,7 @@ class TextDataSourceSpec extends ScalaStanBaseSpec {
     }
 
     it("parses vector") {
-      val data = "1.5 2.5\n3.5 4.5\n"
+      val data = "1.5 2.5 3.5 4.5\n"
       val src = TextDataSource.fromString(data)
       val n = StanDataDeclaration(StanInt())
       val decl = StanDataDeclaration(StanVector(n))

@@ -63,6 +63,18 @@ trait ScalaStan extends Implicits { stan =>
     upper: Option[StanValue[StanReal]] = None
   ): StanVector = StanVector(dim, lower, upper)
 
+  def simplex(dim: StanValue[StanInt]): StanVector =
+    StanVector(dim, constraint = VectorConstraint.Simplex)
+
+  def unitVector(dim: StanValue[StanInt]): StanVector =
+    StanVector(dim, constraint = VectorConstraint.UnitVector)
+
+  def ordered(dim: StanValue[StanInt]): StanVector =
+    StanVector(dim, constraint = VectorConstraint.Ordered)
+
+  def positiveOrdered(dim: StanValue[StanInt]): StanVector =
+    StanVector(dim, constraint = VectorConstraint.PositiveOrdered)
+
   def rowVector(
     dim: StanValue[StanInt],
     lower: Option[StanValue[StanReal]] = None,
@@ -75,6 +87,22 @@ trait ScalaStan extends Implicits { stan =>
     lower: Option[StanValue[StanReal]] = None,
     upper: Option[StanValue[StanReal]] = None
   ): StanMatrix = StanMatrix(rows, cols, lower, upper)
+
+  def corrMatrix(
+    dim: StanValue[StanInt]
+  ): StanMatrix = StanMatrix(dim, dim, constraint = MatrixConstraint.CorrMatrix)
+
+  def choleskyFactorCorr(
+    dim: StanValue[StanInt]
+  ): StanMatrix = StanMatrix(dim, dim, constraint = MatrixConstraint.CholeskyFactorCorr)
+
+  def covMatrix(
+    dim: StanValue[StanInt]
+  ): StanMatrix = StanMatrix(dim, dim, constraint = MatrixConstraint.CovMatrix)
+
+  def choleskyFactorCov(
+    dim: StanValue[StanInt]
+  ): StanMatrix = StanMatrix(dim, dim, constraint = MatrixConstraint.CholeskyFactorCov)
 
   implicit def dataTransform2Value[T <: StanType](transform: DataTransform[T]): StanLocalDeclaration[T] = {
     transform.result

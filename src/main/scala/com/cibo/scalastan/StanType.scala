@@ -317,13 +317,23 @@ trait StanVectorLike extends StanVectorOrMatrix {
   }
 }
 
+sealed abstract class VectorConstraint(val name: String)
+object VectorConstraint {
+  case object Default extends VectorConstraint("vector")
+  case object Simplex extends VectorConstraint("simplex")
+  case object UnitVector extends VectorConstraint("unit_vector")
+  case object Ordered extends VectorConstraint("ordered")
+  case object PositiveOrdered extends VectorConstraint("positive_ordered")
+}
+
 case class StanVector private[scalastan] (
   protected val dim: StanValue[StanInt],
   private[scalastan] val lower: Option[StanValue[StanReal]] = None,
-  private[scalastan] val upper: Option[StanValue[StanReal]] = None
+  private[scalastan] val upper: Option[StanValue[StanReal]] = None,
+  private[scalastan] val constraint: VectorConstraint = VectorConstraint.Default
 ) extends StanVectorLike {
   protected type THIS_TYPE = StanVector
-  private[scalastan] def typeName: String = s"vector$emitBounds[${dim.emit}]"
+  private[scalastan] def typeName: String = s"${constraint.name}$emitBounds[${dim.emit}]"
 }
 
 case class StanRowVector private[scalastan] (
@@ -335,11 +345,30 @@ case class StanRowVector private[scalastan] (
   private[scalastan] def typeName: String = s"row_vector$emitBounds[${dim.emit}]"
 }
 
+sealed abstract class MatrixConstraint(val name: String, val dims: Int) {
+  final def emitSizes(rows: StanValue[StanInt], cols: StanValue[StanInt]): String = dims match {
+    case 1 =>
+      require(rows == cols)
+      s"[${rows.emit}]"
+    case 2 => s"[${rows.emit},${cols.emit}]"
+    case _ => throw new IllegalStateException(s"Invalid number of distinct dimensions for matrix: $dims")
+  }
+}
+
+object MatrixConstraint {
+  case object Default extends MatrixConstraint("matrix", 2)
+  case object CorrMatrix extends MatrixConstraint("corr_matrix", 1)
+  case object CholeskyFactorCorr extends MatrixConstraint("cholesky_factor_corr", 1)
+  case object CovMatrix extends MatrixConstraint("cov_matrix", 1)
+  case object CholeskyFactorCov extends MatrixConstraint("cholesky_factor_cov", 1)
+}
+
 case class StanMatrix private[scalastan] (
   private val rows: StanValue[StanInt],
   private val cols: StanValue[StanInt],
   private[scalastan] val lower: Option[StanValue[StanReal]] = None,
-  private[scalastan] val upper: Option[StanValue[StanReal]] = None
+  private[scalastan] val upper: Option[StanValue[StanReal]] = None,
+  private[scalastan] val constraint: MatrixConstraint = MatrixConstraint.Default
 ) extends StanVectorOrMatrix {
   protected type THIS_TYPE = StanMatrix
   private[scalastan] type ELEMENT_TYPE = StanReal
@@ -348,7 +377,7 @@ case class StanMatrix private[scalastan] (
   private[scalastan] type SCALA_TYPE = Seq[Seq[Double]]
   private[scalastan] type SUMMARY_TYPE = Seq[Seq[Double]]
 
-  private[scalastan] def typeName: String = s"matrix$emitBounds[${rows.emit},${cols.emit}]"
+  private[scalastan] def typeName: String = s"${constraint.name}$emitBounds${constraint.emitSizes(rows, cols)}"
   private[scalastan] def getData(data: Seq[Seq[Double]]): Seq[String] = data.transpose.flatMap(_.map(_.toString))
   private[scalastan] def getDims(data: Seq[Seq[Double]]): Seq[Int] = {
     if (data.nonEmpty) {

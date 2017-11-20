@@ -162,14 +162,16 @@ trait Assignable[T <: StanType] { self: StanValue[T] =>
   def apply(slice: ValueRange): SliceOperatorWithAssignment[T, DECL_TYPE] = SliceOperatorWithAssignment(this, slice)
 }
 
-trait Updatable[T <: StanType] { self: StanValue[T] =>
+trait Incrementable[T <: StanType] { self: StanValue[T] =>
   def +=[B <: StanType](right: StanValue[B])(
     implicit ev: AdditionAllowed[T, T, B],
     code: ArrayBuffer[StanNode]
   ): Unit = {
     code += BinaryOperator("+=", this, right, parens = false)
   }
+}
 
+trait Updatable[T <: StanType] extends Incrementable[T] { self: StanValue[T] =>
   def -=[B <: StanType](right: StanValue[B])(
     implicit ev: AdditionAllowed[T, T, B], code: ArrayBuffer[StanNode]
   ): Unit = {
@@ -203,7 +205,7 @@ case class TargetFunction private[scalastan] () extends StanValue[StanReal] {
   private[scalastan] def emit: String = "target()"
 }
 
-case class TargetValue private[scalastan] () extends StanValue[StanReal] with Updatable[StanReal] {
+case class TargetValue private[scalastan] () extends StanValue[StanReal] with Incrementable[StanReal] {
   private[scalastan] def emit: String = "target"
   def apply(): TargetFunction = TargetFunction()
 }

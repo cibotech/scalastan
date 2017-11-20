@@ -76,6 +76,9 @@ case class DataSource private[data] (
     copy(rawSeq = newValues, enumerations = enumerations + (key -> mapping))
   }
 
+  /** Get enumeration string the specified index. */
+  def getEnumeration(key: String, index: Int): String = reverseEnumerations(key)(index)
+
   /** Create indicators (a separate column for each value) for the specified column(s). */
   def createIndicators(keys: String*): DataSource = {
     require(keys.nonEmpty, "Must specify at least one column")

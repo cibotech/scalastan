@@ -93,16 +93,16 @@ case class StanContinuousDistribution[T <: StanType] private[scalastan] (
   protected val name: String,
   protected val args: StanValue[_]*
 ) extends StanDistribution[T] {
-  def lpdf(y: StanValue[T]): StanValue[T] = DistributionFunctionNode(s"${name}_lpdf", y, "|", args)
-  def cdf(y: StanValue[T]): StanValue[T] = DistributionFunctionNode(s"${name}_cdf", y, ",", args)
-  def lcdf(y: StanValue[T]): StanValue[T] = DistributionFunctionNode(s"${name}_lcdf", y, "|", args)
-  def lccdf(y: StanValue[T]): StanValue[T] = DistributionFunctionNode(s"${name}_lccdf", y, "|", args)
+  def lpdf(y: StanValue[T]): StanValue[StanReal] = DistributionFunctionNode(s"${name}_lpdf", y, "|", args)
+  def cdf(y: StanValue[T]): StanValue[StanReal] = DistributionFunctionNode(s"${name}_cdf", y, ",", args)
+  def lcdf(y: StanValue[T]): StanValue[StanReal] = DistributionFunctionNode(s"${name}_lcdf", y, "|", args)
+  def lccdf(y: StanValue[T]): StanValue[StanReal] = DistributionFunctionNode(s"${name}_lccdf", y, "|", args)
 }
 
 abstract class StanDiscreteDistribution[T <: StanType] extends StanDistribution[T] {
-  def lpmf[R <: StanType](
+  def lpmf(
     y: StanValue[T]
-  )(implicit ev: R =:= T#REAL_TYPE): StanValue[R] = DistributionFunctionNode(s"${name}_lpmf", y, "|", args)
+  ): StanValue[StanReal] = DistributionFunctionNode(s"${name}_lpmf", y, "|", args)
 }
 
 case class StanDiscreteDistributionWithoutCdf[T <: StanType] private[scalastan] (
@@ -114,12 +114,9 @@ case class StanDiscreteDistributionWithCdf[T <: StanType] private[scalastan] (
   protected val name: String,
   protected val args: StanValue[_]*
 ) extends StanDiscreteDistribution[T] {
-  def cdf[R <: StanType](y: StanValue[T])(implicit ev: R =:= T#REAL_TYPE): StanValue[R] =
-    DistributionFunctionNode(s"${name}_cdf", y, ",", args)
-  def lcdf[R <: StanType](y: StanValue[T])(implicit ev: R =:= T#REAL_TYPE): StanValue[R] =
-    DistributionFunctionNode(s"${name}_lcdf", y, "|", args)
-  def lccdf[R <: StanType](y: StanValue[T])(implicit ev: R =:= T#REAL_TYPE): StanValue[R] =
-    DistributionFunctionNode(s"${name}_lccdf", y, "|", args)
+  def cdf(y: StanValue[T]): StanValue[StanReal] = DistributionFunctionNode(s"${name}_cdf", y, ",", args)
+  def lcdf(y: StanValue[T]): StanValue[StanReal] = DistributionFunctionNode(s"${name}_lcdf", y, "|", args)
+  def lccdf(y: StanValue[T]): StanValue[StanReal] = DistributionFunctionNode(s"${name}_lccdf", y, "|", args)
 }
 
 // A return (or output) statement.

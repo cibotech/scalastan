@@ -7,7 +7,7 @@ class StanNodeSpec extends ScalaStanBaseSpec with ScalaStan with StanDistributio
   private val v3 = StanLocalDeclaration[StanInt](StanInt())
   private val y = StanLocalDeclaration[StanReal](StanReal())
   private val continuous: StanContinuousDistribution[StanReal] = Normal(v1, v2)
-  private val discreteCdf: StanDiscreteDistribution[StanReal] = Binomial(v3, v2)
+  private val discreteCdf: StanDiscreteDistribution[StanInt] = Binomial(v3, v2)
 
   describe("StanContinuousDistribution") {
     it("generates sample syntax") {

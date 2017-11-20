@@ -185,6 +185,25 @@ protected object IsVectorLikeOrMatrix {
   implicit val isMatrix = new IsVectorLikeOrMatrix[StanMatrix]
 }
 
+@implicitNotFound("${T} not a vector, row vector, or an array of vector or row vector")
+protected sealed class IsVectorLikeOrArrayVectorLike[T <: StanType] extends TypeCheck
+
+protected object IsVectorLikeOrArrayVectorLike {
+  implicit def isVectorLike[T <: StanVectorLike] = new IsVectorLikeOrArrayVectorLike[T]
+  implicit def isArray[T <: StanVectorLike] = new IsVectorLikeOrArrayVectorLike[StanArray[T]]
+}
+
+@implicitNotFound("${T} must be 0 or 1 dimensional")
+protected sealed class Is0or1Dimensional[T <: StanType] extends TypeCheck
+
+protected object Is0or1Dimensional {
+  implicit def isScalar[T <: StanScalarType] = new Is0or1Dimensional[T]
+  implicit def isVectorLike[T <: StanVectorLike] = new Is0or1Dimensional[T]
+  implicit val isIntArray = new Is0or1Dimensional[StanArray[StanInt]]
+  implicit val isRealArray = new Is0or1Dimensional[StanArray[StanReal]]
+  implicit val isCatArray = new Is0or1Dimensional[StanArray[StanCategorical]]
+}
+
 @implicitNotFound("toMatrix not supported for type ${T}")
 protected sealed class ToMatrixAllowed[T <: StanType] extends TypeCheck
 
@@ -208,7 +227,7 @@ protected object ToVectorAllowed {
 }
 
 @implicitNotFound("appendCol not allowed for ${R} = appendCol(${X}, ${Y})")
-protected sealed class AppendColAllowed[X <: StanType, Y <: StanType, R <: StanType]
+protected sealed class AppendColAllowed[X <: StanType, Y <: StanType, R <: StanType] extends TypeCheck
 
 protected object AppendColAllowed {
   implicit val appendColMM = new AppendColAllowed[StanMatrix, StanMatrix, StanMatrix]
@@ -221,7 +240,7 @@ protected object AppendColAllowed {
 }
 
 @implicitNotFound("appendRow not allowed for ${R} = appendCol(${X}, ${Y})")
-protected sealed class AppendRowAllowed[X <: StanType, Y <: StanType, R <: StanType]
+protected sealed class AppendRowAllowed[X <: StanType, Y <: StanType, R <: StanType] extends TypeCheck
 
 protected object AppendRowAllowed {
   implicit val appendRowMM = new AppendRowAllowed[StanMatrix, StanMatrix, StanMatrix]
@@ -232,3 +251,44 @@ protected object AppendRowAllowed {
   implicit val appendRowDV = new AppendRowAllowed[StanReal, StanVector, StanVector]
   implicit val appendRowVD = new AppendRowAllowed[StanVector, StanReal, StanVector]
 }
+
+@implicitNotFound("invalid vectorization")
+protected sealed class Vectorized1[T <: StanType] extends TypeCheck
+
+protected object Vectorized1 {
+  implicit def validVectorization1[T <: StanType: Is0or1Dimensional] = new Vectorized1[T]
+}
+
+@implicitNotFound("invalid vectorization")
+protected sealed class Vectorized2[A <: StanType, B <: StanType]
+
+protected object Vectorized2 {
+  implicit def validVectorization2[
+    A <: StanType: Is0or1Dimensional,
+    B <: StanType: Is0or1Dimensional
+  ] = new Vectorized2[A, B]
+}
+
+@implicitNotFound("invalid vectorization")
+protected sealed class Vectorized3[A <: StanType, B <: StanType, C <: StanType]
+
+protected object Vectorized3 {
+  implicit def validVectorization3[
+    A <: StanType: Is0or1Dimensional,
+    B <: StanType: Is0or1Dimensional,
+    C <: StanType: Is0or1Dimensional
+  ] = new Vectorized3[A, B, C]
+}
+
+@implicitNotFound("invalid vectorization")
+protected sealed class Vectorized4[A <: StanType, B <: StanType, C <: StanType, D <: StanType]
+
+protected object Vectorized4 {
+  implicit def validVectorizationScalar[
+    A <: StanType: Is0or1Dimensional,
+    B <: StanType: Is0or1Dimensional,
+    C <: StanType: Is0or1Dimensional,
+    D <: StanType: Is0or1Dimensional
+  ] = new Vectorized4[A, B, C, D]
+}
+

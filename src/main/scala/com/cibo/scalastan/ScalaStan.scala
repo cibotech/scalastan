@@ -275,38 +275,46 @@ trait ScalaStan extends Implicits { stan =>
     // Log probability function.
     def target: TargetValue = TargetValue()
 
-    private def emit(writer: PrintWriter): Unit = {
+    def emit(writer: PrintWriter): Unit = {
 
-      writer.println("functions {")
-      functions.foreach(f => f.emit(writer))
-      writer.println("}")
+      if (functions.nonEmpty) {
+        writer.println("functions {")
+        functions.foreach(f => f.emit(writer))
+        writer.println("}")
+      }
 
       writer.println("data {")
       emitDeclarations(writer, dataValues)
       writer.println("}")
 
-      writer.println("transformed data {")
-      emitDeclarations(writer, dataTransforms.map(_.result))
-      dataTransforms.foreach(t => t.emitCode(writer))
-      writer.println("}")
+      if (dataTransforms.nonEmpty) {
+        writer.println("transformed data {")
+        emitDeclarations(writer, dataTransforms.map(_.result))
+        dataTransforms.foreach(t => t.emitCode(writer))
+        writer.println("}")
+      }
 
       writer.println("parameters {")
       emitDeclarations(writer, parameterValues)
       writer.println("}")
 
-      writer.println("transformed parameters {")
-      emitDeclarations(writer, parameterTransforms.map(_.result))
-      parameterTransforms.foreach(t => t.emitCode(writer))
-      writer.println("}")
+      if (parameterTransforms.nonEmpty) {
+        writer.println("transformed parameters {")
+        emitDeclarations(writer, parameterTransforms.map(_.result))
+        parameterTransforms.foreach(t => t.emitCode(writer))
+        writer.println("}")
+      }
 
       writer.println("model {")
       emitCode(writer)
       writer.println("}")
 
-      writer.println("generated quantities {")
-      emitDeclarations(writer, generatedQuantities.map(_.result))
-      generatedQuantities.foreach(g => g.emitCode(writer))
-      writer.println("}")
+      if (generatedQuantities.nonEmpty) {
+        writer.println("generated quantities {")
+        emitDeclarations(writer, generatedQuantities.map(_.result))
+        generatedQuantities.foreach(g => g.emitCode(writer))
+        writer.println("}")
+      }
     }
 
     private[scalastan] def getCode: String = {

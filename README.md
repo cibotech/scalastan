@@ -36,7 +36,7 @@ object MyModel extends App with ScalaStan {
   val sigma = parameter(real(lower = 0))
 
   val model = new Model {
-    sigma ~ InvGamma(0.01, 0.01)
+    sigma ~ Cauchy(0, 1)
     y ~ Normal(m * x + b, sigma)
   }
 
@@ -64,6 +64,7 @@ parameters {
   real<lower = 0> sigma;
 }
 model {
+  sigma ~ cauchy(0, 1);
   y ~ normal(m * x + b, sigma);
 }
 ```

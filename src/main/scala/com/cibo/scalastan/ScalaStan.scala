@@ -314,7 +314,13 @@ trait ScalaStan extends Implicits { stan =>
   trait Model extends StanCode {
 
     // Log probability function.
-    def target: TargetValue = TargetValue()
+    final def target: TargetValue = TargetValue()
+
+    final def emit(ps: PrintStream): Unit = {
+      val pw = new PrintWriter(ps)
+      emit(pw)
+      pw.flush()
+    }
 
     def emit(writer: PrintWriter): Unit = {
 
@@ -365,14 +371,14 @@ trait ScalaStan extends Implicits { stan =>
       writer.toString
     }
 
-    private def getBasePath: Path = {
+    private[scalastan] def getBasePath: Path = {
       Option(System.getenv("HOME")) match {
         case Some(home) => Paths.get(home).resolve(".scalastan")
         case None       => Paths.get("/tmp").resolve("scalastan")
       }
     }
 
-    private def cleanOldModels(base: Path, hash: String): Unit = {
+    private[scalastan] def cleanOldModels(base: Path, hash: String): Unit = {
       if (base.toFile.exists) {
         val dirs = base.toFile.listFiles.filter { f =>
           f.isDirectory && f.getName != hash
@@ -411,6 +417,40 @@ trait ScalaStan extends Implicits { stan =>
       dir
     }
 
-    def compile[M <: CompiledModel](implicit runner: StanRunner[M]): CompiledModel = runner.compile(stan, this)
+    final def compile[M <: CompiledModel](implicit runner: StanRunner[M]): CompiledModel = runner.compile(stan, this)
+  }
+
+  private case class BlackBoxModel private (
+    private val model: String
+  ) extends Model {
+
+    override def emit(pw: PrintWriter): Unit = {
+      pw.write(model)
+    }
+
+    override private[scalastan] def generate: File = {
+      val hash = SHA.hash(model)
+      val base = getBasePath
+      cleanOldModels(base, hash)
+      val dir = base.resolve(hash).toFile
+      println(s"writing code to $dir")
+
+      if (!dir.exists || !dir.listFiles().exists(f => f.getName == stanFileName && f.canExecute)) {
+        Files.createDirectories(dir.toPath)
+        val codeFile = new File(s"${dir.getPath}/$stanFileName")
+        val codeWriter = new PrintWriter(codeFile)
+        codeWriter.write(model)
+        codeWriter.close()
+      }
+      dir
+    }
+  }
+
+  object Model {
+    /** Create a model from Stan code. */
+    def loadFromString(model: String): Model = BlackBoxModel(model)
+
+    /** Create a model from a Stan file. */
+    def loadFromFile(path: String): Model = BlackBoxModel(scala.io.Source.fromFile(path).getLines.mkString("\n"))
   }
 }

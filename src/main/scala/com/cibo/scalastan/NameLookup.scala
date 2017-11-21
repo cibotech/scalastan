@@ -32,8 +32,7 @@ protected trait NameLookup {
   // A cleaned name to use in the generated Stan code.
   // This needs to be unique and valid.
   protected lazy val _internalName: String = _userName.map { un =>
-    val cleanedName = un.filter(c => validCharacters.contains(c))
-    s"${defaultName}_$cleanedName"
+    un.filter(c => validCharacters.contains(c))
   }.getOrElse(defaultName)
 }
 

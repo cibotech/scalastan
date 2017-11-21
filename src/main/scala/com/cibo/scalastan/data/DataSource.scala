@@ -124,22 +124,16 @@ case class DataSource private[data] (
   }
 
   /** Read the specified data declaration using the named data value. */
-  def read[T <: StanType, R](
-    decl: StanDataDeclaration[T],
-    name: String = ""
-  )(implicit ev: R =:= T#SCALA_TYPE): R = {
+  def read[T <: StanType](decl: StanDataDeclaration[T], name: String = ""): T#SCALA_TYPE = {
     raw.get(name) match {
-      case Some(value) => decl.typeConstructor.parse(value.dims, value.values).asInstanceOf[R]
+      case Some(value) => decl.typeConstructor.parse(value.dims, value.values)
       case None        => throw new IllegalArgumentException(s"$name not found")
     }
   }
 
   /** Read the specified data declaration using the named data value. */
-  def apply[T <: StanType, R](
-    decl: StanDataDeclaration[T],
-    name: String = ""
-  )(implicit ev: R =:= T#SCALA_TYPE): (StanDataDeclaration[T], R) = {
-    (decl, read[T, R](decl, name))
+  def apply[T <: StanType](decl: StanDataDeclaration[T], name: String = ""): (StanDataDeclaration[T], T#SCALA_TYPE) = {
+    (decl, read[T](decl, name))
   }
 
   /** Set a value. */

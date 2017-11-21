@@ -99,33 +99,29 @@ abstract class StanValue[T <: StanType] extends StanNode with Implicits {
 }
 
 trait ReadOnlyIndex[T <: StanType] { self: StanValue[T] =>
-  def apply[N <: StanType](
-    index: StanValue[StanInt]
-  )(implicit ev: N =:= T#NEXT_TYPE): IndexOperator[T, N] = {
-    IndexOperator(this, index)
-  }
+  def apply(index: StanValue[StanInt]): IndexOperator[T, T#NEXT_TYPE] = IndexOperator(this, index)
 
-  def apply[N <: StanType](
+  def apply(
     index1: StanValue[StanInt],
     index2: StanValue[StanInt]
-  )(implicit ev: N =:= T#NEXT_TYPE#NEXT_TYPE): IndexOperator[T, N] = {
+  ): IndexOperator[T, T#NEXT_TYPE#NEXT_TYPE] = {
     IndexOperator(this, index1, index2)
   }
 
-  def apply[N <: StanType](
+  def apply(
     index1: StanValue[StanInt],
     index2: StanValue[StanInt],
     index3: StanValue[StanInt]
-  )(implicit ev: N =:= T#NEXT_TYPE#NEXT_TYPE#NEXT_TYPE): IndexOperator[T, N] = {
+  ): IndexOperator[T, T#NEXT_TYPE#NEXT_TYPE#NEXT_TYPE] = {
     IndexOperator(this, index1, index2, index3)
   }
 
-  def apply[N <: StanType](
+  def apply(
     index1: StanValue[StanInt],
     index2: StanValue[StanInt],
     index3: StanValue[StanInt],
     index4: StanValue[StanInt]
-  )(implicit ev: N =:= T#NEXT_TYPE#NEXT_TYPE#NEXT_TYPE#NEXT_TYPE): IndexOperator[T, N] = {
+  ): IndexOperator[T, T#NEXT_TYPE#NEXT_TYPE#NEXT_TYPE#NEXT_TYPE] = {
     IndexOperator(this, index1, index2, index3, index4)
   }
 
@@ -139,33 +135,33 @@ trait Assignable[T <: StanType] { self: StanValue[T] =>
     code += BinaryOperator[T, T, T]("=", this, right, parens = false)
   }
 
-  def apply[N <: StanType](
+  def apply(
     index: StanValue[StanInt]
-  )(implicit ev: N =:= T#NEXT_TYPE): IndexOperatorWithAssignment[T, N, DECL_TYPE] = {
+  ): IndexOperatorWithAssignment[T, T#NEXT_TYPE, DECL_TYPE] = {
     IndexOperatorWithAssignment(this, index)
   }
 
-  def apply[N <: StanType](
+  def apply(
     index1: StanValue[StanInt],
     index2: StanValue[StanInt]
-  )(implicit ev: N =:= T#NEXT_TYPE#NEXT_TYPE): IndexOperatorWithAssignment[T, N, DECL_TYPE] = {
+  ): IndexOperatorWithAssignment[T, T#NEXT_TYPE#NEXT_TYPE, DECL_TYPE] = {
     IndexOperatorWithAssignment(this, index1, index2)
   }
 
-  def apply[N <: StanType](
+  def apply(
     index1: StanValue[StanInt],
     index2: StanValue[StanInt],
     index3: StanValue[StanInt]
-  )(implicit ev: N =:= T#NEXT_TYPE#NEXT_TYPE#NEXT_TYPE): IndexOperatorWithAssignment[T, N, DECL_TYPE] = {
+  ): IndexOperatorWithAssignment[T, T#NEXT_TYPE#NEXT_TYPE#NEXT_TYPE, DECL_TYPE] = {
     IndexOperatorWithAssignment(this, index1, index2, index3)
   }
 
-  def apply[N <: StanType](
+  def apply(
     index1: StanValue[StanInt],
     index2: StanValue[StanInt],
     index3: StanValue[StanInt],
     index4: StanValue[StanInt]
-  )(implicit ev: N =:= T#NEXT_TYPE#NEXT_TYPE#NEXT_TYPE#NEXT_TYPE): IndexOperatorWithAssignment[T, N, DECL_TYPE] = {
+  ): IndexOperatorWithAssignment[T, T#NEXT_TYPE#NEXT_TYPE#NEXT_TYPE#NEXT_TYPE, DECL_TYPE] = {
     IndexOperatorWithAssignment(this, index1, index2, index3, index4)
   }
 

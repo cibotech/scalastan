@@ -191,22 +191,14 @@ protected trait StanBuiltInFunctions {
   def log1mInvLogit[T <: StanType](x: StanValue[T]): StanValue[T] = FunctionNode("log1m_inv_logit", x)
 
   // Array reductions (41.1).
-  def min[T <: StanCompoundType, E <: StanType](x: StanValue[T])(implicit ev: T#ELEMENT_TYPE =:= E): StanValue[E] =
-    FunctionNode("min", x)
-  def max[T <: StanCompoundType, E <: StanType](x: StanValue[T])(implicit ev: T#ELEMENT_TYPE =:= E): StanValue[E] =
-    FunctionNode("max", x)
-  def sum[T <: StanCompoundType, E <: StanType](x: StanValue[T])(implicit ev: T#ELEMENT_TYPE =:= E): StanValue[E] =
-    FunctionNode("sum", x)
-  def prod[T <: StanCompoundType, E <: StanType](x: StanValue[T])(implicit ev: T#ELEMENT_TYPE =:= E): StanValue[E] =
-    FunctionNode("prod", x)
-  def logSumExp[T <: StanCompoundType, E <: StanType](x: StanValue[T])(implicit ev: T#ELEMENT_TYPE =:= E): StanValue[E] =
-    FunctionNode("log_sum_exp", x)
-  def mean[T <: StanCompoundType, E <: StanType](x: StanValue[T])(implicit ev: T#ELEMENT_TYPE =:= E): StanValue[E] =
-    FunctionNode("mean", x)
-  def variance[T <: StanCompoundType, E <: StanType](x: StanValue[T])(implicit ev: T#ELEMENT_TYPE =:= E): StanValue[E] =
-    FunctionNode("variance", x)
-  def sd[T <: StanCompoundType, E <: StanType](x: StanValue[T])(implicit ev: T#ELEMENT_TYPE =:= E): StanValue[E] =
-    FunctionNode("sd", x)
+  def min[T <: StanCompoundType](x: StanValue[T]): StanValue[T#ELEMENT_TYPE] = FunctionNode("min", x)
+  def max[T <: StanCompoundType](x: StanValue[T]): StanValue[T#ELEMENT_TYPE] = FunctionNode("max", x)
+  def sum[T <: StanCompoundType](x: StanValue[T]): StanValue[T#ELEMENT_TYPE] = FunctionNode("sum", x)
+  def prod[T <: StanCompoundType](x: StanValue[T]): StanValue[T#ELEMENT_TYPE] = FunctionNode("prod", x)
+  def logSumExp[T <: StanCompoundType](x: StanValue[T]): StanValue[T#ELEMENT_TYPE] = FunctionNode("log_sum_exp", x)
+  def mean[T <: StanCompoundType](x: StanValue[T]): StanValue[T#ELEMENT_TYPE] = FunctionNode("mean", x)
+  def variance[T <: StanCompoundType](x: StanValue[T]): StanValue[T#ELEMENT_TYPE] = FunctionNode("variance", x)
+  def sd[T <: StanCompoundType](x: StanValue[T]): StanValue[T#ELEMENT_TYPE] = FunctionNode("sd", x)
   def distance[A <: StanType, B <: StanType](
     x: StanValue[A], y: StanValue[B]
   )(implicit ev: DistanceAllowed[A, B]): StanValue[StanReal] = FunctionNode("distance", x, y)

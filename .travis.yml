@@ -19,4 +19,4 @@ cache:
   - $HOME/.sbt/boot/
 
 script:
-  - sbt test
+  - sbt ++$TRAVIS_SCALA_VERSION test

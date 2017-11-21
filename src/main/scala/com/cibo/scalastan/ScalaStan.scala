@@ -18,6 +18,9 @@ import scala.collection.mutable.ArrayBuffer
 
 trait ScalaStan extends Implicits { stan =>
 
+  // Maximum number of models to cache.
+  protected val maxCacheSize: Int = 100
+
   private val modelExecutable: String = "model"
   private val stanFileName: String = s"$modelExecutable.stan"
 
@@ -370,7 +373,6 @@ trait ScalaStan extends Implicits { stan =>
     }
 
     private def cleanOldModels(base: Path, hash: String): Unit = {
-      val maxCacheSize = 100
       if (base.toFile.exists) {
         val dirs = base.toFile.listFiles.filter { f =>
           f.isDirectory && f.getName != hash

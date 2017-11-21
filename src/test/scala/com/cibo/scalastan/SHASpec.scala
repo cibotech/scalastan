@@ -11,11 +11,21 @@ class SHASpec extends ScalaStanBaseSpec {
   }
 
   describe("ShaWriter") {
-    it("returns the expected result") {
+    it("returns the expected result after close") {
       val sw = new StringWriter()
       val shaWriter = ShaWriter(sw)
-      shaWriter.println("test")
+      shaWriter.write("test\n")
       shaWriter.close()
+
+      sw.toString shouldBe "test\n"
+      shaWriter.sha.digest shouldBe "4e1243bd22c66e76c2ba9eddc1f91394e57f9f83"
+    }
+
+    it("returns the expected result after flush") {
+      val sw = new StringWriter()
+      val shaWriter = ShaWriter(sw)
+      shaWriter.write("test\n")
+      shaWriter.flush()
 
       sw.toString shouldBe "test\n"
       shaWriter.sha.digest shouldBe "4e1243bd22c66e76c2ba9eddc1f91394e57f9f83"

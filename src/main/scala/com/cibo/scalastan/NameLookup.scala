@@ -26,7 +26,7 @@ protected trait NameLookup {
   // A user-facing name to use for this identifier.
   lazy val name: String = _userName.getOrElse(defaultName)
 
-  // A list of valid characters tot place in the generated Stan.
+  // A list of valid characters to place in the generated Stan.
   private val validCharacters: Set[Char] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_0123456789".toSet
 
   // A cleaned name to use in the generated Stan code.

@@ -82,6 +82,38 @@ class StanTypeSpec extends ScalaStanBaseSpec {
     }
   }
 
+  describe("simplexes") {
+    it("emits the right declaration") {
+      val n = StanParameterDeclaration(StanInt())
+      val v = StanVector(n, constraint = VectorConstraint.Simplex)
+      v.emitDeclaration("vec") should fullyMatch regex "simplex\\[.+\\] vec"
+    }
+  }
+
+  describe("unit_vectors") {
+    it("emits the right declaration") {
+      val n = StanParameterDeclaration(StanInt())
+      val v = StanVector(n, constraint = VectorConstraint.UnitVector)
+      v.emitDeclaration("vec") should fullyMatch regex "unit_vector\\[.+\\] vec"
+    }
+  }
+
+  describe("ordered vectors") {
+    it("emits the right declaration") {
+      val n = StanParameterDeclaration(StanInt())
+      val v = StanVector(n, constraint = VectorConstraint.Ordered)
+      v.emitDeclaration("vec") should fullyMatch regex "ordered\\[.+\\] vec"
+    }
+  }
+
+  describe("positive_ordered vectors") {
+    it("emits the right declaration") {
+      val n = StanParameterDeclaration(StanInt())
+      val v = StanVector(n, constraint = VectorConstraint.PositiveOrdered)
+      v.emitDeclaration("vec") should fullyMatch regex "positive_ordered\\[.+\\] vec"
+    }
+  }
+
   describe("row vectors") {
     it("emits the right data") {
       val n = StanParameterDeclaration(StanInt())
@@ -129,6 +161,42 @@ class StanTypeSpec extends ScalaStanBaseSpec {
       val m = StanMatrix(rows, cols, lower = 1.5)
 
       m.emitDeclaration("m") should fullyMatch regex "matrix<lower=1.5>\\[.+,.+\\] m"
+    }
+  }
+
+  describe("correlation matrices") {
+    it("emits the right declaration") {
+      val rows = StanParameterDeclaration(StanInt())
+      val m = StanMatrix(rows, rows, constraint = MatrixConstraint.CorrMatrix)
+
+      m.emitDeclaration("m") should fullyMatch regex "corr_matrix\\[.+\\] m"
+    }
+  }
+
+  describe("cholesky_factor_corr matrices") {
+    it("emits the right declaration") {
+      val rows = StanParameterDeclaration(StanInt())
+      val m = StanMatrix(rows, rows, constraint = MatrixConstraint.CholeskyFactorCorr)
+
+      m.emitDeclaration("m") should fullyMatch regex "cholesky_factor_corr\\[.+\\] m"
+    }
+  }
+
+  describe("cov_matrices") {
+    it("emits the right declaration") {
+      val rows = StanParameterDeclaration(StanInt())
+      val m = StanMatrix(rows, rows, constraint = MatrixConstraint.CovMatrix)
+
+      m.emitDeclaration("m") should fullyMatch regex "cov_matrix\\[.+\\] m"
+    }
+  }
+
+  describe("cholesky_factor_cov matrices") {
+    it("emits the right declaration") {
+      val rows = StanParameterDeclaration(StanInt())
+      val m = StanMatrix(rows, rows, constraint = MatrixConstraint.CholeskyFactorCov)
+
+      m.emitDeclaration("m") should fullyMatch regex "cholesky_factor_cov\\[.+\\] m"
     }
   }
 

@@ -11,8 +11,8 @@ class LinearRegressionSpec extends ScalaStanBaseSpec {
 
     it("generates the model") {
       val model = lr.compile
-      model.isInstanceOf[MockStanCompiledModel] shouldBe true
-      check(model.asInstanceOf[MockStanCompiledModel].code,
+      model.isInstanceOf[MockCompiledModel] shouldBe true
+      check(model.asInstanceOf[MockCompiledModel].code,
         """
            model {
              v#_sigma ~ inv_gamma(0.01,0.01);
@@ -23,7 +23,7 @@ class LinearRegressionSpec extends ScalaStanBaseSpec {
     }
 
     it("generates predictions") {
-      val results = lr.compile.asInstanceOf[MockStanCompiledModel]
+      val results = lr.compile.asInstanceOf[MockCompiledModel]
         .set[StanVector](lr.beta, Seq(Seq(2.0)))
         .set[StanReal](lr.beta0, Seq(3.0))
         .run()

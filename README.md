@@ -332,3 +332,31 @@ The results object also has a `summary` method to output a summary of results li
 ```scala
 results.summary(System.out)
 ```
+
+External Stan Code
+------------------
+It is possible to use ScalaStan to generate regular Stan code using the `emit` function on the model.
+For example:
+```scala
+    val myModel = new Model {
+      // ...
+    }
+    val writer = new java.io.PrintWriter("myModel.stan")
+    myModel.emit(writer)
+    writer.close()
+```
+
+It is also possible to use ScalaStan to run existing Stan models.  To use an existing model, the data
+and parameters must be set up in ScalaStan, then the `loadFromFile` (or `loadFromString`) method on
+`Model` can be used to load the model.  Once loaded, the model can be used just as a model implemented
+directly in ScalaStan. For example:
+```scala
+    val n = data(int(lower = 0))
+    val x = data(vector(n))
+    val mu = parameter(real())
+    val sigma = parameter(real(lower = 0))
+
+    val model = Model.loadFromFile("normal.stan")
+
+    // ...
+```

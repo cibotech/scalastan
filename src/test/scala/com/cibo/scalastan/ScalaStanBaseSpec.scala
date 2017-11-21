@@ -4,7 +4,7 @@ import org.scalatest.{FunSpec, Matchers}
 
 trait ScalaStanBaseSpec extends FunSpec with Matchers {
 
-  case class MockStanCompiledModel(
+  case class MockCompiledModel(
     private[scalastan] val ss: ScalaStan,
     private[scalastan] val code: String,
     private[scalastan] val data: Vector[Map[String, String]] = Vector.empty,
@@ -21,7 +21,7 @@ trait ScalaStanBaseSpec extends FunSpec with Matchers {
       }
     }
 
-    def set[T <: StanType](decl: StanParameterDeclaration[T], values: Seq[T#SCALA_TYPE]): MockStanCompiledModel = {
+    def set[T <: StanType](decl: StanParameterDeclaration[T], values: Seq[T#SCALA_TYPE]): MockCompiledModel = {
       require(data.isEmpty || data.length == values.length)
       val dataBefore = if (data.isEmpty) values.map(_ => Map[String, String]("lp__" -> "1")) else data
       val prefix = decl.emit
@@ -32,16 +32,16 @@ trait ScalaStanBaseSpec extends FunSpec with Matchers {
     protected def replaceMapping(newMapping: Map[String, DataMapping[_]]): CompiledModel =
       copy(dataMapping = newMapping)
     protected def runChecked(chains: Int, seed: Int, cache: Boolean, method: RunMethod.Method): StanResults =
-      MockStanRunner.run(this, chains, seed, cache, method)
+      MockRunner.run(this, chains, seed, cache, method)
   }
 
-  implicit object MockStanRunner extends StanRunner[MockStanCompiledModel] {
-    def compile(ss: ScalaStan, model: ScalaStan#Model): CompiledModel = MockStanCompiledModel(
+  implicit object MockRunner extends StanRunner[MockCompiledModel] {
+    def compile(ss: ScalaStan, model: ScalaStan#Model): CompiledModel = MockCompiledModel(
       ss = ss,
       code = model.getCode
     )
     def run(
-      model: MockStanCompiledModel,
+      model: MockCompiledModel,
       chains: Int,
       seed: Int,
       cache: Boolean,

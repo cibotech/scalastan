@@ -79,17 +79,6 @@ case class StanResults private (
     implicit ev: R =:= T#SUMMARY_TYPE
   ): R = combine(decl)(vs => func(vs.flatten))
 
-  private class Cache {
-    private val cache = scala.collection.mutable.Map[String, Double]()
-    def get(key: String, func: Seq[Double] => Double, values: Seq[Double]): Double = {
-      if (key.nonEmpty) {
-        cache.getOrElseUpdate(key, func(values))
-      } else {
-        func(values)
-      }
-    }
-  }
-
   private def meanAndVariance(values: Seq[Double]): (Double, Double) = {
     var n = 0.0
     var m1 = 0.0

@@ -1,7 +1,6 @@
 package com.cibo.scalastan.models
 
 import com.cibo.scalastan.{ScalaStanBaseSpec, StanMatrix, StanReal, StanVector}
-import org.scalatest.FunSuite
 
 class ARkRegressionSpec extends ScalaStanBaseSpec {
   describe("ARkRegression") {

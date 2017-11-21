@@ -1,6 +1,6 @@
 package com.cibo.scalastan.models
 
-import com.cibo.scalastan.{ScalaStanBaseSpec, StanReal, StanResults, StanVector}
+import com.cibo.scalastan.{ScalaStanBaseSpec, StanReal, StanVector}
 
 class LinearRegressionSpec extends ScalaStanBaseSpec {
   describe("LinearRegression") {

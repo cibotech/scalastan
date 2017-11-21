@@ -44,8 +44,6 @@ private case class ShaWriter(writer: Writer) extends Writer {
   override def flush(): Unit = writer.flush()
 
   override def close(): Unit = writer.close()
-
-  def println(str: String): Unit = write(s"$str\n")
 }
 
 private object SHA {

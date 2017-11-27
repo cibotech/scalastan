@@ -38,6 +38,13 @@ class StanNodeSpec extends ScalaStanBaseSpec with ScalaStan with StanDistributio
       checkCode(model, "model { y ~ normal(v1,v2) T[v1,v2]; }")
     }
 
+    it("generates sample syntax with an expression on the LHS") {
+      val model = new Model {
+        log(y) ~ continuous
+      }
+      checkCode(model, "model { log(y) ~ normal(v1,v2); }")
+    }
+
     it("generates lpdf syntax") {
       val model = new Model {
         target += continuous.lpdf(y)

@@ -17,6 +17,27 @@ class StanNodeSpec extends ScalaStanBaseSpec with ScalaStan with StanDistributio
       checkCode(model, "model { y ~ normal(v1,v2); }")
     }
 
+    it("generates sample syntax with lower bound") {
+      val model = new Model {
+        y ~ continuous.truncate(v2)
+      }
+      checkCode(model, "model { y ~ normal(v1,v2) T[v2,]; }")
+    }
+
+    it("generates sample syntax with upper bound") {
+      val model = new Model {
+        y ~ continuous.truncate(upper = v2)
+      }
+      checkCode(model, "model { y ~ normal(v1,v2) T[,v2]; }")
+    }
+
+    it("generates sample syntax with upper and lower bounds") {
+      val model = new Model {
+        y ~ continuous.truncate(v1, v2)
+      }
+      checkCode(model, "model { y ~ normal(v1,v2) T[v1,v2]; }")
+    }
+
     it("generates lpdf syntax") {
       val model = new Model {
         target += continuous.lpdf(y)

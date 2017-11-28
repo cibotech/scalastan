@@ -16,7 +16,7 @@ import java.nio.file.{Files, Path, Paths}
 import scala.language.implicitConversions
 import scala.collection.mutable.ArrayBuffer
 
-trait ScalaStan extends Implicits { stan =>
+trait ScalaStan extends Implicits with StanFunctions with StanDistributions { stan =>
 
   // Maximum number of models to cache.
   protected val maxCacheSize: Int = 100
@@ -131,7 +131,7 @@ trait ScalaStan extends Implicits { stan =>
 
   implicit def compile[M <: CompiledModel](model: Model)(implicit runner: StanRunner[M]): CompiledModel = model.compile
 
-  trait StanCode extends StanBuiltInFunctions with StanDistributions {
+  trait StanCode {
 
     protected implicit val _codeBuffer: ArrayBuffer[StanNode] = ArrayBuffer[StanNode]()
 

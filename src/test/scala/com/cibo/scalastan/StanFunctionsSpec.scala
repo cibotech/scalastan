@@ -1,6 +1,6 @@
 package com.cibo.scalastan
 
-class StanBuiltInFunctionsSpec extends ScalaStanBaseSpec {
+class StanFunctionsSpec extends ScalaStanBaseSpec {
   describe("built-in functions") {
     it("generates reject") {
       new ScalaStan {

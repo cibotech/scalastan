@@ -132,10 +132,12 @@ trait ReadOnlyIndex[T <: StanType] { self: StanValue[T] =>
 }
 
 trait Assignable[T <: StanType] { self: StanValue[T] =>
-  def :=(right: StanValue[T])(
-    implicit code: ArrayBuffer[StanNode], ev: AssignmentAllowed[DECL_TYPE]
+  def :=[R <: StanType](right: StanValue[R])(
+    implicit code: ArrayBuffer[StanNode],
+    ev1: AssignmentAllowed[DECL_TYPE],
+    ev2: CanConvert[R, T]
   ): Unit = {
-    code += BinaryOperator[T, T, T]("=", this, right, parens = false)
+    code += BinaryOperator[T, T, R]("=", this, right, parens = false)
   }
 
   def apply(

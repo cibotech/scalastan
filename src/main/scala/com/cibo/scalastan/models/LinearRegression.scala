@@ -29,7 +29,7 @@ case class LinearRegression(
   val sigma: StanParameterDeclaration[StanReal] = parameter(real(lower = 0))    // Error
 
   private val model = new Model {
-    sigma ~ InvGamma(0.01, 0.01)
+    sigma ~ Cauchy(0, 1)
     y ~ Normal(x * beta + beta0, sigma)
   }
 

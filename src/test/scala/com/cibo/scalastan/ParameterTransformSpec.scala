@@ -8,7 +8,7 @@ class ParameterTransformSpec extends ScalaStanBaseSpec {
           result := 1
         }
         val model = new Model {}
-        checkCode(model, "transformed parameters { real v#; v# = 1.0; }")
+        checkCode(model, "transformed parameters { real v#; v# = 1; }")
       }
     }
 
@@ -25,7 +25,7 @@ class ParameterTransformSpec extends ScalaStanBaseSpec {
     it("should allow updating the result by index") {
       new ScalaStan {
         new ParameterTransform(vector(2)) {
-          result(1) := 2
+          result(1) := 2.0
         }
         val model = new Model {}
         checkCode(model, "transformed parameters { vector[2] v#; v#[1] = 2.0; }")

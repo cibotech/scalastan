@@ -8,7 +8,7 @@ class GeneratedQuantitySpec extends ScalaStanBaseSpec {
           result := 5
         }
         val model = new Model {}
-        checkCode(model, "generated quantities { real v#; v# = 5.0; }")
+        checkCode(model, "generated quantities { real v#; v# = 5; }")
       }
     }
   }

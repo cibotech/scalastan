@@ -12,7 +12,7 @@ package com.cibo.scalastan
 
 import scala.collection.mutable.ArrayBuffer
 
-protected trait StanBuiltInFunctions {
+protected trait StanFunctions {
 
   // Reject (5.10).
   def reject(args: StanValue[_]*)(implicit code: ArrayBuffer[StanNode]): Unit = {

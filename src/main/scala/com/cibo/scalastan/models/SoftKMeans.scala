@@ -7,6 +7,9 @@ case class SoftKMeans(
   observations: Seq[Seq[Double]]  // Observations
 ) extends ScalaStan {
 
+  // Soft K-Means
+  // from "Stan Modeling Language: User's Guide and Reference Manual" version 2.16.0.
+
   private val n = data(int(lower = 0))    // Number of data points
   private val d = data(int(lower = 1))    // Number of dimensions
   private val k = data(int(lower = 1))    // Number of clusters

@@ -208,7 +208,7 @@ protected trait StanBuiltInFunctions {
 
   // Array size and dimension function (41.2).
   def dims[T <: StanType](x: StanValue[T]): StanValue[StanArray[StanInt]] = FunctionNode("dims", x)
-  def size[T <: StanCompoundType](x: StanValue[T]): StanValue[StanInt] = FunctionNode("size", x)
+  def size[T <: StanArray[_]](x: StanValue[T]): StanValue[StanInt] = FunctionNode("size", x)
 
   // Array broadcasting (41.3).
   def repArray[T <: StanType](x: StanValue[T], n: StanValue[StanInt]): StanValue[StanArray[T]]

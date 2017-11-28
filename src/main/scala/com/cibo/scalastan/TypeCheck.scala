@@ -301,4 +301,3 @@ protected object Vectorized4 {
     D <: StanType: Is0or1Dimensional
   ] = new Vectorized4[A, B, C, D]
 }
-

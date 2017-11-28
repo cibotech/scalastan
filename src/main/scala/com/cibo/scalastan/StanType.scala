@@ -96,6 +96,10 @@ sealed trait StanType {
       ""
     }
 
+  // Determine if the bounds are all derived from data.
+  final private[scalastan] def isDerivedFromData: Boolean =
+    lower.forall(_.isDerivedFromData) && upper.forall(_.isDerivedFromData) && getIndices.forall(_.isDerivedFromData)
+
   def apply(
     dim: StanValue[StanInt]
   ): StanArray[THIS_TYPE] =

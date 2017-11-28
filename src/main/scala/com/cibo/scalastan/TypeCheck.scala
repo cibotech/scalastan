@@ -148,8 +148,9 @@ protected object AssignmentAllowed {
 protected sealed class CanConvert[FROM <: StanType, TO <: StanType]
 
 protected object CanConvert {
-  implicit def sameType[T <: StanType] = new CanConvert[T, T]
-  implicit val intToReal = new CanConvert[StanInt, StanReal]
+  implicit def compoundType[T <: StanCompoundType] = new CanConvert[T, T]
+  implicit def scalar2real[T <: StanScalarType] = new CanConvert[T, StanReal]
+  implicit val int2int = new CanConvert[StanInt, StanInt]
 }
 
 @implicitNotFound("continuous type required, got ${T}")

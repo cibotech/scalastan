@@ -307,7 +307,7 @@ trait ScalaStan extends Implicits { stan =>
     decls: Seq[StanDeclaration[_]]
   ): Unit = {
     decls.foreach { decl =>
-      writer.println(s"  ${decl.emitDeclaration}; // ${decl.name}")
+      writer.println(s"  ${decl.emitDeclaration};")
     }
   }
 

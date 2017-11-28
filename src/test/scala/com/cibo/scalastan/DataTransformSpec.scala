@@ -8,7 +8,7 @@ class DataTransformSpec extends ScalaStanBaseSpec {
           result := 5
         }
         val model = new Model {}
-        checkCode(model, "transformed data { real v#; // v# v# = 5.0; }")
+        checkCode(model, "transformed data { real v#; v# = 5.0; }")
       }
     }
 

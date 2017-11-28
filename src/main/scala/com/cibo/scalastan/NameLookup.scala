@@ -37,20 +37,38 @@ protected trait NameLookup {
 }
 
 protected object NameLookup {
-  private[scalastan] def lookupName(obj: NameLookup)(implicit ss: ScalaStan): Option[String] = {
-    Try {
-      import scala.reflect.runtime.{universe => ru}
-      val mirror = ru.runtimeMirror(ss.getClass.getClassLoader)
-      val ssMirror = mirror.reflect(ss)
-      ssMirror.symbol.typeSignature.decls.find { decl =>
+  import scala.reflect.runtime.{universe => ru}
+
+  private def findInInstance(obj: NameLookup, mirror: ru.InstanceMirror): Option[String] = {
+    if (mirror.instance.getClass.isSynthetic || mirror.instance.getClass.isPrimitive) {
+      None
+    } else {
+      val scope = mirror.symbol.typeSignature.decls
+      scope.find { decl =>
         if (decl.isMethod && decl.asMethod.isGetter && decl.asMethod.returnType <:< ru.typeOf[NameLookup]) {
-          ssMirror.reflectMethod(decl.asMethod).apply().asInstanceOf[NameLookup]._id == obj._id
+          mirror.reflectMethod(decl.asMethod).apply().asInstanceOf[NameLookup]._id == obj._id
         } else {
           false
         }
+      }.map(_.name.decodedName.toString).orElse {
+        scope.view.filter { decl =>
+          decl.isMethod && decl.asMethod.isGetter
+        }.flatMap { decl =>
+          val method = mirror.reflectMethod(decl.asMethod)
+          val instanceOrNull = method.apply()
+          Option(instanceOrNull).flatMap { instance =>
+            val innerMirror = ru.runtimeMirror(instance.getClass.getClassLoader).reflect(instance)
+            findInInstance(obj, innerMirror)
+          }
+        }.headOption
       }
-    }.toOption.flatten.map { decl =>
-      decl.name.decodedName.toString
     }
+  }
+
+  private[scalastan] def lookupName(obj: NameLookup)(implicit ss: ScalaStan): Option[String] = {
+    val mirror = ru.runtimeMirror(ss.getClass.getClassLoader)
+    val classLoader = ss.getClass.getClassLoader
+    val instanceMirror = mirror.reflect(ss)
+    findInInstance(obj, instanceMirror)
   }
 }

@@ -43,25 +43,27 @@ protected object NameLookup {
     if (mirror.instance.getClass.isSynthetic || mirror.instance.getClass.isPrimitive) {
       None
     } else {
-      val scope = mirror.symbol.typeSignature.decls
-      scope.find { decl =>
-        if (decl.isMethod && decl.asMethod.isGetter && decl.asMethod.returnType <:< ru.typeOf[NameLookup]) {
-          mirror.reflectMethod(decl.asMethod).apply().asInstanceOf[NameLookup]._id == obj._id
-        } else {
-          false
-        }
-      }.map(_.name.decodedName.toString).orElse {
-        scope.view.filter { decl =>
-          decl.isMethod && decl.asMethod.isGetter
-        }.flatMap { decl =>
-          val method = mirror.reflectMethod(decl.asMethod)
-          val instanceOrNull = method.apply()
-          Option(instanceOrNull).flatMap { instance =>
-            val innerMirror = ru.runtimeMirror(instance.getClass.getClassLoader).reflect(instance)
-            findInInstance(obj, innerMirror)
+      Try {
+        val scope = mirror.symbol.typeSignature.decls
+        scope.find { decl =>
+          if (decl.isMethod && decl.asMethod.isGetter && decl.asMethod.returnType <:< ru.typeOf[NameLookup]) {
+            mirror.reflectMethod(decl.asMethod).apply().asInstanceOf[NameLookup]._id == obj._id
+          } else {
+            false
           }
-        }.headOption
-      }
+        }.map(_.name.decodedName.toString).orElse {
+          scope.view.filter { decl =>
+            decl.isMethod && decl.asMethod.isGetter
+          }.flatMap { decl =>
+            val method = mirror.reflectMethod(decl.asMethod)
+            val instanceOrNull = method.apply()
+            Option(instanceOrNull).flatMap { instance =>
+              val innerMirror = ru.runtimeMirror(instance.getClass.getClassLoader).reflect(instance)
+              findInInstance(obj, innerMirror)
+            }
+          }.headOption
+        }
+      }.toOption.flatten
     }
   }
 

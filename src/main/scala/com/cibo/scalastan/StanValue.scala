@@ -18,7 +18,10 @@ abstract class StanValue[T <: StanType] extends StanNode with Implicits {
 
   // The declaration type used to declare this value.
   // This is used to determine if assignment is allowed.
-  type DECL_TYPE <: StanDeclaration[_]
+  private[scalastan] type DECL_TYPE <: StanDeclaration[_]
+
+  // Check if this value is derived from data only.
+  private[scalastan] def isDerivedFromData: Boolean
 
   def unary_-(): StanValue[T] = UnaryOperator("-", this)
 
@@ -201,17 +204,20 @@ case class FunctionNode[T <: StanType] private[scalastan] (
   private val name: String,
   private val args: StanValue[_]*
 ) extends StanValue[T] with ReadOnlyIndex[T] {
-  def emit: String = {
+  private[scalastan] def isDerivedFromData: Boolean = args.forall(_.isDerivedFromData)
+  private[scalastan] def emit: String = {
     val argStr = args.map(_.emit).mkString(",")
     s"$name($argStr)"
   }
 }
 
 case class TargetFunction private[scalastan] () extends StanValue[StanReal] {
+  private[scalastan] def isDerivedFromData: Boolean = false
   private[scalastan] def emit: String = "target()"
 }
 
 case class TargetValue private[scalastan] () extends StanValue[StanReal] with Incrementable[StanReal] {
+  private[scalastan] def isDerivedFromData: Boolean = false
   private[scalastan] def emit: String = "target"
   def apply(): TargetFunction = TargetFunction()
 }
@@ -222,6 +228,7 @@ case class DistributionFunctionNode[T <: StanType, R <: StanType] private[scalas
   private val sep: String,
   private val args: Seq[StanValue[_]]
 ) extends StanValue[R] with ReadOnlyIndex[R] {
+  private[scalastan] def isDerivedFromData: Boolean = false
   private[scalastan] def emit: String = {
     val argStr = args.map(_.emit).mkString(",")
     s"$name(${y.emit} $sep $argStr)"
@@ -232,6 +239,7 @@ case class UnaryOperator[T <: StanType, R <: StanType] private[scalastan] (
   private val symbol: String,
   private val right: StanValue[T]
 ) extends StanValue[R] with ReadOnlyIndex[R] {
+  private[scalastan] def isDerivedFromData: Boolean = right.isDerivedFromData
   private[scalastan] def emit: String = s"$symbol(${right.emit})"
 }
 
@@ -241,6 +249,7 @@ case class BinaryOperator[T <: StanType, L <: StanType, R <: StanType] private[s
   private val right: StanValue[R],
   private val parens: Boolean = true
 ) extends StanValue[T] with ReadOnlyIndex[T] {
+  private[scalastan] def isDerivedFromData: Boolean = left.isDerivedFromData && right.isDerivedFromData
   private[scalastan] def emit: String =
     if (parens) {
       s"(${left.emit}) $symbol (${right.emit})"
@@ -253,6 +262,7 @@ case class IndexOperator[T <: StanType, N <: StanType] private[scalastan] (
   private val value: StanValue[T],
   private val indices: StanValue[StanInt]*
 ) extends StanValue[N] with ReadOnlyIndex[N] {
+  private[scalastan] def isDerivedFromData: Boolean = value.isDerivedFromData && indices.forall(_.isDerivedFromData)
   private[scalastan] def emit: String = value.emit + indices.map(_.emit).mkString("[", ",", "]")
 }
 
@@ -260,6 +270,8 @@ case class SliceOperator[T <: StanType] private[scalastan] (
   private val value: StanValue[T],
   private val slice: ValueRange
 ) extends StanValue[T] with ReadOnlyIndex[T] {
+  private[scalastan] def isDerivedFromData: Boolean =
+    value.isDerivedFromData && slice.start.isDerivedFromData && slice.end.isDerivedFromData
   private[scalastan] def emit: String = s"${value.emit}[${slice.start.emit}:${slice.end.emit}]"
 }
 
@@ -267,7 +279,8 @@ case class IndexOperatorWithAssignment[T <: StanType, N <: StanType, D <: StanDe
   private val value: StanValue[T],
   private val indices: StanValue[StanInt]*
 ) extends StanValue[N] with Assignable[N] {
-  type DECL_TYPE = D
+  private[scalastan] type DECL_TYPE = D
+  private[scalastan] def isDerivedFromData: Boolean = value.isDerivedFromData && indices.forall(_.isDerivedFromData)
   private[scalastan] def emit: String = value.emit + indices.map(_.emit).mkString("[", ",", "]")
 }
 
@@ -275,30 +288,36 @@ case class SliceOperatorWithAssignment[T <: StanType, D <: StanDeclaration[_]] p
   private val value: StanValue[T],
   private val slice: ValueRange
 ) extends StanValue[T] with Assignable[T] {
-  type DECL_TYPE = D
+  private[scalastan] type DECL_TYPE = D
+  private[scalastan] def isDerivedFromData: Boolean =
+    value.isDerivedFromData && slice.start.isDerivedFromData && slice.end.isDerivedFromData
   private[scalastan] def emit: String = s"${value.emit}[${slice.start.emit}:${slice.end.emit}]"
 }
 
 case class TransposeOperator[T <: StanType, R <: StanType] private[scalastan] (
   private val value: StanValue[T]
 ) extends StanValue[R] with ReadOnlyIndex[R] {
+  private[scalastan] def isDerivedFromData: Boolean = value.isDerivedFromData
   private[scalastan] def emit: String = s"(${value.emit})'"
 }
 
 case class StanConstant[T <: StanType] private[scalastan] (
   private val value: T#SCALA_TYPE
 ) extends StanValue[T] with ReadOnlyIndex[T] {
+  private[scalastan] def isDerivedFromData: Boolean = true
   private[scalastan] def emit: String = value.toString
 }
 
 case class StanStringLiteral private[scalastan] (
   private val value: String
 ) extends StanValue[StanString] {
+  private[scalastan] def isDerivedFromData: Boolean = true
   private[scalastan] def emit: String = s""""$value""""
 }
 
 case class LiteralNode private[scalastan] (
   private val value: String
 ) extends StanValue[StanVoid] {
+  private[scalastan] def isDerivedFromData: Boolean = true
   private[scalastan] def emit: String = value.toString
 }

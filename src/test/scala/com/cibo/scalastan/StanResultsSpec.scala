@@ -7,9 +7,10 @@ class StanResultsSpec extends ScalaStanBaseSpec {
   private implicit val ss = new ScalaStan {}
   private val model = CmdStanCompiledModel(new File("."), ss)
 
+  private val n = StanDataDeclaration[StanInt](StanInt())
   private val v1 = StanParameterDeclaration[StanInt](StanInt())
-  private val v2 = StanParameterDeclaration[StanVector](StanVector(v1))
-  private val v3 = StanParameterDeclaration[StanArray[StanVector]](StanArray(v1, StanVector(v1)))
+  private val v2 = StanParameterDeclaration[StanVector](StanVector(n))
+  private val v3 = StanParameterDeclaration[StanArray[StanVector]](StanArray(n, StanVector(n)))
 
   private val testData1 = Map[String, Int](
     "lp__" -> 1,

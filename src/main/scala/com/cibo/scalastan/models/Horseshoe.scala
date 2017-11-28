@@ -16,7 +16,7 @@ case class Horseshoe(
   xs: Seq[Seq[Double]],                 // Inputs
   ys: Seq[Double],                      // Outputs
   p0: Double = 3.0,                     // Prior on the number of important parameters.
-  scaleInterceptPrior: Double = 10.0,   // Prior standard deviation for the ntercept.
+  scaleInterceptPrior: Double = 10.0,   // Prior standard deviation for the intercept.
   nuLocalPrior: Double = 1.0,           // Prior on degrees of freedom for the half-t priors for lambda.
   nuGlobalPrior: Double = 1.0,          // Prior on degrees of freedom for the half-t priors on tau.
   slabScalePrior: Double = 1.0,         // Slabe scale for the regularized horseshoe.

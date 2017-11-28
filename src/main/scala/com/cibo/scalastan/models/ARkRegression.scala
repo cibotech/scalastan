@@ -43,7 +43,7 @@ case class ARkRegression(
 
   private val model = new Model {
 
-    sigma ~ InvGamma(0.01, 0.01)
+    sigma ~ Cauchy(0, 1)
     xbeta ~ Normal(0, priorSigma)
     for (i <- range(1, m)) {
       beta(i) ~ Normal(0, priorSigma)

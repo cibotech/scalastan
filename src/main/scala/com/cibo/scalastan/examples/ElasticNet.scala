@@ -76,7 +76,7 @@ object ElasticNet extends App with ScalaStan {
     lassoLambda: StanDataDeclaration[StanReal]
   ) extends LeastSquaresLike with RidgePenaltyLike with LassoPenaltyLike {
     val betaElasticNet = new GeneratedQuantity(vector(cols(x))) {
-      result := (1 + lassoLambda) * beta
+      result := (1 + ridgeLambda) * beta
     }
   }
 

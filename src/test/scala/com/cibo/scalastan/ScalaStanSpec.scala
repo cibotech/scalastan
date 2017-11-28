@@ -224,7 +224,7 @@ class ScalaStanSpec extends ScalaStanBaseSpec {
             val r = local(vector(local(int())))
             r(5) := 1
           }
-          checkCode(model, "v#[5] = 1.0;")
+          checkCode(model, "v#[5] = 1;")
         }
       }
 
@@ -234,7 +234,7 @@ class ScalaStanSpec extends ScalaStanBaseSpec {
             val r = local(matrix(local(int()), local(int())))
             r(5, 6) := 1
           }
-          checkCode(model, "v#[5,6] = 1.0;")
+          checkCode(model, "v#[5,6] = 1;")
         }
       }
     }

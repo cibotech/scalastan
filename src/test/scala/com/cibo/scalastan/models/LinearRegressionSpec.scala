@@ -15,7 +15,7 @@ class LinearRegressionSpec extends ScalaStanBaseSpec {
       check(model.asInstanceOf[MockCompiledModel].code,
         """
            model {
-             sigma ~ inv_gamma(0.01,0.01);
+             sigma ~ cauchy(0,1);
              y ~ normal(((x) * (beta)) + (beta0),sigma);
            }
         """

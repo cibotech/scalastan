@@ -118,7 +118,7 @@ class StanValueSpec extends ScalaStanBaseSpec {
         val model = new Model {
           local(real()) := 1
         }
-        checkCode(model, "v# = 1.0;")
+        checkCode(model, "v# = 1;")
       }
     }
 
@@ -160,7 +160,7 @@ class StanValueSpec extends ScalaStanBaseSpec {
           val a = local(vector(5))
           a(2) := 2
         }
-        checkCode(model, "vector[5] v#; v#[2] = 2.0;")
+        checkCode(model, "vector[5] v#; v#[2] = 2;")
       }
     }
 
@@ -170,7 +170,7 @@ class StanValueSpec extends ScalaStanBaseSpec {
           val a = local(matrix(5, 6))
           a(2, 3) := 4
         }
-        checkCode(model, "matrix[5,6] v#; v#[2,3] = 4.0;")
+        checkCode(model, "matrix[5,6] v#; v#[2,3] = 4;")
       }
     }
   }

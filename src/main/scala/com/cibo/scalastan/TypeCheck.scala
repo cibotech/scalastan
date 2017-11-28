@@ -144,6 +144,14 @@ protected object AssignmentAllowed {
   ): AssignmentAllowed[StanParameterDeclaration[T]] = new AssignmentAllowed[StanParameterDeclaration[T]]
 }
 
+@implicitNotFound("implicit conversion from ${FROM} to ${TO} not allowed")
+protected sealed class CanConvert[FROM <: StanType, TO <: StanType]
+
+protected object CanConvert {
+  implicit def sameType[T <: StanType] = new CanConvert[T, T]
+  implicit val intToReal = new CanConvert[StanInt, StanReal]
+}
+
 @implicitNotFound("continuous type required, got ${T}")
 protected sealed class ContinuousType[T <: StanType] extends TypeCheck
 

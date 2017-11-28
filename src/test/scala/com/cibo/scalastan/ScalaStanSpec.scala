@@ -6,7 +6,7 @@ class ScalaStanSpec extends ScalaStanBaseSpec {
       new ScalaStan {
         data(int())
         val model = new Model {}
-        checkCode(model, "data { int v#; // v# }")
+        checkCode(model, "data { int v#; }")
       }
     }
   }
@@ -16,7 +16,7 @@ class ScalaStanSpec extends ScalaStanBaseSpec {
       new ScalaStan {
         parameter(real())
         val model = new Model {}
-        checkCode(model, "parameters { real v#; // v# }")
+        checkCode(model, "parameters { real v#; }")
       }
     }
   }

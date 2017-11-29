@@ -16,7 +16,9 @@ import java.nio.file.{Files, Path, Paths}
 import scala.language.implicitConversions
 import scala.collection.mutable.ArrayBuffer
 
-trait ScalaStan extends Implicits with StanFunctions with StanDistributions { stan =>
+trait ScalaStan extends Implicits with StanDistributions { ss =>
+
+  protected object stan extends StanFunctions
 
   // Maximum number of models to cache.
   protected val maxCacheSize: Int = 100
@@ -272,8 +274,8 @@ trait ScalaStan extends Implicits with StanFunctions with StanDistributions { st
 
   abstract class TransformBase[T <: StanType, D <: StanDeclaration[T]] extends StanCode with NameLookup {
     val result: D
-    protected def _userName: Option[String] = NameLookup.lookupName(this)(stan)
-    protected val _ss: ScalaStan = stan
+    protected def _userName: Option[String] = NameLookup.lookupName(this)(ss)
+    protected val _ss: ScalaStan = ss
   }
 
   abstract class DataTransform[T <: StanType](typeConstructor: T) extends TransformBase[T, StanLocalDeclaration[T]] {
@@ -417,7 +419,7 @@ trait ScalaStan extends Implicits with StanFunctions with StanDistributions { st
       dir
     }
 
-    final def compile[M <: CompiledModel](implicit runner: StanRunner[M]): CompiledModel = runner.compile(stan, this)
+    final def compile[M <: CompiledModel](implicit runner: StanRunner[M]): CompiledModel = runner.compile(ss, this)
   }
 
   private case class BlackBoxModel private (

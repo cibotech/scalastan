@@ -4,8 +4,7 @@ import com.cibo.scalastan._
 
 case class NaiveBayes(
   documentTopics: Seq[Int],               // Mapping from document to topic
-  words: Seq[Int],                        // Word ID for each observation
-  documents: Seq[Int],                    // Document ID for each observation
+  documentWords: Seq[(Int, Int)],         // Words contained in each document (document, word)
   topicPrior: Option[Seq[Double]] = None, // Topic prior
   wordPrior: Option[Seq[Double]] = None   // Word prior
 ) extends ScalaStan {
@@ -13,9 +12,18 @@ case class NaiveBayes(
   // Naive Bayes Classification
   // from "Stan Modeling Language: User's Guide and Reference Manual" version 2.16.0.
 
-  private lazy val topicCount: Int = documentTopics.max + 1
-  private lazy val wordCount: Int = words.max + 1
-  private lazy val documentCount: Int = documents.max + 1
+  private lazy val words = documentWords.map(_._2)
+  private lazy val documents = documentWords.map(_._1)
+  private lazy val topicCount: Int = documentTopics.max
+  private lazy val wordCount: Int = words.max
+  private lazy val documentCount: Int = documents.max
+
+  require(documentTopics.forall(_ > 0), "Document topic IDs must be > 0")
+  require(documentWords.forall(_._1 > 0), "Document IDs must be > 0")
+  require(documentWords.forall(_._2 > 0), "Word IDs must be > 0")
+  require(documentTopics.toSet.size == topicCount, "Document topic IDs must be contiguous")
+  require(documents.toSet.size == documentCount, "Document IDs must be contiguous")
+  require(words.toSet.size == wordCount, "Word IDs must be contiguous")
 
   private val k = data(int(lower = 1))                  // Number of topics
   private val v = data(int(lower = 1))                  // Number of words
@@ -56,4 +64,16 @@ case class NaiveBayes(
     .withData(doc, documents)
     .withData(alpha, topicPrior.getOrElse(defaultTopicPrior))
     .withData(beta, wordPrior.getOrElse(defaultWordPrior))
+
+  def scores(ws: Set[Int], results: StanResults): Seq[Double] = {
+    val bestTheta = results.best(theta)
+    val bestPhi = results.best(phi)
+    bestPhi.zip(bestTheta).map { case (ps, t) =>
+      t * ps.zipWithIndex.filter(x => ws.contains(x._2)).map(_._1).product
+    }
+  }
+
+  def classify(ws: Set[Int], results: StanResults): Int = {
+    scores(ws, results).zipWithIndex.maxBy(_._1)._2 + 1
+  }
 }

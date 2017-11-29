@@ -10,7 +10,7 @@
 
 package com.cibo.scalastan.examples
 
-import com.cibo.scalastan.{RunMethod, ScalaStan}
+import com.cibo.scalastan.ScalaStan
 
 object EightSchools extends App with ScalaStan {
 
@@ -36,17 +36,7 @@ object EightSchools extends App with ScalaStan {
     .withData(sigma, sigmas)
     .run(
       chains = 4,
-      seed = 194838,
-      method = RunMethod.Sample(
-        algorithm = RunMethod.Hmc(
-          engine = RunMethod.Nuts(
-            maxDepth = 15
-          )
-        ),
-        adapt = RunMethod.SampleAdapt(
-          delta = 0.9
-        )
-      )
+      seed = 194838
     )
 
   result.summary(System.out)

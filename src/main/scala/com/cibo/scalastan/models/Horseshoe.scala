@@ -52,27 +52,27 @@ case class Horseshoe(
   private val caux = parameter(real(lower = 0))
 
   private val tau0 = new DataTransform(real(lower = 0)) {
-    result := fmin(p0, p - 1) / (p - fmin(p0, p - 1)) / pow(n, 0.5)
+    result := stan.fmin(p0, p - 1) / (p - stan.fmin(p0, p - 1)) / stan.pow(n, 0.5)
   }
 
   // Global shrinkage parameter.
   private val tau = new ParameterTransform(real(lower = 0)) {
-    result := aux1Global * sqrt(aux2Global) * tau0 * sigma
+    result := aux1Global * stan.sqrt(aux2Global) * tau0 * sigma
   }
 
   // Slab scale.
   private val c = new ParameterTransform(real(lower = 0)) {
-    result := slabScale * sqrt(caux)
+    result := slabScale * stan.sqrt(caux)
   }
 
   // Local shrinkage parameter.
   private val lambda = new ParameterTransform(vector(p, lower = 0)) {
-    result := aux1Local :* sqrt(aux2Local)
+    result := aux1Local :* stan.sqrt(aux2Local)
   }
 
   // "Truncated" local shrinkage parameter.
   private val lambdaTilde = new ParameterTransform(vector(p, lower = 0)) {
-    result := sqrt((c ^ 2) * square(lambda) :/ ((c ^ 2) + (tau ^ 2) * square(lambda)))
+    result := stan.sqrt((c ^ 2) * stan.square(lambda) :/ ((c ^ 2) + (tau ^ 2) * stan.square(lambda)))
   }
 
   // Regression coefficients.

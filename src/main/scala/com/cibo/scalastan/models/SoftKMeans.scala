@@ -18,13 +18,13 @@ case class SoftKMeans(
   val mu: StanParameterDeclaration[StanArray[StanVector]] = parameter(vector(d)(k))  // Cluster means
 
   private val negLogK = new DataTransform(real(upper = 0)) {
-    result := -log(k)
+    result := -stan.log(k)
   }
 
   val softZ: StanParameterDeclaration[StanArray[StanArray[StanReal]]] = new ParameterTransform(real(upper = 0)(n, k)) {
     for (i <- range(1, n)) {
       for (j <- range(1, k)) {
-        result(i, j) := negLogK - 0.5 * dotSelf(mu(j) - y(i))
+        result(i, j) := negLogK - 0.5 * stan.dotSelf(mu(j) - y(i))
       }
     }
   }
@@ -37,7 +37,7 @@ case class SoftKMeans(
 
     // Likelihood
     for(i <- range(1, n)) {
-      target += logSumExp(softZ(i))
+      target += stan.logSumExp(softZ(i))
     }
   }
 

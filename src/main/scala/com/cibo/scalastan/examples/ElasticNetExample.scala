@@ -12,7 +12,10 @@ package com.cibo.scalastan.examples
 
 import com.cibo.scalastan._
 
-object ElasticNet extends App with ScalaStan {
+object ElasticNetExample extends App with ScalaStan {
+
+  // Elastic Net implementation based on code from
+  // "Stan Modeling Language: User's Guide and Reference Manual" version 2.16.0.
 
   // Linear regression by minimizing the squared error.
   trait LeastSquaresLike extends Model {
@@ -20,7 +23,7 @@ object ElasticNet extends App with ScalaStan {
     val y: StanDataDeclaration[StanVector]
     val beta: StanParameterDeclaration[StanVector]
 
-    target += -dotSelf(y - x * beta)
+    target += -stan.dotSelf(y - x * beta)
   }
 
   // Add a Ridge penalty (penalize the Euclidean length of the coefficients).
@@ -28,7 +31,7 @@ object ElasticNet extends App with ScalaStan {
     val ridgeLambda: StanDataDeclaration[StanReal]
     val beta: StanParameterDeclaration[StanVector]
 
-    target += -ridgeLambda * dotSelf(beta)
+    target += -ridgeLambda * stan.dotSelf(beta)
   }
 
   // Add a Lasso penalty (penalize the sum of the absolute coefficients).
@@ -37,7 +40,7 @@ object ElasticNet extends App with ScalaStan {
     val beta: StanParameterDeclaration[StanVector]
 
     for (i <- beta.range) {
-      target += -lassoLambda * fabs(beta(i))
+      target += -lassoLambda * stan.fabs(beta(i))
     }
   }
 
@@ -75,7 +78,7 @@ object ElasticNet extends App with ScalaStan {
     ridgeLambda: StanDataDeclaration[StanReal],
     lassoLambda: StanDataDeclaration[StanReal]
   ) extends LeastSquaresLike with RidgePenaltyLike with LassoPenaltyLike {
-    val betaElasticNet = new GeneratedQuantity(vector(cols(x))) {
+    val betaElasticNet = new GeneratedQuantity(vector(stan.cols(x))) {
       result := (1 + ridgeLambda) * beta
     }
   }
@@ -94,11 +97,11 @@ object ElasticNet extends App with ScalaStan {
 
   val model = ElasticNetRegression(x, y, beta, lambda1, lambda2)
 
-  val xs = Seq(Seq(1.0, 0.5), Seq(2.1, 0.7), Seq(2.9, 0.8))
+  val xs = Seq(Seq(1.0, 0.5, 0.3), Seq(2.1, 0.7, 0.1), Seq(2.9, 0.8, 0.2))
   val ys = Seq(1.5, 2.5, 3.5)
 
   val results = model
-    .withData(lambda1, 0.1)
+    .withData(lambda1, 0.2)
     .withData(lambda2, 0.1)
     .withData(x, xs)
     .withData(y, ys)

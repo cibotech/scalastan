@@ -48,10 +48,10 @@ object Dogs extends App with ScalaStan {
   }
 
   val model = new Model {
-    beta ~ stan.Normal(0.0, 100.0)
+    beta ~ stan.normal(0.0, 100.0)
     for (i <- range(1, nDogs)) {
       for (j <- range(1, nTrials)) {
-        y(i, j) ~ stan.BernoulliLogit(p(i, j))
+        y(i, j) ~ stan.bernoulli_logit(p(i, j))
       }
     }
   }

@@ -39,15 +39,15 @@ case class NaiveBayes(
   val phi: StanParameterDeclaration[StanArray[StanVector]] = parameter(simplex(v)(k))  // Word distribution for topic k
 
   private val model = new Model {
-    theta ~ stan.Dirichlet(alpha)
+    theta ~ stan.dirichlet(alpha)
     for (i <- range(1, k)) {
-      phi(i) ~ stan.Dirichlet(beta)
+      phi(i) ~ stan.dirichlet(beta)
     }
     for (i <- range(1, m)) {
-      z(i) ~ stan.Categorical(theta)
+      z(i) ~ stan.categorical(theta)
     }
     for (i <- range(1, n)) {
-      w(i) ~ stan.Categorical(phi(z(doc(i))))
+      w(i) ~ stan.categorical(phi(z(doc(i))))
     }
   }
 

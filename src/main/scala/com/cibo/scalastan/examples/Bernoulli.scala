@@ -19,9 +19,9 @@ object Bernoulli extends App with ScalaStan {
   val theta = parameter(real(lower = 0.0, upper = 1.0))
 
   val model = new Model {
-    theta ~ stan.Beta(1.0, 1.0)
+    theta ~ stan.beta(1.0, 1.0)
     for(n <- y.range) {
-      target += stan.Bernoulli(theta).lpmf(y(n))
+      target += stan.bernoulli(theta).lpmf(y(n))
     }
   }
 

@@ -29,8 +29,8 @@ case class LinearRegression(
   val sigma: StanParameterDeclaration[StanReal] = parameter(real(lower = 0))    // Error
 
   private val model = new Model {
-    sigma ~ Cauchy(0, 1)
-    y ~ Normal(x * beta + beta0, sigma)
+    sigma ~ stan.Cauchy(0, 1)
+    y ~ stan.Normal(x * beta + beta0, sigma)
   }
 
   def compile[M <: CompiledModel](implicit runner: StanRunner[M]): CompiledModel = model.compile

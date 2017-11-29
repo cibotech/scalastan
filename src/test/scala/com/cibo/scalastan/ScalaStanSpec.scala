@@ -136,7 +136,7 @@ class ScalaStanSpec extends ScalaStanBaseSpec {
         new ScalaStan {
           val model = new Model {
             val a = local(real())
-            a ~ Normal(0, 1)
+            a ~ stan.Normal(0, 1)
           }
           checkCode(model, "model { real v#; v# ~ normal(0,1); }")
         }

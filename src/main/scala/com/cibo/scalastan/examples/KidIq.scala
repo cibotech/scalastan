@@ -27,8 +27,8 @@ object KidIq extends App with ScalaStan {
   val sigma = parameter(real(lower = 0))
 
   val model = new Model {
-    sigma ~ Cauchy(0, 2.5)
-    kidScore ~ Normal(beta(1) + beta(2) * momHs + beta(3) * momIq + beta(4) * inter, sigma)
+    sigma ~ stan.Cauchy(0, 2.5)
+    kidScore ~ stan.Normal(beta(1) + beta(2) * momHs + beta(3) * momIq + beta(4) * inter, sigma)
   }
 
   val kidScoreData = Vector[Double](

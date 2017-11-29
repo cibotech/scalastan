@@ -67,7 +67,7 @@ case class ARkRegression(
 
       when(count > k) {
         val mu = local(real())
-        mu := alpha + stan.dotProduct(x(i), xbeta)
+        mu := alpha + stan.dot_product(x(i), xbeta)
         for (j <- range(1, k)) {
           mu += beta(currentGroup, j) * y(i - j)
         }

@@ -25,7 +25,7 @@ class StanFunctionsSpec extends ScalaStanBaseSpec {
         new ScalaStan {
           val model = new Model {
             val n = local(int())
-            local(vector(n)) := stan.appendRow(local(real()), local(vector(n)))
+            local(vector(n)) := stan.append_row(local(real()), local(vector(n)))
           }
           checkCode(model, "v# = append_row(v#, v#);")
         }
@@ -37,7 +37,7 @@ class StanFunctionsSpec extends ScalaStanBaseSpec {
         new ScalaStan {
           val model = new Model {
             val n = local(int())
-            local(rowVector(n)) := stan.appendCol(local(real()), local(rowVector(n)))
+            local(rowVector(n)) := stan.append_col(local(real()), local(rowVector(n)))
           }
           checkCode(model, "v# = append_col(v#, v#);")
         }

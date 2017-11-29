@@ -37,7 +37,7 @@ case class SoftKMeans(
 
     // Likelihood
     for(i <- range(1, n)) {
-      target += stan.logSumExp(softZ(i))
+      target += stan.log_sum_exp(softZ(i))
     }
   }
 

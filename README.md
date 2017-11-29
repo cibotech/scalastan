@@ -198,9 +198,7 @@ target += Normal(0.0, 1.0).lpdf(y)
 ```
 
 #### Other Functions
-The built-in Stan functions are available in ScalaStan (see `StanBuiltInFunctions`).
-The naming convention uses camel-case with leading lower-case instead of underscores.
-For example, the `dot_product` function in Stan is `dotProduct` in ScalaStan.
+The built-in Stan functions are available in ScalaStan from the `stan` object.
 
 
 Data and Parameter Transforms

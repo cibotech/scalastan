@@ -100,6 +100,9 @@ sealed trait StanType {
   final private[scalastan] def isDerivedFromData: Boolean =
     lower.forall(_.isDerivedFromData) && upper.forall(_.isDerivedFromData) && getIndices.forall(_.isDerivedFromData)
 
+  // Get the type constructor for the next type.
+  private[scalastan] def next: NEXT_TYPE
+
   def apply(
     dim: StanValue[StanInt]
   ): StanArray[THIS_TYPE] =
@@ -131,6 +134,7 @@ trait StanScalarType extends StanType {
   private[scalastan] type SUMMARY_TYPE = Double
   private[scalastan] type NEXT_TYPE = StanVoid
   private[scalastan] type REAL_TYPE = StanReal
+  final private[scalastan] def next: StanVoid = StanVoid()
 }
 
 trait StanCompoundType extends StanType
@@ -152,11 +156,13 @@ case class StanVoid private[scalastan] (
   private[scalastan] def parse(name: String, values: Map[String, String]): Unit = ()
   private[scalastan] def parse(dims: Seq[Int], values: Seq[String]): Unit = ()
   private[scalastan] def combine(values: Seq[Seq[SCALA_TYPE]])(func: Seq[Seq[Double]] => Double): Unit = ()
+  final private[scalastan] def next: StanVoid = this
 }
 
 case class StanString private[scalastan] () extends StanType {
   protected type THIS_TYPE = StanString
   private[scalastan] type ELEMENT_TYPE = StanString
+  private[scalastan] type NEXT_TYPE = StanVoid
   private[scalastan] type REAL_TYPE = StanReal
   private[scalastan] type SCALA_TYPE = String
   private[scalastan] type SUMMARY_TYPE = String
@@ -168,6 +174,7 @@ case class StanString private[scalastan] () extends StanType {
   private[scalastan] def parse(name: String, values: Map[String, String]): String = values(name)
   private[scalastan] def parse(dims: Seq[Int], values: Seq[String]): String = ""
   private[scalastan] def combine(values: Seq[Seq[SCALA_TYPE]])(func: Seq[Seq[Double]] => Double): String = ""
+  final private[scalastan] def next: StanVoid = StanVoid()
 }
 
 abstract class StanDiscreteType extends StanScalarType {
@@ -278,6 +285,8 @@ case class StanArray[CONTAINED <: StanType] private[scalastan] (
       inner.combine(v.asInstanceOf[Seq[Seq[inner.SCALA_TYPE]]])(func)
     }.toVector
   }
+
+  final private[scalastan] def next: NEXT_TYPE = inner
 }
 
 case class StanReal private[scalastan] (
@@ -329,6 +338,8 @@ trait StanVectorLike extends StanVectorOrMatrix {
       func(v)
     }.toVector
   }
+
+  final private[scalastan] def next: NEXT_TYPE = StanReal(lower, upper)
 }
 
 sealed abstract class VectorConstraint(val name: String)
@@ -439,4 +450,6 @@ case class StanMatrix private[scalastan] (
       }.toVector
     }.toVector
   }
+
+  final private[scalastan] def next: NEXT_TYPE = StanVector(cols, lower, upper)
 }

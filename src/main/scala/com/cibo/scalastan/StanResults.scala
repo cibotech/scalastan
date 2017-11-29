@@ -30,7 +30,7 @@ case class StanResults private (
   lazy val bestChain: Int = chains.zipWithIndex.maxBy(_._1.map(_.apply(lpName).toDouble).max)._2
   lazy val bestIndex: Int = chains(bestChain).zipWithIndex.maxBy(_._1.apply(lpName).toDouble)._2
 
-  private def extract(name: String): Seq[Seq[Double]] = chains.map(_.map(_.apply(name).tDouble))
+  private def extract(name: String): Seq[Seq[Double]] = chains.map(_.map(_.apply(name).toDouble))
 
   lazy val logPosterior: Seq[Seq[Double]] = extract(lpName)
   lazy val divergent: Seq[Seq[Double]] = extract(divergentName)

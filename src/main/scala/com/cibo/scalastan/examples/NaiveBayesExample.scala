@@ -24,5 +24,4 @@ object NaiveBayesExample extends App {
 
   println(model.classify(Set(1, 2, 4), results))
   println(model.classify(Set(4, 5), results))
-
 }

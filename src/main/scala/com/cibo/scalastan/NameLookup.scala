@@ -25,15 +25,6 @@ protected trait NameLookup {
 
   // A user-facing name to use for this identifier.
   lazy val name: String = _userName.getOrElse(defaultName)
-
-  // A list of valid characters to place in the generated Stan.
-  private val validCharacters: Set[Char] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_0123456789".toSet
-
-  // A cleaned name to use in the generated Stan code.
-  // This needs to be unique and valid.
-  protected lazy val _internalName: String = _userName.map { un =>
-    un.filter(c => validCharacters.contains(c))
-  }.getOrElse(defaultName)
 }
 
 protected object NameLookup {
@@ -67,10 +58,18 @@ protected object NameLookup {
     }
   }
 
+  // A list of valid characters to place in the generated Stan.
+  private val validCharacters: Set[Char] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_0123456789".toSet
+
+  private def fixName(name: String): Option[String] = {
+    val filtered = name.filter(c => validCharacters.contains(c))
+    if (filtered.nonEmpty) Some(filtered) else None
+  }
+
   private[scalastan] def lookupName(obj: NameLookup)(implicit ss: ScalaStan): Option[String] = {
     val mirror = ru.runtimeMirror(ss.getClass.getClassLoader)
     val classLoader = ss.getClass.getClassLoader
     val instanceMirror = mirror.reflect(ss)
-    findInInstance(obj, instanceMirror)
+    findInInstance(obj, instanceMirror).flatMap(fixName)
   }
 }

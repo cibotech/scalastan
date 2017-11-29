@@ -17,8 +17,8 @@ sealed abstract class StanDeclaration[T <: StanType](implicit ss: ScalaStan) ext
   protected def _userName: Option[String] = internalNameFunc().orElse(NameLookup.lookupName(this))
   protected val _ss: ScalaStan = ss
 
-  private[scalastan] def emit: String = _internalName
-  private[scalastan] def emitDeclaration: String = typeConstructor.emitDeclaration(_internalName)
+  private[scalastan] def emit: String = name
+  private[scalastan] def emitDeclaration: String = typeConstructor.emitDeclaration(name)
 
   def size(implicit ev: T <:< StanCompoundType): StanValue[StanInt] = dims.head
 
@@ -39,12 +39,46 @@ case class StanDataDeclaration[T <: StanType] private[scalastan] (
 
 case class StanParameterDeclaration[T <: StanType] private[scalastan] (
   private[scalastan] val typeConstructor: T,
-  protected val internalNameFunc: () => Option[String] = () => None
+  protected val internalNameFunc: () => Option[String] = () => None,
+  private[scalastan] val indices: Seq[Int] = Seq.empty
 )(implicit ss: ScalaStan) extends StanDeclaration[T] with Assignable[T] with Updatable[T] {
   require(typeConstructor.isDerivedFromData,
     "parameter declaration bounds must be derived from data declarations or constant")
   private[scalastan] type DECL_TYPE = StanParameterDeclaration[T]
   private[scalastan] def isDerivedFromData: Boolean = false
+
+  override private[scalastan] def emit: String = {
+    val baseName = super.emit
+    if (indices.nonEmpty) {
+      s"$baseName[" + indices.mkString(",") + "]"
+    } else {
+      baseName
+    }
+  }
+
+  def apply(
+    index: Int
+  ): StanParameterDeclaration[T#NEXT_TYPE] = {
+    StanParameterDeclaration(typeConstructor.next, () => Some(name), indices :+ index)
+  }
+
+  def apply(
+    index1: Int,
+    index2: Int
+  ): StanParameterDeclaration[T#NEXT_TYPE#NEXT_TYPE] = apply(index1).apply(index2)
+
+  def apply(
+    index1: Int,
+    index2: Int,
+    index3: Int
+  ): StanParameterDeclaration[T#NEXT_TYPE#NEXT_TYPE#NEXT_TYPE] = apply(index1, index2).apply(index3)
+
+  def apply(
+    index1: Int,
+    index2: Int,
+    index3: Int,
+    index4: Int
+  ): StanParameterDeclaration[T#NEXT_TYPE#NEXT_TYPE#NEXT_TYPE#NEXT_TYPE] = apply(index1, index2).apply(index3, index4)
 }
 
 case class StanLocalDeclaration[T <: StanType] private[scalastan] (

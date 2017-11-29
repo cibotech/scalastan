@@ -43,10 +43,10 @@ case class ARkRegression(
 
   private val model = new Model {
 
-    sigma ~ stan.Cauchy(0, 1)
-    xbeta ~ stan.Normal(0, priorSigma)
+    sigma ~ stan.cauchy(0, 1)
+    xbeta ~ stan.normal(0, priorSigma)
     for (i <- range(1, m)) {
-      beta(i) ~ stan.Normal(0, priorSigma)
+      beta(i) ~ stan.normal(0, priorSigma)
     }
 
     // Number of observations in the current group.
@@ -71,7 +71,7 @@ case class ARkRegression(
         for (j <- range(1, k)) {
           mu += beta(currentGroup, j) * y(i - j)
         }
-        y(i) ~ stan.Normal(mu, sigma)
+        y(i) ~ stan.normal(mu, sigma)
       }
     }
   }

@@ -86,15 +86,15 @@ case class Horseshoe(
   }
 
   private val model = new Model {
-    sigma ~ stan.Cauchy(0, 1)
-    z ~ stan.Normal(0, 1)
-    aux1Local ~ stan.Normal(0, 1)
-    aux2Local ~ stan.InvGamma(0.5 * nuLocal, 0.5 * nuLocal)
-    aux1Global ~ stan.Normal(0, 1)
-    aux2Global ~ stan.InvGamma(0.5 * nuGlobal, 0.5 * nuGlobal)
-    caux ~ stan.InvGamma(0.5 * slabDf, 0.5 * slabDf)
-    beta0 ~ stan.Normal(0, scaleIntercept)
-    y ~ stan.Normal(f, sigma)
+    sigma ~ stan.cauchy(0, 1)
+    z ~ stan.normal(0, 1)
+    aux1Local ~ stan.normal(0, 1)
+    aux2Local ~ stan.inv_gamma(0.5 * nuLocal, 0.5 * nuLocal)
+    aux1Global ~ stan.normal(0, 1)
+    aux2Global ~ stan.inv_gamma(0.5 * nuGlobal, 0.5 * nuGlobal)
+    caux ~ stan.inv_gamma(0.5 * slabDf, 0.5 * slabDf)
+    beta0 ~ stan.normal(0, scaleIntercept)
+    y ~ stan.normal(f, sigma)
   }
 
   def compile[M <: CompiledModel](implicit runner: StanRunner[M]): CompiledModel = model.compile

@@ -36,8 +36,8 @@ object MyModel extends App with ScalaStan {
   val sigma = parameter(real(lower = 0))
 
   val model = new Model {
-    sigma ~ Cauchy(0, 1)
-    y ~ Normal(m * x + b, sigma)
+    sigma ~ stan.cauchy(0, 1)
+    y ~ stan.normal(m * x + b, sigma)
   }
 
   val xs: Seq[Double] = ???
@@ -183,18 +183,16 @@ when(x > 1) {
 ```
 
 #### Distributions
-The built-in Stan distributions are available in ScalaStan (see `StanDistributions` for a list).
-The naming convention uses an initial upper-case letter and camel-case
-(for example, the Beta distribution is `Beta`).
+The built-in Stan distributions are available in ScalaStan from the `stan` object.
 
 To indicate that a value is sampled from a distribution, the `~` operator is used, for example:
 ```scala
-y ~ Normal(0.0, 1.0)
+y ~ stan.normal(0.0, 1.0)
 ```
 
-This is equivalent to the following:
+This is roughly equivalent to the following:
 ```scala
-target += Normal(0.0, 1.0).lpdf(y)
+target += stan.normal(0.0, 1.0).lpdf(y)
 ```
 
 #### Other Functions
@@ -244,7 +242,7 @@ random numbers drawn from a distribution.
 Here is an example to draw a random number:
 ```scala
 val rand = new GeneratedQuantity(real()) {
-  result := Normal(0.0, 1.0).rng
+  result := stan.normal(0.0, 1.0).rng
 }
 ```
 

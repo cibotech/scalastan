@@ -25,8 +25,8 @@ object Exponential extends App with ScalaStan {
     alpha := 1.0
     beta := 1.0
 
-    lambda ~ stan.Gamma(alpha, beta)
-    y ~ stan.Exponential(lambda)
+    lambda ~ stan.gamma(alpha, beta)
+    y ~ stan.exponential(lambda)
   }
 
   val dataset = Vector(1.0, 2.0, 3.0)

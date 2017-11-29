@@ -21,7 +21,7 @@ object Normal extends App with ScalaStan {
   val mu = parameter(real())
 
   val model = new Model {
-    y ~ Normal(mu, sigma)
+    y ~ stan.Normal(mu, sigma)
   }
 
   val dataset = Vector(1.0, -2.0, 3.0, 0.0, 0.5, -1.0)

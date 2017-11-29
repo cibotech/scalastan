@@ -23,10 +23,10 @@ object EightSchools extends App with ScalaStan {
   val theta = parameter(real()(j))
 
   val model = new Model {
-    mu ~ Normal(0, 5)
-    tau ~ Cauchy(0, 5)
-    theta ~ Normal(mu, tau)
-    y ~ Normal(theta, sigma)
+    mu ~ stan.Normal(0, 5)
+    tau ~ stan.Cauchy(0, 5)
+    theta ~ stan.Normal(mu, tau)
+    y ~ stan.Normal(theta, sigma)
   }
 
   val ys = Seq[Double](28, 8, -3, 7, -1, 1, 18, 12)

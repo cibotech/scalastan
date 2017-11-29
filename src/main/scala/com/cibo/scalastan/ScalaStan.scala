@@ -16,9 +16,9 @@ import java.nio.file.{Files, Path, Paths}
 import scala.language.implicitConversions
 import scala.collection.mutable.ArrayBuffer
 
-trait ScalaStan extends Implicits with StanDistributions { ss =>
+trait ScalaStan extends Implicits { ss =>
 
-  protected object stan extends StanFunctions
+  protected object stan extends StanFunctions with StanDistributions
 
   // Maximum number of models to cache.
   protected val maxCacheSize: Int = 100

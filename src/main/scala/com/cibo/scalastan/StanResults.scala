@@ -26,17 +26,19 @@ case class StanResults private (
   private val treeDepthName = "treedepth__"
   private val energyName = "energy__"
   private val acceptName = "accept_stat__"
+  private val stepSizeName = "stepsize__"
 
   lazy val bestChain: Int = chains.zipWithIndex.maxBy(_._1.map(_.apply(lpName).toDouble).max)._2
   lazy val bestIndex: Int = chains(bestChain).zipWithIndex.maxBy(_._1.apply(lpName).toDouble)._2
 
-  private def extract(name: String): Seq[Seq[Double]] = chains.map(_.map(_.apply(name).toDouble))
+  private def extract(name: String): Seq[Seq[Double]] = chains.map(_.flatMap(_.get(name).map(_.toDouble)))
 
   lazy val logPosterior: Seq[Seq[Double]] = extract(lpName)
   lazy val divergent: Seq[Seq[Double]] = extract(divergentName)
   lazy val treeDepth: Seq[Seq[Double]] = extract(treeDepthName)
   lazy val energy: Seq[Seq[Double]] = extract(energyName)
   lazy val acceptStat: Seq[Seq[Double]] = extract(acceptName)
+  lazy val stepSize: Seq[Seq[Double]] = extract(stepSizeName)
 
   val chainCount: Int = chains.size
   val iterationsPerChain: Int = chains.head.size

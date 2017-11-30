@@ -53,7 +53,7 @@ case class StanResults private (
   def samples[T <: StanType](
     decl: StanParameterDeclaration[T]
   ): Seq[Seq[T#SCALA_TYPE]] = {
-    val name = decl.name + (if (decl.indices.nonEmpty) decl.indices.mkString(".", ".", "") else "")
+    val name = decl.root.emit + (if (decl.indices.nonEmpty) decl.indices.mkString(".", ".", "") else "")
     chains.map { chain =>
       chain.map { values =>
         decl.typeConstructor.parse(name, values)

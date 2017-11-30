@@ -40,6 +40,7 @@ case class StanDataDeclaration[T <: StanType] private[scalastan] (
 case class StanParameterDeclaration[T <: StanType] private[scalastan] (
   private[scalastan] val typeConstructor: T,
   protected val internalNameFunc: () => Option[String] = () => None,
+  private[scalastan] val rootOpt: Option[StanParameterDeclaration[_ <: StanType]] = None,
   private[scalastan] val indices: Seq[Int] = Seq.empty
 )(implicit ss: ScalaStan) extends StanDeclaration[T] with Assignable[T] with Updatable[T] {
   require(typeConstructor.isDerivedFromData,
@@ -47,38 +48,34 @@ case class StanParameterDeclaration[T <: StanType] private[scalastan] (
   private[scalastan] type DECL_TYPE = StanParameterDeclaration[T]
   private[scalastan] def isDerivedFromData: Boolean = false
 
-  override private[scalastan] def emit: String = {
-    val baseName = super.emit
-    if (indices.nonEmpty) {
-      s"$baseName[" + indices.mkString(",") + "]"
-    } else {
-      baseName
-    }
+  private[scalastan] def root: StanParameterDeclaration[_ <: StanType] = rootOpt.getOrElse(this)
+
+  def apply(index: Int): StanParameterDeclaration[T#NEXT_TYPE] = {
+    val newName = s"$name[$index]"
+    StanParameterDeclaration(typeConstructor.next, () => Some(newName), Some(root), indices :+ index)
+  }
+
+  def apply(index1: Int, index2: Int): StanParameterDeclaration[T#NEXT_TYPE#NEXT_TYPE] = {
+    val args = Seq(index1, index2)
+    val newName = args.mkString(s"$name[", ",", "]")
+    StanParameterDeclaration(typeConstructor.next.next, () => Some(newName), Some(root), indices ++ args)
   }
 
   def apply(
-    index: Int
-  ): StanParameterDeclaration[T#NEXT_TYPE] = {
-    StanParameterDeclaration(typeConstructor.next, () => Some(name), indices :+ index)
+    index1: Int, index2: Int, index3: Int
+  ): StanParameterDeclaration[T#NEXT_TYPE#NEXT_TYPE#NEXT_TYPE] = {
+    val args = Seq(index1, index2, index3)
+    val newName = args.mkString(s"$name[", ",", "]")
+    StanParameterDeclaration(typeConstructor.next.next.next, () => Some(newName), Some(root), indices ++ args)
   }
 
   def apply(
-    index1: Int,
-    index2: Int
-  ): StanParameterDeclaration[T#NEXT_TYPE#NEXT_TYPE] = apply(index1).apply(index2)
-
-  def apply(
-    index1: Int,
-    index2: Int,
-    index3: Int
-  ): StanParameterDeclaration[T#NEXT_TYPE#NEXT_TYPE#NEXT_TYPE] = apply(index1, index2).apply(index3)
-
-  def apply(
-    index1: Int,
-    index2: Int,
-    index3: Int,
-    index4: Int
-  ): StanParameterDeclaration[T#NEXT_TYPE#NEXT_TYPE#NEXT_TYPE#NEXT_TYPE] = apply(index1, index2).apply(index3, index4)
+    index1: Int, index2: Int, index3: Int, index4: Int
+  ): StanParameterDeclaration[T#NEXT_TYPE#NEXT_TYPE#NEXT_TYPE#NEXT_TYPE] = {
+    val args = Seq(index1, index2, index3, index4)
+    val newName = args.mkString(s"$name[", ",", "]")
+    StanParameterDeclaration(typeConstructor.next.next.next.next, () => Some(newName), Some(root), indices ++ args)
+  }
 }
 
 case class StanLocalDeclaration[T <: StanType] private[scalastan] (

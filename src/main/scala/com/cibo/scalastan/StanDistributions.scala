@@ -56,7 +56,7 @@ protected trait StanDistributions {
     implicit ev: Vectorized2[N, T]
   ): StanDiscreteDistributionWithoutCdf[R] = StanDiscreteDistributionWithoutCdf("binomial_logit", Seq(n, alpha))
 
-  def categorical[T <: StanType: ContinuousType, R <: StanType: DiscreteType](
+  def categorical[T <: StanType: ContinuousType, R <: StanType](
     theta: StanValue[T]
   )(
     implicit ev: Vectorized1[T]

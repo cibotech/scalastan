@@ -23,7 +23,7 @@ protected trait StanDistributions {
     N <: StanType: DiscreteType,
     A <: StanType: ContinuousType,
     B <: StanType: ContinuousType,
-    R <: StanType: DiscreteType
+    R <: StanType
   ](
     n: StanValue[N],
     alpha: StanValue[A],
@@ -38,18 +38,18 @@ protected trait StanDistributions {
     implicit ev: Vectorized1[T]
   ): StanDiscreteDistributionWithCdf[R] = StanDiscreteDistributionWithCdf("bernoulli", Seq(theta))
 
-  def bernoulli_logit[T <: StanType: ContinuousType, R <: StanType: DiscreteType](
+  def bernoulli_logit[T <: StanType: ContinuousType, R <: StanType](
     alpha: StanValue[T]
   )(
     implicit ev: Vectorized1[T]
   ): StanDiscreteDistributionWithoutCdf[R] = StanDiscreteDistributionWithoutCdf("bernoulli_logit", Seq(alpha))
 
-  def binomial[N <: StanType: DiscreteType, T <: StanType: ContinuousType, R <: StanType: DiscreteType](
+  def binomial[N <: StanType: DiscreteType, T <: StanType: ContinuousType, R <: StanType](
     n: StanValue[N],
     theta: StanValue[T]
   ): StanDiscreteDistributionWithCdf[R] = StanDiscreteDistributionWithCdf("binomial", Seq(n, theta))
 
-  def binomial_logit[N <: StanType: DiscreteType, T <: StanType: ContinuousType, R <: StanType: DiscreteType](
+  def binomial_logit[N <: StanType: DiscreteType, T <: StanType: ContinuousType, R <: StanType](
     n: StanValue[N],
     alpha: StanValue[T]
   )(
@@ -62,7 +62,7 @@ protected trait StanDistributions {
     implicit ev: Vectorized1[T]
   ): StanDiscreteDistributionWithoutCdf[R] = StanDiscreteDistributionWithoutCdf("categorical", Seq(theta))
 
-  def categorical_logit[T <: StanType: ContinuousType, R <: StanType: DiscreteType](
+  def categorical_logit[T <: StanType: ContinuousType, R <: StanType](
     beta: StanValue[T]
   )(
     implicit ev: Vectorized1[T]
@@ -197,7 +197,7 @@ protected trait StanDistributions {
   def multi_gp_cholesky(l: StanValue[StanMatrix], w: StanValue[StanVector]): StanContinuousDistribution[StanReal] =
     StanContinuousDistribution("multi_gp_cholesky", Seq(l, w))
 
-  def multinomial[T <: StanType: ContinuousType, R <: StanType: DiscreteType](
+  def multinomial[T <: StanType: ContinuousType, R <: StanType](
     theta: StanValue[T]
   )(
     implicit ev: Vectorized1[T]
@@ -239,21 +239,21 @@ protected trait StanDistributions {
     ev2: IsVectorLikeOrArrayVectorLike[R]
   ): StanContinuousDistribution[R] = StanContinuousDistribution("multi_student_t", Seq(nu, mu, sigma))
 
-  def neg_binomial[A <: StanType: ContinuousType, B <: StanType: ContinuousType, R <: StanType: DiscreteType](
+  def neg_binomial[A <: StanType: ContinuousType, B <: StanType: ContinuousType, R <: StanType](
     alpha: StanValue[A],
     beta: StanValue[B]
   )(
     implicit ev: Vectorized2[A, B]
   ): StanDiscreteDistributionWithCdf[R] = StanDiscreteDistributionWithCdf("neg_binomial", Seq(alpha, beta))
 
-  def neg_binomial_2[A <: StanType: ContinuousType, B <: StanType: ContinuousType, R <: StanType: DiscreteType](
+  def neg_binomial_2[A <: StanType: ContinuousType, B <: StanType: ContinuousType, R <: StanType](
     mu: StanValue[A],
     phi: StanValue[B]
   )(
     implicit ev: Vectorized2[A, B]
   ): StanDiscreteDistributionWithCdf[R] = StanDiscreteDistributionWithCdf("neg_binomial_2", Seq(mu, phi))
 
-  def neg_binomial_2_log[A <: StanType: ContinuousType, B <: StanType: ContinuousType, R <: StanType: DiscreteType](
+  def neg_binomial_2_log[A <: StanType: ContinuousType, B <: StanType: ContinuousType, R <: StanType](
     eta: StanValue[A],
     phi: StanValue[B]
   )(
@@ -287,13 +287,13 @@ protected trait StanDistributions {
     implicit ev: Vectorized3[M, L, A]
   ): StanContinuousDistribution[R] = StanContinuousDistribution("pareto_type_2", Seq(mu, lambda, alpha))
 
-  def poisson[L <: StanType: ContinuousType, R <: StanType: DiscreteType](
+  def poisson[L <: StanType: ContinuousType, R <: StanType](
     lambda: StanValue[L]
   )(
     implicit ev: Vectorized1[L]
   ): StanDiscreteDistributionWithCdf[R] = StanDiscreteDistributionWithCdf("poisson", Seq(lambda))
 
-  def poisson_log[A <: StanType: ContinuousType, R <: StanType: DiscreteType](
+  def poisson_log[A <: StanType: ContinuousType, R <: StanType](
     alpha: StanValue[A]
   )(
     implicit ev: Vectorized1[A]

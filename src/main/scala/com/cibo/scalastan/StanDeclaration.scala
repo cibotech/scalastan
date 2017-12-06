@@ -19,6 +19,7 @@ sealed abstract class StanDeclaration[T <: StanType](implicit ss: ScalaStan) ext
 
   private[scalastan] def emit: String = name
   private[scalastan] def emitDeclaration: String = typeConstructor.emitDeclaration(name)
+  private[scalastan] def emitFunctionDeclaration: String = typeConstructor.emitFunctionDeclaration(name)
 
   def size(implicit ev: T <:< StanCompoundType): StanValue[StanInt] = dims.head
 

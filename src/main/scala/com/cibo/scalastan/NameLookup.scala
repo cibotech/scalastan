@@ -9,7 +9,6 @@
  */
 
 package com.cibo.scalastan
-
 import scala.util.Try
 
 protected trait NameLookup {

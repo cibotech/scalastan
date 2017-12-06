@@ -82,8 +82,27 @@ sealed trait StanType {
 
   // Emit a full Stan declaration for this type given the specified name.
   final private[scalastan] def emitDeclaration(name: String): String = {
-    val dims = emitDims.mkString(",")
-    if (dims.nonEmpty) s"$typeName $name[$dims]" else s"$typeName $name"
+    val dims = emitDims
+    if (dims.nonEmpty) {
+      val dimString = dims.mkString(",")
+      s"$typeName $name[$dimString]"
+    } else {
+      s"$typeName $name"
+    }
+  }
+
+  final private[scalastan] def emitFunctionDeclaration: String = {
+    val dims = emitDims
+    if (dims.nonEmpty) {
+      val dimString = dims.mkString(",")
+      s"$typeName[$dimString]"
+    } else {
+      typeName
+    }
+  }
+
+  final private[scalastan] def emitFunctionDeclaration(name: String): String = {
+    s"$emitFunctionDeclaration $name"
   }
 
   // Emit the upper/lower bounds on elements.
@@ -102,6 +121,10 @@ sealed trait StanType {
 
   // Get the type constructor for the next type.
   private[scalastan] def next: NEXT_TYPE
+
+  def apply(): StanArray[THIS_TYPE] = {
+    StanArray(None, this.asInstanceOf[THIS_TYPE])
+  }
 
   def apply(
     dim: StanValue[StanInt]
@@ -223,7 +246,7 @@ case class StanCategorical private[scalastan] () extends StanDiscreteType {
 }
 
 case class StanArray[CONTAINED <: StanType] private[scalastan] (
-  private val dim: StanValue[StanInt],
+  private val dim: Option[StanValue[StanInt]],
   private[scalastan] val inner: CONTAINED
 ) extends StanCompoundType {
   protected type THIS_TYPE = StanArray[CONTAINED]
@@ -238,8 +261,8 @@ case class StanArray[CONTAINED <: StanType] private[scalastan] (
   private[scalastan] val upper: Option[StanValue[CONTAINED#ELEMENT_TYPE]] =
     inner.upper.asInstanceOf[Option[StanValue[CONTAINED#ELEMENT_TYPE]]]
 
-  override private[scalastan] def emitDims: Seq[String] = dim.emit +: inner.emitDims
-  override private[scalastan] def getIndices: Seq[StanValue[StanInt]] = dim +: inner.getIndices
+  override private[scalastan] def emitDims: Seq[String] = dim.map(_.emit).getOrElse("") +: inner.emitDims
+  override private[scalastan] def getIndices: Seq[StanValue[StanInt]] = dim.get +: inner.getIndices
   private[scalastan] def typeName: String = inner.typeName
   private[scalastan] def getData(data: SCALA_TYPE): Seq[String] =
     data.map(d => inner.getData(d.asInstanceOf[inner.SCALA_TYPE])).transpose.flatten

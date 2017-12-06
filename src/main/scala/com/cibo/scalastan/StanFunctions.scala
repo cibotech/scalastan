@@ -448,7 +448,7 @@ protected trait StanFunctions {
   ): StanValue[StanArray[R]] = FunctionNode("to_array_1d", v)
 
   // ODE Solvers (45).
-  def intgrate_ode_rk45[T <: StanScalarType](
+  def integrate_ode_rk45[T <: StanScalarType](
     ode: ScalaStan#Function[StanArray[StanReal]],
     initialState: StanValue[StanArray[StanReal]],
     initialTime: StanValue[T],
@@ -456,10 +456,12 @@ protected trait StanFunctions {
     theta: StanValue[StanArray[StanReal]],
     xr: StanValue[StanArray[StanReal]],
     xi: StanValue[StanArray[StanInt]]
-  ): StanValue[StanArray[StanArray[StanReal]]] =
+  ): StanValue[StanArray[StanArray[StanReal]]] = {
+    ode.markUsed()
     FunctionNode("integrate_ode_rk45", LiteralNode(ode.result.emit), initialState, initialTime, times, theta, xr, xi)
+  }
 
-  def intgrate_ode_rk45[T <: StanScalarType, RT <: StanScalarType, AT <: StanScalarType](
+  def integrate_ode_rk45[T <: StanScalarType, RT <: StanScalarType, AT <: StanScalarType](
     ode: ScalaStan#Function[StanArray[StanReal]],
     initialState: StanValue[StanArray[StanReal]],
     initialTime: StanValue[T],
@@ -470,21 +472,24 @@ protected trait StanFunctions {
     relTol: StanValue[RT],
     absTol: StanValue[AT],
     maxNumSteps: StanValue[StanInt]
-  ): StanValue[StanArray[StanArray[StanReal]]] = FunctionNode(
-    "integrate_ode_rk45",
-    LiteralNode(ode.result.emit),
-    initialState,
-    initialTime,
-    times,
-    theta,
-    xr,
-    xi,
-    relTol,
-    absTol,
-    maxNumSteps
-  )
+  ): StanValue[StanArray[StanArray[StanReal]]] = {
+    ode.markUsed()
+    FunctionNode(
+      "integrate_ode_rk45",
+      LiteralNode(ode.result.emit),
+      initialState,
+      initialTime,
+      times,
+      theta,
+      xr,
+      xi,
+      relTol,
+      absTol,
+      maxNumSteps
+    )
+  }
 
-  def intgrate_ode_bdf[T <: StanScalarType](
+  def integrate_ode_bdf[T <: StanScalarType](
     ode: ScalaStan#Function[StanArray[StanReal]],
     initialState: StanValue[StanArray[StanReal]],
     initialTime: StanValue[T],
@@ -492,10 +497,12 @@ protected trait StanFunctions {
     theta: StanValue[StanArray[StanReal]],
     xr: StanValue[StanArray[StanReal]],
     xi: StanValue[StanArray[StanInt]]
-  ): StanValue[StanArray[StanReal]] =
+  ): StanValue[StanArray[StanReal]] = {
+    ode.markUsed()
     FunctionNode("integrate_ode_bdf", LiteralNode(ode.result.emit), initialState, initialTime, times, theta, xr, xi)
+  }
 
-  def intgrate_ode_bdf[T <: StanScalarType, RT <: StanScalarType, AT <: StanScalarType](
+  def integrate_ode_bdf[T <: StanScalarType, RT <: StanScalarType, AT <: StanScalarType](
     ode: ScalaStan#Function[StanArray[StanReal]],
     initialState: StanValue[StanArray[StanReal]],
     initialTime: StanValue[T],
@@ -506,18 +513,21 @@ protected trait StanFunctions {
     relTol: StanValue[RT],
     absTol: StanValue[AT],
     maxNumSteps: StanValue[StanInt]
-  ): StanValue[StanArray[StanArray[StanReal]]] = FunctionNode(
-    "integrate_ode_bdf",
-    LiteralNode(ode.result.emit),
-    initialState,
-    initialTime,
-    times,
-    theta,
-    xr,
-    xi,
-    relTol,
-    absTol,
-    maxNumSteps
-  )
+  ): StanValue[StanArray[StanArray[StanReal]]] = {
+    ode.markUsed()
+    FunctionNode(
+      "integrate_ode_bdf",
+      LiteralNode(ode.result.emit),
+      initialState,
+      initialTime,
+      times,
+      theta,
+      xr,
+      xi,
+      relTol,
+      absTol,
+      maxNumSteps
+    )
+  }
 
 }

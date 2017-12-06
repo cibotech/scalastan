@@ -310,6 +310,13 @@ case class StanConstant[T <: StanType] private[scalastan] (
   private[scalastan] def emit: String = value.toString
 }
 
+case class LiteralArray[T <: StanType] private[scalastan] (
+  private val values: Seq[StanValue[T#NEXT_TYPE]]
+) extends StanValue[T] with ReadOnlyIndex[T] {
+  private[scalastan] def isDerivedFromData: Boolean = true
+  private[scalastan] def emit: String = values.map(_.emit).mkString("{", ",", "}")
+}
+
 case class StanStringLiteral private[scalastan] (
   private val value: String
 ) extends StanValue[StanString] {

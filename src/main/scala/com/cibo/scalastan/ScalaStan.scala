@@ -219,6 +219,25 @@ trait ScalaStan extends Implicits { ss =>
       _codeBuffer += ContinueNode()
     }
 
+    private[ScalaStan] def emitTopLevelLocals(writer: PrintWriter): Unit = {
+      // Values have to be declared before code.  Since we treat transformations
+      // differently, we need to make a special pass to combine the top-level locals.
+      var indent: Int = 0
+      _codeBuffer.foreach { c =>
+        if (c.isInstanceOf[LeaveScope]) {
+          indent -= 1
+        }
+        if (indent == 0 && c.isInstanceOf[StanInlineDeclaration[_]]) {
+          writer.print(c.emit)
+          writer.println(c.terminator)
+        }
+        if (c.isInstanceOf[EnterScope]) {
+          indent += 1
+        }
+      }
+      require(indent == 0)
+    }
+
     private[ScalaStan] def emitCode(writer: PrintWriter): Unit = {
       val indentSpaces = 2
       var indent: Int = 0
@@ -226,9 +245,11 @@ trait ScalaStan extends Implicits { ss =>
         if (c.isInstanceOf[LeaveScope]) {
           indent -= 1
         }
-        writer.print(" " * (indentSpaces * (indent + 1)))
-        writer.print(c.emit)
-        writer.println(c.terminator)
+        if (indent != 0 || !c.isInstanceOf[StanInlineDeclaration[_]]) {
+          writer.print(" " * (indentSpaces * (indent + 1)))
+          writer.print(c.emit)
+          writer.println(c.terminator)
+        }
         if (c.isInstanceOf[EnterScope]) {
           indent += 1
         }
@@ -271,6 +292,7 @@ trait ScalaStan extends Implicits { ss =>
     private[ScalaStan] def emit(writer: PrintWriter): Unit = {
       val params = inputs.map(_.emitFunctionDeclaration).mkString(",")
       writer.println(s"${returnType.emitFunctionDeclaration} ${result.emit}($params) {")
+      emitTopLevelLocals(writer)
       emitCode(writer)
       writer.println("}")
     }
@@ -334,6 +356,7 @@ trait ScalaStan extends Implicits { ss =>
 
       if (functions.nonEmpty) {
         writer.println("functions {")
+        functions.foreach(t => t.emitTopLevelLocals(writer))
         functions.foreach(f => f.emit(writer))
         writer.println("}")
       }
@@ -345,6 +368,7 @@ trait ScalaStan extends Implicits { ss =>
       if (dataTransforms.nonEmpty) {
         writer.println("transformed data {")
         emitDeclarations(writer, dataTransforms.map(_.result))
+        dataTransforms.foreach(t => t.emitTopLevelLocals(writer))
         dataTransforms.foreach(t => t.emitCode(writer))
         writer.println("}")
       }
@@ -356,17 +380,20 @@ trait ScalaStan extends Implicits { ss =>
       if (parameterTransforms.nonEmpty) {
         writer.println("transformed parameters {")
         emitDeclarations(writer, parameterTransforms.map(_.result))
+        parameterTransforms.foreach(t => t.emitTopLevelLocals(writer))
         parameterTransforms.foreach(t => t.emitCode(writer))
         writer.println("}")
       }
 
       writer.println("model {")
+      emitTopLevelLocals(writer)
       emitCode(writer)
       writer.println("}")
 
       if (generatedQuantities.nonEmpty) {
         writer.println("generated quantities {")
         emitDeclarations(writer, generatedQuantities.map(_.result))
+        generatedQuantities.foreach(t => t.emitTopLevelLocals(writer))
         generatedQuantities.foreach(g => g.emitCode(writer))
         writer.println("}")
       }

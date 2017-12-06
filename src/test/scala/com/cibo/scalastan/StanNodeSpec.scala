@@ -6,65 +6,67 @@ class StanNodeSpec extends ScalaStanBaseSpec with ScalaStan {
   private val v2 = StanLocalDeclaration[StanReal](StanReal())
   private val v3 = StanLocalDeclaration[StanInt](StanInt())
   private val y = StanLocalDeclaration[StanReal](StanReal())
-  private val continuous: StanContinuousDistribution[StanReal] = stan.normal(v1, v2)
-  private val discreteCdf: StanDiscreteDistribution[StanInt] = stan.binomial(v3, v2)
 
   describe("StanContinuousDistribution") {
     it("generates sample syntax") {
       val model = new Model {
-        y ~ continuous
+        y ~ stan.normal(v1, v2)
       }
       checkCode(model, "model { y ~ normal(v1,v2); }")
     }
 
     it("generates sample syntax with lower bound") {
       val model = new Model {
-        y ~ continuous.truncate(v2)
+        y ~ stan.normal(v1, v2).truncate(v2)
       }
       checkCode(model, "model { y ~ normal(v1,v2) T[v2,]; }")
     }
 
     it("generates sample syntax with upper bound") {
       val model = new Model {
-        y ~ continuous.truncate(upper = v2)
+        y ~ stan.normal(v1, v2).truncate(upper = v2)
       }
       checkCode(model, "model { y ~ normal(v1,v2) T[,v2]; }")
     }
 
     it("generates sample syntax with upper and lower bounds") {
       val model = new Model {
-        y ~ continuous.truncate(v1, v2)
+        y ~ stan.normal(v1, v2).truncate(v1, v2)
       }
       checkCode(model, "model { y ~ normal(v1,v2) T[v1,v2]; }")
     }
 
     it("generates sample syntax with an expression on the LHS") {
       val model = new Model {
-        stan.log(y) ~ continuous
+        stan.log(y) ~ stan.normal(v1, v2)
       }
       checkCode(model, "model { log(y) ~ normal(v1,v2); }")
     }
 
     it("generates lpdf syntax") {
       val model = new Model {
-        target += continuous.lpdf(y)
+        target += stan.normal(v1, v2).lpdf(y)
       }
       checkCode(model, "model { target += normal_lpdf(y | v1,v2); }")
     }
 
     it("generates cdf syntax") {
       val model = new Model {
-        v2 := continuous.cdf(y)
+        v2 := stan.normal(v1, v2).cdf(y)
       }
       checkCode(model, "model { v2 = normal_cdf(y , v1,v2); }")
     }
 
     it("should allow rng in a generated quantity") {
-      val gen = new GeneratedQuantity(real()) { continuous.rng }
+      val gen = new GeneratedQuantity(real()) { stan.normal(v1, v2).rng }
     }
 
     it("should not allow rng in a model") {
-      "val model = new Model { continuous.rng }" shouldNot compile
+      "val model = new Model { stan.normal(v1, v2).rng }" shouldNot compile
+    }
+
+    it("should allow rng with addition") {
+      val gen = new GeneratedQuantity(real()) { result := result + stan.normal(v1, v2).rng }
     }
   }
 }

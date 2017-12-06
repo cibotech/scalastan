@@ -252,12 +252,16 @@ trait ScalaStan extends Implicits { ss =>
       _codeBuffer += ReturnNode(value)
     }
 
-    def apply(args: StanValue[_]*): FunctionNode[RETURN_TYPE] = {
+    private[scalastan] def markUsed(): Unit = {
       val name = result.emit
       if (!functions.exists(_.result.emit == name)) {
         functions += this
       }
-      val node = FunctionNode[RETURN_TYPE](name, args: _*)
+    }
+
+    def apply(args: StanValue[_]*): FunctionNode[RETURN_TYPE] = {
+      markUsed()
+      val node = FunctionNode[RETURN_TYPE](result.emit, args: _*)
       if (returnType == StanVoid()) {
         _codeBuffer += node
       }
@@ -265,8 +269,8 @@ trait ScalaStan extends Implicits { ss =>
     }
 
     private[ScalaStan] def emit(writer: PrintWriter): Unit = {
-      val params = inputs.map(_.emitDeclaration).mkString(",")
-      writer.println(s"${returnType.typeName} ${result.emit}($params) {")
+      val params = inputs.map(_.emitFunctionDeclaration).mkString(",")
+      writer.println(s"${returnType.emitFunctionDeclaration} ${result.emit}($params) {")
       emitCode(writer)
       writer.println("}")
     }

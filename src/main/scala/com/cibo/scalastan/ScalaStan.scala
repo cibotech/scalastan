@@ -283,7 +283,9 @@ trait ScalaStan extends Implicits { ss =>
   }
 
   abstract class DataTransform[T <: StanType](typeConstructor: T) extends TransformBase[T, StanLocalDeclaration[T]] {
-    lazy val result: StanLocalDeclaration[T] = StanLocalDeclaration[T](typeConstructor, () => _userName)
+    lazy val result: StanLocalDeclaration[T] = StanLocalDeclaration[T](
+      typeConstructor, () => _userName, derivedFromData = true
+    )
 
     if (!dataTransforms.exists(_._id == _id)) {
       dataTransforms += this

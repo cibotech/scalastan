@@ -81,10 +81,11 @@ case class StanParameterDeclaration[T <: StanType] private[scalastan] (
 
 case class StanLocalDeclaration[T <: StanType] private[scalastan] (
   private[scalastan] val typeConstructor: T,
-  protected val internalNameFunc: () => Option[String] = () => None
+  protected val internalNameFunc: () => Option[String] = () => None,
+  private val derivedFromData: Boolean = false
 )(implicit ss: ScalaStan) extends StanDeclaration[T] with Assignable[T] with Updatable[T] {
   private[scalastan] type DECL_TYPE = StanLocalDeclaration[T]
-  private[scalastan] def isDerivedFromData: Boolean = false
+  private[scalastan] def isDerivedFromData: Boolean = derivedFromData
 }
 
 case class StanInlineDeclaration[T <: StanType](

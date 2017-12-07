@@ -203,4 +203,12 @@ class StanValueSpec extends ScalaStanBaseSpec {
       d.emit should fullyMatch regex "v[0-9]+\\[1:2\\]"
     }
   }
+
+  describe("multiple indexes") {
+    ignore("can have multiple indexes") {
+      val i = StanDataDeclaration[StanArray[StanInt]](StanArray(None, StanInt()))
+      val vec = StanDataDeclaration[StanArray[StanReal]](StanArray(None, StanReal()))
+      vec(i).emit should fullyMatch regex "v[0-9]+\\[v[0-9]+\\]"
+    }
+  }
 }

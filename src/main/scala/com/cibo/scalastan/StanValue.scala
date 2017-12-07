@@ -102,7 +102,11 @@ abstract class StanValue[T <: StanType] extends StanNode with Implicits {
 }
 
 trait ReadOnlyIndex[T <: StanType] { self: StanValue[T] =>
-  def apply(index: StanValue[StanInt]): IndexOperator[T, T#NEXT_TYPE] = IndexOperator(this, index)
+  def apply[I <: StanType, N <: StanType](
+    index: StanValue[I]
+  )(
+    implicit ev: IndexAllowed[T, I, N]
+  ): IndexOperator[T, N] = IndexOperator(this, index)
 
   def apply(
     index1: StanValue[StanInt],
@@ -140,11 +144,12 @@ trait Assignable[T <: StanType] { self: StanValue[T] =>
     code += BinaryOperator[T, T, R]("=", this, right, parens = false)
   }
 
-  def apply(
-    index: StanValue[StanInt]
-  ): IndexOperatorWithAssignment[T, T#NEXT_TYPE, DECL_TYPE] = {
+  def apply[I <: StanType, N <: StanType](
+    index: StanValue[I]
+  )(
+    implicit ev: IndexAllowed[T, I, N]
+  ): IndexOperatorWithAssignment[T, N, DECL_TYPE] =
     IndexOperatorWithAssignment(this, index)
-  }
 
   def apply(
     index1: StanValue[StanInt],
@@ -262,7 +267,7 @@ case class BinaryOperator[T <: StanType, L <: StanType, R <: StanType] private[s
 
 case class IndexOperator[T <: StanType, N <: StanType] private[scalastan] (
   private val value: StanValue[T],
-  private val indices: StanValue[StanInt]*
+  private val indices: StanValue[_]*
 ) extends StanValue[N] with ReadOnlyIndex[N] {
   private[scalastan] def isDerivedFromData: Boolean = value.isDerivedFromData && indices.forall(_.isDerivedFromData)
   private[scalastan] def emit: String = value.emit + indices.map(_.emit).mkString("[", ",", "]")
@@ -279,7 +284,7 @@ case class SliceOperator[T <: StanType] private[scalastan] (
 
 case class IndexOperatorWithAssignment[T <: StanType, N <: StanType, D <: StanDeclaration[_]] private[scalastan] (
   private val value: StanValue[T],
-  private val indices: StanValue[StanInt]*
+  private val indices: StanValue[_]*
 ) extends StanValue[N] with Assignable[N] {
   private[scalastan] type DECL_TYPE = D
   private[scalastan] def isDerivedFromData: Boolean = value.isDerivedFromData && indices.forall(_.isDerivedFromData)

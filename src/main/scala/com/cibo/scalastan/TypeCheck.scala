@@ -223,6 +223,15 @@ protected object Is0or1Dimensional {
   implicit val isCatArray = new Is0or1Dimensional[StanArray[StanCategorical]]
 }
 
+@implicitNotFound("${T} must be 1 or 2 dimensional")
+protected sealed class Is1or2Dimensional[T <: StanType] extends TypeCheck
+
+protected object Is1or2Dimensional {
+  implicit def isVectorLike[T <: StanVectorLike] = new Is1or2Dimensional[T]
+  implicit def isMatrix[T <: StanMatrix] = new Is1or2Dimensional[T]
+  implicit def isArray0or1[T <: StanType: Is0or1Dimensional] = new Is1or2Dimensional[StanArray[T]]
+}
+
 @implicitNotFound("toMatrix not supported for type ${T}")
 protected sealed class ToMatrixAllowed[T <: StanType] extends TypeCheck
 
@@ -271,7 +280,7 @@ protected object AppendRowAllowed {
   implicit val appendRowVD = new AppendRowAllowed[StanVector, StanReal, StanVector]
 }
 
-@implicitNotFound("invalid vectorization")
+@implicitNotFound("invalid vectorization: ${T}")
 protected sealed class Vectorized1[T <: StanType] extends TypeCheck
 
 protected object Vectorized1 {
@@ -309,4 +318,12 @@ protected object Vectorized4 {
     C <: StanType: Is0or1Dimensional,
     D <: StanType: Is0or1Dimensional
   ] = new Vectorized4[A, B, C, D]
+}
+
+@implicitNotFound("index not allowed")
+protected sealed class IndexAllowed[T <: StanType, I <: StanType, N <: StanType]
+
+protected object IndexAllowed {
+  implicit def dereference[T <: StanType, I <: StanInt] = new IndexAllowed[T, I, T#NEXT_TYPE]
+  implicit def combine1[T <: StanType, I <: StanArray[StanInt]] = new IndexAllowed[T, I, T]
 }

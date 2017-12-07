@@ -32,7 +32,7 @@ case class SoftKMeans(
   private val model = new Model {
     // Prior
     for (i <- range(1, k)) {
-      mu(k) ~ stan.normal(0, 1)
+      mu(i) ~ stan.normal(0, 1)
     }
 
     // Likelihood

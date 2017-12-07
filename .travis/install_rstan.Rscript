@@ -1,0 +1,23 @@
+#!/usr/bin/env Rscript
+
+# https://github.com/stan-dev/rstan/wiki/Installing-RStan-on-Mac-or-Linux
+
+# travis has 2 cores available
+Sys.setenv(MAKEFLAGS = "-j2") 
+
+dotR <- file.path(Sys.getenv("HOME"), ".R")
+if (!file.exists(dotR)) dir.create(dotR)
+M <- file.path(dotR, "Makevars")
+if (!file.exists(M)) file.create(M)
+
+cat("\nCXXFLAGS=-O3 -mtune=native -march=native -Wno-unused-variable -Wno-unused-function", 
+    file = M, sep = "\n", append = TRUE)
+
+cat("\nCXXFLAGS+=-flto -ffat-lto-objects  -Wno-unused-local-typedefs", 
+    file = M, sep = "\n", append = TRUE)
+
+cat("\nCXXFLAGS += -Wno-ignored-attributes -Wno-deprecated-declarations", 
+    file = M, sep = "\n", append = TRUE)
+
+
+install.packages("rstan", repos = "https://cloud.r-project.org/", dependencies=TRUE)

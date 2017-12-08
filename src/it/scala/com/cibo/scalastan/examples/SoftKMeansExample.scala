@@ -2,6 +2,8 @@ package com.cibo.scalastan.examples
 
 import com.cibo.scalastan.models.SoftKMeans
 
+class SoftKMeansExampleSpec extends AppRunnerSpec(SoftKMeansExample)
+
 object SoftKMeansExample extends App {
 
   val observations = Seq[Seq[Double]](

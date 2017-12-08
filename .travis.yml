@@ -1,22 +1,38 @@
-sudo: false
+sudo: true
 
-language: scala
+env:
+  matrix:
+  - SCALA_VERSION=2.11.11
+  - SCALA_VERSION=2.12.4
+  global:
+  - SBT_VERSION=1.0.3
 
-scala:
-  - 2.11.11
-  - 2.12.4
+language: r
 
-jdk:
-  oraclejdk8
+addons:
+  apt:
+    packages:
+    - g++
+    - oracle-java8-set-default
+
+install:
+- .travis/install_scala.sh
+- .travis/install_rstan.Rscript
+
+# - R -f .travis/verify_rstan.Rscript
 
 before_cache:
   - find $HOME/.sbt -name "*.lock" | xargs rm
   - find $HOME/.ivy2 -name "ivydata-*.properties" | xargs rm
 
 cache:
-  directories:
-  - $HOME/.ivy2/cache/
-  - $HOME/.sbt/boot/
+  - packages
+  - directories:
+    - $HOME/R/Library
+    - $HOME/.ivy2/cache/
+    - $HOME/.sbt/boot/
+
 
 script:
-  - sbt ++$TRAVIS_SCALA_VERSION test
+  - sbt ++$SCALA_VERSION test it:test
+  - R -f .travis/verify_rstan.Rscript

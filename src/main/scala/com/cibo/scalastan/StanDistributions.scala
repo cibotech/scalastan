@@ -59,7 +59,7 @@ protected trait StanDistributions {
   def categorical[T <: StanType: ContinuousType, R <: StanType](
     theta: StanValue[T]
   )(
-    implicit ev: Is1or2Dimensional[T]
+    implicit ev: Vectorized1[T]
   ): StanDiscreteDistributionWithoutCdf[R, StanInt] = StanDiscreteDistributionWithoutCdf("categorical", Seq(theta))
 
   def categorical_logit[T <: StanType: ContinuousType, R <: StanType](

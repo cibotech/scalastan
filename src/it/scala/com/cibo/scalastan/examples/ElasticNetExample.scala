@@ -12,6 +12,8 @@ package com.cibo.scalastan.examples
 
 import com.cibo.scalastan._
 
+class ElasticNetExampleSpec extends AppRunnerSpec(ElasticNetExample)
+
 object ElasticNetExample extends App with ScalaStan {
 
   // Elastic Net implementation based on code from

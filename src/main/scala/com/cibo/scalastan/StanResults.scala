@@ -203,14 +203,19 @@ case class StanResults private (
   /** Get the potential scale reduction factor for a parameter. */
   def psrf[T <: StanType](decl: StanParameterDeclaration[T]): T#SUMMARY_TYPE = combine(decl)(psrf)
 
-  private def cleanName(name: String, mapping: Map[String, String]): String = {
-    val parts = name.split("\\.")
-    val first = mapping.getOrElse(parts.head, parts.head)
-    if (parts.tail.nonEmpty) {
-      val indices = parts.tail.mkString("[", ",", "]")
-      s"$first$indices"
+  private def cleanName(name: String, mapping: Map[String, String]): Option[String] = {
+    if (name.endsWith("__")) {
+      Some(name)
     } else {
-      first
+      val parts = name.split('.')
+      mapping.get(parts.head).map { first =>
+        if (parts.tail.nonEmpty) {
+          val indices = parts.tail.mkString("[", ",", "]")
+          s"$first$indices"
+        } else {
+          first
+        }
+      }
     }
   }
 
@@ -244,9 +249,9 @@ case class StanResults private (
     (partitioned._1.map(_._1), partitioned._2.map(_._1))
   }
 
-  def summary(ps: PrintStream): Unit = {
+  def summary(ps: PrintStream, parameters: StanParameterDeclaration[_]*): Unit = {
     val pw = new PrintWriter(ps)
-    summary(pw)
+    summary(pw, parameters: _*)
     pw.flush()
   }
 
@@ -262,19 +267,22 @@ case class StanResults private (
     val psrfResult: Double = psrf(values)
   }
 
-  def summary(pw: PrintWriter): Unit = {
+  def summary(pw: PrintWriter, parameters: StanParameterDeclaration[_]*): Unit = {
 
     val fieldWidth = 8
 
     // Get a mapping from Stan name to ScalaStan name.
-    val mapping = model.ss.parameters.map(p => p.emit -> p.name).toMap
+    val parametersToShow = if (parameters.nonEmpty) parameters else model.ss.parameters
+    val mapping = parametersToShow.map(p => p.emit -> p.name).toMap
 
     // Build a mapping of name -> chain -> iteration -> value
     val names = chains.head.headOption.map(_.keys).getOrElse(Seq.empty)
-    val results: Seq[(String, Seq[Seq[Double]])] = names.par.map { name =>
-      cleanName(name, mapping) -> chains.map { chain =>
-        chain.map { iteration =>
-          Try(iteration(name).toDouble).getOrElse(Double.NaN)
+    val results: Seq[(String, Seq[Seq[Double]])] = names.par.flatMap { name =>
+      cleanName(name, mapping).map { cleanedName =>
+        cleanedName -> chains.map { chain =>
+          chain.map { iteration =>
+            Try(iteration(name).toDouble).getOrElse(Double.NaN)
+          }
         }
       }
     }.toVector.sortBy(_._1)

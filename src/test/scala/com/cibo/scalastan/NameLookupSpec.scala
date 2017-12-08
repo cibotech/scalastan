@@ -22,14 +22,14 @@ class NameLookupSpec extends FunSpec with Matchers {
       StanObjectInClass.y.name shouldBe "y"
     }
 
-    ignore("finds names in an anonymous class") {
+    it("finds names in an anonymous class") {
       val anon = new ScalaStan {
         val z = parameter(real())
       }
       anon.z.name shouldBe "z"
     }
 
-    ignore("finds names in an object in an anonymous class") {
+    it("finds names in an object in an anonymous class") {
       class T
       val anon = new T {
         object Test extends ScalaStan {

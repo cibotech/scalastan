@@ -30,7 +30,7 @@ class ScalaStanSpec extends ScalaStanBaseSpec {
             x += 1
           }
         }
-        checkCode(model, "model { int v#; for(v# in 1:2) { v# += 1; } }")
+        checkCode(model, "model { int x; for(v# in 1:2) { x += 1; } }")
       }
     }
 
@@ -42,7 +42,7 @@ class ScalaStanSpec extends ScalaStanBaseSpec {
           val x = local(int())
           x += 1
         }
-        checkCode(model, "model { int v#; for(v# in 1:2) { } v# += 1; }")
+        checkCode(model, "model { int x; for(v# in 1:2) { } x += 1; }")
       }
     }
 
@@ -138,7 +138,7 @@ class ScalaStanSpec extends ScalaStanBaseSpec {
             val a = local(real())
             a ~ stan.normal(0, 1)
           }
-          checkCode(model, "model { real v#; v# ~ normal(0,1); }")
+          checkCode(model, "model { real a; a ~ normal(0,1); }")
         }
       }
     }
@@ -224,7 +224,7 @@ class ScalaStanSpec extends ScalaStanBaseSpec {
             val r = local(vector(local(int())))
             r(5) := 1
           }
-          checkCode(model, "v#[5] = 1;")
+          checkCode(model, "r[5] = 1;")
         }
       }
 
@@ -234,7 +234,7 @@ class ScalaStanSpec extends ScalaStanBaseSpec {
             val r = local(matrix(local(int()), local(int())))
             r(5, 6) := 1
           }
-          checkCode(model, "v#[5,6] = 1;")
+          checkCode(model, "r[5,6] = 1;")
         }
       }
     }

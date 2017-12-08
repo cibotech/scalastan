@@ -29,31 +29,40 @@ protected trait NameLookup {
 protected object NameLookup {
   import scala.reflect.runtime.{universe => ru}
 
-  private def findInInstance(obj: NameLookup, mirror: ru.InstanceMirror): Option[String] = {
-    if (mirror.instance.getClass.isSynthetic || mirror.instance.getClass.isPrimitive) {
+  private def findInInstance(obj: NameLookup, mirror: ru.InstanceMirror, depth: Int = 0): Option[String] = {
+    val maxDepth = 4
+    if (depth > maxDepth || mirror.instance.getClass.isSynthetic) {
       None
     } else {
-      Try {
-        val scope = mirror.symbol.typeSignature.decls
-        scope.find { decl =>
-          if (decl.isMethod && decl.asMethod.isGetter && decl.asMethod.returnType <:< ru.typeOf[NameLookup]) {
-            mirror.reflectMethod(decl.asMethod).apply().asInstanceOf[NameLookup]._id == obj._id
-          } else {
-            false
-          }
-        }.map(_.name.decodedName.toString).orElse {
-          scope.view.filter { decl =>
-            decl.isMethod && decl.asMethod.isGetter
-          }.flatMap { decl =>
-            val method = mirror.reflectMethod(decl.asMethod)
-            val instanceOrNull = method.apply()
-            Option(instanceOrNull).flatMap { instance =>
-              val innerMirror = ru.runtimeMirror(instance.getClass.getClassLoader).reflect(instance)
-              findInInstance(obj, innerMirror)
-            }
-          }.headOption
+      // For some reason, we sometimes fail to get the symbol object the first time...
+      val symbols = Try(mirror.symbol).getOrElse(mirror.symbol)
+      val terms = symbols.typeSignature.decls.filter(d => d.isTerm).map(_.asTerm)
+      terms.find { decl =>
+        if (decl.isMethod && decl.asMethod.isGetter && decl.asMethod.returnType <:< ru.typeOf[NameLookup]) {
+          mirror.reflectMethod(decl.asMethod).apply().asInstanceOf[NameLookup]._id == obj._id
+        } else if (decl.isJava && (decl.isVal || decl.isVar) && decl.typeSignature <:< ru.typeOf[NameLookup]) {
+          mirror.reflectField(decl).get.asInstanceOf[NameLookup]._id == obj._id
+        } else {
+          false
         }
-      }.toOption.flatten
+      }.map(_.name.decodedName.toString).orElse {
+        terms.view.flatMap { decl =>
+          val instanceOpt = if (decl.isMethod && decl.asMethod.isGetter) {
+            Option(mirror.reflectMethod(decl.asMethod).apply())
+          } else if (decl.isJava && (decl.isVal || decl.isVar)) {
+            Option(mirror.reflectField(decl).get)
+          } else {
+            None
+          }
+          instanceOpt.filterNot(_.getClass.isSynthetic).flatMap { instance =>
+            val innerMirror = ru.runtimeMirror(instance.getClass.getClassLoader).reflect(instance)
+            if (Try(innerMirror.symbol).isFailure) {
+              println("WHAT" + instance)
+            }
+            findInInstance(obj, innerMirror, depth + 1)
+          }
+        }.headOption
+      }
     }
   }
 
@@ -66,9 +75,11 @@ protected object NameLookup {
   }
 
   private[scalastan] def lookupName(obj: NameLookup)(implicit ss: ScalaStan): Option[String] = {
-    val mirror = ru.runtimeMirror(ss.getClass.getClassLoader)
-    val classLoader = ss.getClass.getClassLoader
-    val instanceMirror = mirror.reflect(ss)
-    findInInstance(obj, instanceMirror).flatMap(fixName)
+    Try {
+      val classLoader = ss.getClass.getClassLoader
+      val mirror = ru.runtimeMirror(classLoader)
+      val instanceMirror = mirror.reflect(ss)
+      findInInstance(obj, instanceMirror).flatMap(fixName)
+    }.getOrElse(None)
   }
 }

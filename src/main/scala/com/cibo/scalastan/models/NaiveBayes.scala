@@ -51,7 +51,9 @@ case class NaiveBayes(
     for (i <- range(1, m)) {
       z(i) ~ stan.categorical(theta)
     }
-    w ~ stan.categorical(phi(z(doc)))
+    for (i <- w.range) {
+      w(i) ~ stan.categorical(phi(z(doc(i))))
+    }
   }
 
   private def defaultTopicPrior: Seq[Double] = Seq.fill[Double](topicCount)(1.0 / topicCount)

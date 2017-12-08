@@ -193,9 +193,12 @@ case class StanResults private (
   }
 
   private def psrf(values: Seq[Seq[Double]]): Double = {
-    val n = values.head.size.toDouble
-    val w = withinSampleVariance(values)
-    val b = betweenSampleVariance(values)
+    // Split into 2m chains of length n/2
+    val groupSize = (iterationsPerChain + 1) + 2
+    val groupedValues = values.flatMap(_.grouped(groupSize))
+    val n = groupedValues.head.size.toDouble
+    val w = withinSampleVariance(groupedValues)
+    val b = betweenSampleVariance(groupedValues)
     val varPlus = ((n - 1.0) * w + b) / n
     math.sqrt(varPlus / w)
   }

@@ -17,6 +17,7 @@ class AppRunnerSpec(app: App) extends FunSpec with Matchers {
 
   describe(description) {
     it("can run the app") {
+      app.main(Array.empty)
       noException should be thrownBy app.main(Array.empty)
     }
   }

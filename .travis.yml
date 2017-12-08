@@ -34,5 +34,5 @@ cache:
 
 
 script:
-  - sbt ++$SCALA_VERSION test
+  - sbt ++$SCALA_VERSION test it:test
   - R -f .travis/verify_rstan.Rscript

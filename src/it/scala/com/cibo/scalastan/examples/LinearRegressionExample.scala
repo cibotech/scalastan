@@ -12,6 +12,8 @@ package com.cibo.scalastan.examples
 
 import com.cibo.scalastan.models.LinearRegression
 
+class LinearRegressionExampleSpec extends AppRunnerSpec(LinearRegressionExample)
+
 object LinearRegressionExample extends App {
 
   val xs = Seq[Seq[Double]](Seq(1), Seq(2), Seq(3), Seq(4), Seq(6))

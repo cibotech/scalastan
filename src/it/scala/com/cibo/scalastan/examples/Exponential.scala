@@ -12,6 +12,8 @@ package com.cibo.scalastan.examples
 
 import com.cibo.scalastan.ScalaStan
 
+class ExponentialISpec extends AppRunnerSpec(Exponential)
+
 object Exponential extends App with ScalaStan {
 
   val n = data(int(lower = 0))

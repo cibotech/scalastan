@@ -12,6 +12,8 @@ package com.cibo.scalastan.examples
 
 import com.cibo.scalastan.ScalaStan
 
+class KidScoreMomHsSpec extends AppRunnerSpec(KidScoreMomHs)
+
 object KidScoreMomHs extends App with ScalaStan {
 
   val N = data(int(lower = 0))

@@ -2,6 +2,8 @@ package com.cibo.scalastan.examples
 
 import com.cibo.scalastan.models.NaiveBayes
 
+class NaiveBayesExampleSpec extends AppRunnerSpec(NaiveBayesExample)
+
 object NaiveBayesExample extends App {
 
   // Mapping from group -> document -> words

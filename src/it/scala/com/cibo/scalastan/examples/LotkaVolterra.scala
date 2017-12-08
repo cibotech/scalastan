@@ -2,6 +2,8 @@ package com.cibo.scalastan.examples
 
 import com.cibo.scalastan.ScalaStan
 
+class LotkaVolterraSpec extends AppRunnerSpec(LotkaVolterra)
+
 object LotkaVolterra extends App with ScalaStan {
 
   val dz_dt = new Function(real()()) {

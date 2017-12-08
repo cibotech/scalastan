@@ -10,7 +10,9 @@
 
 package com.cibo.scalastan.examples
 
-import com.cibo.scalastan.{ScalaStan, StanInt}
+import com.cibo.scalastan.ScalaStan
+
+class KidIqSpec extends AppRunnerSpec(KidIq)
 
 object KidIq extends App with ScalaStan {
 

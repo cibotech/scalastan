@@ -62,6 +62,9 @@ case class StanResults private (
   }
 
   /** Get the best scoring sample. */
+  def best(values: Seq[Seq[Double]]): Double = values.apply(bestChain).apply(bestIndex)
+
+  /** Get the best scoring sample. */
   def best[T <: StanType](decl: StanParameterDeclaration[T]): T#SCALA_TYPE =
     samples(decl).apply(bestChain).apply(bestIndex)
 
@@ -74,13 +77,7 @@ case class StanResults private (
     tc.combine(samples(decl).asInstanceOf[Seq[Seq[tc.SCALA_TYPE]]])(func)
   }
 
-  private def combineSingle[T <: StanType](
-    decl: StanParameterDeclaration[T]
-  )(
-    func: Seq[Double] => Double
-  ): T#SUMMARY_TYPE = combine(decl)(vs => func(vs.flatten))
-
-  private def meanAndVariance(values: Seq[Double]): (Double, Double) = {
+  private def meanAndVariance1d(values: Seq[Double]): (Double, Double) = {
     var n = 0.0
     var m1 = 0.0
     var m2 = 0.0
@@ -94,7 +91,7 @@ case class StanResults private (
     (m1, if (n < 2.0) Double.NaN else m2 / (n - 1.0))
   }
 
-  private def mean(values: Seq[Double]): Double = {
+  private def mean1d(values: Seq[Double]): Double = {
     var n = 0.0
     var result = 0.0
     values.foreach { x =>
@@ -105,54 +102,68 @@ case class StanResults private (
     result
   }
 
-  private def variance(values: Seq[Double]): Double = meanAndVariance(values)._2
+  private def variance1d(values: Seq[Double]): Double = meanAndVariance1d(values)._2
 
   /** Get the mean of all samples across all chains and iterations. */
-  def mean[T <: StanType](decl: StanParameterDeclaration[T]): T#SUMMARY_TYPE =
-    combineSingle(decl)(mean)
+  def mean(values: Seq[Seq[Double]]): Double = mean1d(values.flatten)
+
+  /** Get the mean of all samples across all chains and iterations. */
+  def mean[T <: StanType](decl: StanParameterDeclaration[T]): T#SUMMARY_TYPE = combine(decl)(mean)
 
   private def mcse(v: Double, ess: Double): Double = math.sqrt(v) / math.sqrt(ess)
 
-  private def mcse(values: Seq[Seq[Double]]): Double =
-    mcse(variance(values.flatten), effectiveSampleSize(values))
+  /** Get the MCSE of a all samples across all chains and iterations. */
+  def mcse(values: Seq[Seq[Double]]): Double = mcse(variance(values), effectiveSampleSize(values))
 
   /** Get the MCSE of a all samples across all chains and iterations. */
   def mcse[T <: StanType](decl: StanParameterDeclaration[T]): T#SUMMARY_TYPE =
     combine(decl)(mcse)
 
   /** Get the variance of a all samples across all chains and iterations. */
-  def variance[T <: StanType, R](decl: StanParameterDeclaration[T]): T#SUMMARY_TYPE =
-    combineSingle(decl)(variance)
+  def variance(values: Seq[Seq[Double]]): Double = variance1d(values.flatten)
 
-  private def sd(values: Seq[Double]): Double = math.sqrt(variance(values))
+  /** Get the variance of a all samples across all chains and iterations. */
+  def variance[T <: StanType, R](decl: StanParameterDeclaration[T]): T#SUMMARY_TYPE = combine(decl)(variance)
 
   /** Get the standard deviation of a all samples across all chains and iterations. */
-  def sd[T <: StanType](decl: StanParameterDeclaration[T]): T#SUMMARY_TYPE =
-    combineSingle(decl)(sd)
+  def sd(values: Seq[Seq[Double]]): Double = math.sqrt(variance(values))
+
+  /** Get the standard deviation of a all samples across all chains and iterations. */
+  def sd[T <: StanType](decl: StanParameterDeclaration[T]): T#SUMMARY_TYPE = combine(decl)(sd)
 
   private def quantileSorted(frac: Double)(sortedValues: Seq[Double]): Double = {
     val index = math.min((sortedValues.size.toDouble * frac).round.toInt, sortedValues.size - 1)
     sortedValues(index)
   }
 
-  private def quantile(frac: Double)(values: Seq[Double]): Double = quantileSorted(frac)(values.sorted)
+  /** Get the specified quantile of all samples across all chains and iterations. */
+  def quantile(values: Seq[Seq[Double]], prob: Double): Double = {
+    require(prob > 0.0 && prob < 1.0)
+    quantileSorted(prob)(values.flatten.sorted)
+  }
 
   /** Get the specified quantile of all samples across all chains and iterations. */
   def quantile[T <: StanType](decl: StanParameterDeclaration[T], prob: Double = 0.5): T#SUMMARY_TYPE = {
     require(prob > 0.0 && prob < 1.0)
-    combineSingle(decl)(quantile(prob))
+    combine(decl)(vs => quantile(vs, prob))
   }
 
   /** Get the minimum of all samples across all chains and iterations. */
-  def min[T <: StanType](decl: StanParameterDeclaration[T]): T#SUMMARY_TYPE = combineSingle(decl)(_.min)
+  def min(values: Seq[Seq[Double]]): Double = values.flatten.min
+
+  /** Get the minimum of all samples across all chains and iterations. */
+  def min[T <: StanType](decl: StanParameterDeclaration[T]): T#SUMMARY_TYPE = combine(decl)(min)
 
   /** Get the maximum of all samples across all chains and iterations. */
-  def max[T <: StanType](decl: StanParameterDeclaration[T]): T#SUMMARY_TYPE = combineSingle(decl)(_.max)
+  def max(values: Seq[Seq[Double]]): Double = values.flatten.max
+
+  /** Get the maximum of all samples across all chains and iterations. */
+  def max[T <: StanType](decl: StanParameterDeclaration[T]): T#SUMMARY_TYPE = combine(decl)(max)
 
   private def autocovariance(k: Int, x: Seq[Double]): Double = {
     val n = x.size
-    val xMean = mean(x)
-    mean {
+    val xMean = mean1d(x)
+    mean1d {
       (0 until n - k).map { i =>
         (x(i + k) - xMean) * (x(i) - xMean)
       }
@@ -162,13 +173,13 @@ case class StanResults private (
   private def effectiveSampleSize(values: Seq[Seq[Double]]): Double = {
     val n = values.head.size // Samples per chain
     val m = values.size // Number of chains
-    val chainMeansAndVars = values.map(meanAndVariance)
+    val chainMeansAndVars = values.map(meanAndVariance1d)
     val chainMeans = chainMeansAndVars.map(_._1)
-    val meanVar = mean(chainMeansAndVars.map(_._2))
-    val varPlus = meanVar * (n - 1) / n + (if (m > 1) variance(chainMeans) else 0.0)
+    val meanVar = mean1d(chainMeansAndVars.map(_._2))
+    val varPlus = meanVar * (n - 1) / n + (if (m > 1) variance1d(chainMeans) else 0.0)
     val rho = (1 until n).view.map { t =>
       val acov_t = values.map(vs => autocovariance(t, vs))
-      1.0 - (meanVar - mean(acov_t)) / varPlus
+      1.0 - (meanVar - mean1d(acov_t)) / varPlus
     }.takeWhile(_ >= 0.0)
     (m * n) / (if (rho.size > 1) 1.0 + 2.0 * rho.sum else 1.0)
   }
@@ -181,18 +192,19 @@ case class StanResults private (
   private def betweenSampleVariance(values: Seq[Seq[Double]]): Double = {
     val m = values.size.toDouble
     val n = values.head.size.toDouble
-    val totalMean = mean(values.flatten)
+    val totalMean = mean(values)
     (n / (m - 1.0)) * values.map { vs =>
-      math.pow(mean(vs) - totalMean, 2)
+      math.pow(mean1d(vs) - totalMean, 2)
     }.sum
   }
 
   private def withinSampleVariance(values: Seq[Seq[Double]]): Double = {
     val m = values.size.toDouble
-    values.map(variance).sum / m
+    values.map(variance1d).sum / m
   }
 
-  private def psrf(values: Seq[Seq[Double]]): Double = {
+  /** Get the (split) potential scale reduction factor for a set of chains. */
+  def psrf(values: Seq[Seq[Double]]): Double = {
     // Split into 2m chains of length n/2
     val groupSize = (iterationsPerChain + 1) + 2
     val groupedValues = values.flatMap(_.grouped(groupSize))
@@ -203,7 +215,7 @@ case class StanResults private (
     math.sqrt(varPlus / w)
   }
 
-  /** Get the potential scale reduction factor for a parameter. */
+  /** Get the (split) potential scale reduction factor for a parameter. */
   def psrf[T <: StanType](decl: StanParameterDeclaration[T]): T#SUMMARY_TYPE = combine(decl)(psrf)
 
   private def cleanName(name: String, mapping: Map[String, String]): Option[String] = {
@@ -261,12 +273,12 @@ case class StanResults private (
   private case class SummaryStats(values: Seq[Seq[Double]]) {
     private val flattened = values.flatten
     private val sortedValues = flattened.sorted
-    val (meanResult, varianceResult) = meanAndVariance(flattened)
+    val (meanResult, varianceResult) = meanAndVariance1d(flattened)
     val essResult: Double = effectiveSampleSize(values)
     val mcseResult: Double = mcse(varianceResult, essResult)
-    val quantile5: Double = quantile(0.05)(sortedValues)
-    val quantile50: Double = quantile(0.5)(sortedValues)
-    val quantile95: Double = quantile(0.95)(sortedValues)
+    val quantile5: Double = quantileSorted(0.05)(sortedValues)
+    val quantile50: Double = quantileSorted(0.5)(sortedValues)
+    val quantile95: Double = quantileSorted(0.95)(sortedValues)
     val psrfResult: Double = psrf(values)
   }
 

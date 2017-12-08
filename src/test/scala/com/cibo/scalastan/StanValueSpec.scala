@@ -160,7 +160,7 @@ class StanValueSpec extends ScalaStanBaseSpec {
           val a = local(vector(5))
           a(2) := 2
         }
-        checkCode(model, "vector[5] v#; v#[2] = 2;")
+        checkCode(model, "vector[5] a; a[2] = 2;")
       }
     }
 
@@ -170,7 +170,7 @@ class StanValueSpec extends ScalaStanBaseSpec {
           val a = local(matrix(5, 6))
           a(2, 3) := 4
         }
-        checkCode(model, "matrix[5,6] v#; v#[2,3] = 4;")
+        checkCode(model, "matrix[5,6] a; a[2,3] = 4;")
       }
     }
   }
@@ -205,9 +205,10 @@ class StanValueSpec extends ScalaStanBaseSpec {
   }
 
   describe("multiple indexes") {
-    ignore("can have multiple indexes") {
-      val i = StanDataDeclaration[StanArray[StanInt]](StanArray(None, StanInt()))
-      val vec = StanDataDeclaration[StanArray[StanReal]](StanArray(None, StanReal()))
+    it("can have multiple indexes") {
+      val n = StanDataDeclaration[StanInt](StanInt())
+      val i = StanDataDeclaration[StanArray[StanInt]](StanArray(n, StanInt()))
+      val vec = StanDataDeclaration[StanArray[StanReal]](StanArray(n, StanReal()))
       vec(i).emit should fullyMatch regex "v[0-9]+\\[v[0-9]+\\]"
     }
   }

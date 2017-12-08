@@ -80,6 +80,10 @@ class StanResultsSpec extends ScalaStanBaseSpec {
     it("returns the best scalar sample") {
       results.best(TestScalaStan.v1) shouldBe 0
     }
+
+    it("returns the best lp") {
+      results.best(results.logPosterior) shouldBe 2
+    }
   }
 
   describe("mean") {
@@ -90,11 +94,19 @@ class StanResultsSpec extends ScalaStanBaseSpec {
     it("returns the mean vector") {
       results.mean(TestScalaStan.v2) shouldBe Vector(1.5, 2.5, 3.5)
     }
+
+    it("returns the mean lp") {
+      results.mean(results.logPosterior) shouldBe 1.5
+    }
   }
 
   describe("variance") {
     it("returns the variance") {
       results.variance(TestScalaStan.v1) shouldBe 0.5
+    }
+
+    it("returns the variance of lp") {
+      results.variance(results.logPosterior) shouldBe 0.5
     }
   }
 
@@ -102,17 +114,29 @@ class StanResultsSpec extends ScalaStanBaseSpec {
     it("returns the standard deviation") {
       results.sd(TestScalaStan.v1) shouldBe math.sqrt(0.5)
     }
+
+    it("returns the sd of lp") {
+      results.sd(results.logPosterior) shouldBe math.sqrt(0.5)
+    }
   }
 
   describe("min") {
     it("returns the min") {
       results.min(TestScalaStan.v1) shouldBe 0
     }
+
+    it("returns the min lp") {
+      results.min(results.logPosterior) shouldBe 1
+    }
   }
 
   describe("max") {
     it("returns the max") {
       results.max(TestScalaStan.v1) shouldBe 1
+    }
+
+    it("returns the max lp") {
+      results.max(results.logPosterior) shouldBe 2
     }
   }
 
@@ -123,6 +147,10 @@ class StanResultsSpec extends ScalaStanBaseSpec {
 
     it("returns 95%") {
       results.quantile(TestScalaStan.v1, 0.95) shouldBe 1
+    }
+
+    it("returns the 5% lp") {
+      results.quantile(results.logPosterior, 0.05) shouldBe 1
     }
   }
 
@@ -135,6 +163,10 @@ class StanResultsSpec extends ScalaStanBaseSpec {
   describe("mcse") {
     it("returns the mcse") {
       results.mcse(TestScalaStan.v1) shouldBe 0.5
+    }
+
+    it("returns the mcse lp") {
+      results.mcse(results.logPosterior) shouldBe 0.5
     }
   }
 

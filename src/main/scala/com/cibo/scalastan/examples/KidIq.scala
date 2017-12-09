@@ -19,7 +19,7 @@ object KidIq extends App with ScalaStan {
   val momIq = data(vector(N, lower = 0, upper = 200))
   val momHs = data(vector(N, lower = 0, upper = 1))
 
-  val inter = new DataTransform(vector(N)) {
+  val inter = new TransformedData(vector(N)) {
     result := momHs :* momIq
   }
 

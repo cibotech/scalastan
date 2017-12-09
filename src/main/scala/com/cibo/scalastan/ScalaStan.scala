@@ -32,8 +32,8 @@ trait ScalaStan extends Implicits { ss =>
   private[scalastan] val dataValues = ArrayBuffer[StanDataDeclaration[_]]()
   private val parameterValues = ArrayBuffer[StanParameterDeclaration[_]]()
   private val functions = ArrayBuffer[Function[_]]()
-  private val dataTransforms = ArrayBuffer[DataTransform[_]]()
-  private val parameterTransforms = ArrayBuffer[ParameterTransform[_]]()
+  private val transformedData = ArrayBuffer[TransformedData[_]]()
+  private val transformedParameters = ArrayBuffer[TransformedParameter[_]]()
   private val generatedQuantities = ArrayBuffer[GeneratedQuantity[_]]()
 
   private[scalastan] def nextId: Int = {
@@ -44,7 +44,7 @@ trait ScalaStan extends Implicits { ss =>
   }
 
   private[scalastan] def parameters: Seq[StanParameterDeclaration[_]] =
-    parameterValues ++ parameterTransforms.map(_.result) ++ generatedQuantities.map(_.result)
+    parameterValues ++ transformedParameters.map(_.result) ++ generatedQuantities.map(_.result)
 
   def data[T <: StanType](typeConstructor: T): StanDataDeclaration[T] = {
     val v = StanDataDeclaration[T](typeConstructor)
@@ -119,11 +119,11 @@ trait ScalaStan extends Implicits { ss =>
     dim: StanValue[StanInt]
   ): StanMatrix = StanMatrix(dim, dim, constraint = MatrixConstraint.CholeskyFactorCov)
 
-  implicit def dataTransform2Value[T <: StanType](transform: DataTransform[T]): StanLocalDeclaration[T] = {
+  implicit def dataTransform2Value[T <: StanType](transform: TransformedData[T]): StanLocalDeclaration[T] = {
     transform.result
   }
 
-  implicit def paramTransform2Value[T <: StanType](transform: ParameterTransform[T]): StanParameterDeclaration[T] = {
+  implicit def paramTransform2Value[T <: StanType](transform: TransformedParameter[T]): StanParameterDeclaration[T] = {
     transform.result
   }
 
@@ -304,22 +304,24 @@ trait ScalaStan extends Implicits { ss =>
     protected val _ss: ScalaStan = ss
   }
 
-  abstract class DataTransform[T <: StanType](typeConstructor: T) extends TransformBase[T, StanLocalDeclaration[T]] {
+  abstract class TransformedData[T <: StanType](typeConstructor: T) extends TransformBase[T, StanLocalDeclaration[T]] {
     lazy val result: StanLocalDeclaration[T] = StanLocalDeclaration[T](
       typeConstructor, () => _userName, derivedFromData = true
     )
 
-    if (!dataTransforms.exists(_._id == _id)) {
-      dataTransforms += this
+    if (!transformedData.exists(_._id == _id)) {
+      transformedData += this
     }
   }
 
-  abstract class ParameterTransform[T <: StanType](typeConstructor: T) extends TransformBase[T, StanParameterDeclaration[T]] {
+  abstract class TransformedParameter[T <: StanType](
+    typeConstructor: T
+  ) extends TransformBase[T, StanParameterDeclaration[T]] {
     lazy val result: StanParameterDeclaration[T] = StanParameterDeclaration[T](typeConstructor, () => _userName)
     protected implicit val _parameterTransform: InParameterTransform = InParameterTransform
 
-    if (!parameterTransforms.exists(_._id == _id)) {
-      parameterTransforms += this
+    if (!transformedParameters.exists(_._id == _id)) {
+      transformedParameters += this
     }
   }
 
@@ -365,11 +367,11 @@ trait ScalaStan extends Implicits { ss =>
       emitDeclarations(writer, dataValues)
       writer.println("}")
 
-      if (dataTransforms.nonEmpty) {
+      if (transformedData.nonEmpty) {
         writer.println("transformed data {")
-        emitDeclarations(writer, dataTransforms.map(_.result))
-        dataTransforms.foreach(t => t.emitTopLevelLocals(writer))
-        dataTransforms.foreach(t => t.emitCode(writer))
+        emitDeclarations(writer, transformedData.map(_.result))
+        transformedData.foreach(t => t.emitTopLevelLocals(writer))
+        transformedData.foreach(t => t.emitCode(writer))
         writer.println("}")
       }
 
@@ -377,11 +379,11 @@ trait ScalaStan extends Implicits { ss =>
       emitDeclarations(writer, parameterValues)
       writer.println("}")
 
-      if (parameterTransforms.nonEmpty) {
+      if (transformedParameters.nonEmpty) {
         writer.println("transformed parameters {")
-        emitDeclarations(writer, parameterTransforms.map(_.result))
-        parameterTransforms.foreach(t => t.emitTopLevelLocals(writer))
-        parameterTransforms.foreach(t => t.emitCode(writer))
+        emitDeclarations(writer, transformedParameters.map(_.result))
+        transformedParameters.foreach(t => t.emitTopLevelLocals(writer))
+        transformedParameters.foreach(t => t.emitCode(writer))
         writer.println("}")
       }
 

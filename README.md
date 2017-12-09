@@ -199,17 +199,17 @@ target += stan.normal(0.0, 1.0).lpdf(y)
 The built-in Stan functions are available in ScalaStan from the `stan` object.
 
 
-Data and Parameter Transforms
+Transformed Data and Parameters
 -----------------------------
 Transformed versions of data and parameters can be declared via the `transformed data` and `transformed parameters`
-sections in Stan. In ScalaStan, this is accomplished by extending the `DataTransform` or `ParameterTransform`
+sections in Stan. In ScalaStan, this is accomplished by extending the `TransformedData` or `TransformedParameter`
 classes.  These classes take a parameter that is the type of the transformed value.  The body of the class
 provides a DSL to encode the transformation using the same constructs as the model.  Inside this DSL, the
 value is accessed using `result`.
 
 Here is a simple data transform to add `1` to all elements of an array:
 ```scala
-val xPlusOne = new ParameterTransform(vector(n)) {
+val xPlusOne = new TransformedParameter(vector(n)) {
   result := x + 1
 }
 ```

@@ -51,37 +51,37 @@ case class Horseshoe(
   private val aux2Local = parameter(vector(p, lower = 0))
   private val caux = parameter(real(lower = 0))
 
-  private val tau0 = new DataTransform(real(lower = 0)) {
+  private val tau0 = new TransformedData(real(lower = 0)) {
     result := stan.fmin(p0, p - 1) / (p - stan.fmin(p0, p - 1)) / stan.pow(n, 0.5)
   }
 
   // Global shrinkage parameter.
-  private val tau = new ParameterTransform(real(lower = 0)) {
+  private val tau = new TransformedParameter(real(lower = 0)) {
     result := aux1Global * stan.sqrt(aux2Global) * tau0 * sigma
   }
 
   // Slab scale.
-  private val c = new ParameterTransform(real(lower = 0)) {
+  private val c = new TransformedParameter(real(lower = 0)) {
     result := slabScale * stan.sqrt(caux)
   }
 
   // Local shrinkage parameter.
-  private val lambda = new ParameterTransform(vector(p, lower = 0)) {
+  private val lambda = new TransformedParameter(vector(p, lower = 0)) {
     result := aux1Local :* stan.sqrt(aux2Local)
   }
 
   // "Truncated" local shrinkage parameter.
-  private val lambdaTilde = new ParameterTransform(vector(p, lower = 0)) {
+  private val lambdaTilde = new TransformedParameter(vector(p, lower = 0)) {
     result := stan.sqrt((c ^ 2) * stan.square(lambda) :/ ((c ^ 2) + (tau ^ 2) * stan.square(lambda)))
   }
 
   // Regression coefficients.
-  val beta: StanParameterDeclaration[StanVector] = new ParameterTransform(vector(p)) {
+  val beta: StanParameterDeclaration[StanVector] = new TransformedParameter(vector(p)) {
     result := z :* lambdaTilde * tau
   }
 
   // Latent function values.
-  private val f = new ParameterTransform(vector(n)) {
+  private val f = new TransformedParameter(vector(n)) {
     result := beta0 + x * beta
   }
 

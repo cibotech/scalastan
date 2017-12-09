@@ -21,7 +21,7 @@ object Dogs extends App with ScalaStan {
 
   val beta = parameter(vector(3))
 
-  val nAvoid = new ParameterTransform(matrix(nDogs, nTrials)) {
+  val nAvoid = new TransformedParameter(matrix(nDogs, nTrials)) {
     for (j <- range(1, nDogs)) {
       result(j, 1) := 0
       for (t <- range(2, nTrials)) {
@@ -30,7 +30,7 @@ object Dogs extends App with ScalaStan {
     }
   }
 
-  val nShock = new ParameterTransform(matrix(nDogs, nTrials)) {
+  val nShock = new TransformedParameter(matrix(nDogs, nTrials)) {
     for (j <- range(1, nDogs)) {
       result(j, 1) := 0
       for (t <- range(2, nTrials)) {
@@ -39,7 +39,7 @@ object Dogs extends App with ScalaStan {
     }
   }
 
-  val p = new ParameterTransform(matrix(nDogs, nTrials)) {
+  val p = new TransformedParameter(matrix(nDogs, nTrials)) {
     for (j <- range(1, nDogs)) {
       for (t <- range(1, nTrials)) {
         result(j, t) := beta(1) + beta(2) * nAvoid(j, t) + beta(3) * nShock(j, t)

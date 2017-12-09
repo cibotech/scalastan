@@ -33,7 +33,7 @@ object LotkaVolterra extends App with ScalaStan {
   val z0 = parameter(real(lower = 0)(2))
   val sigma = parameter(real(lower = 0)(2))
 
-  val z = new ParameterTransform(real()(N, 2)) {
+  val z = new TransformedParameter(real()(N, 2)) {
     result := stan.integrate_ode_rk45(dz_dt, z0, 0.0, ts, theta, stan.rep_array(0.0, 0),
       stan.rep_array(0, 0), 1e-6, 1e-4, 1000)
   }

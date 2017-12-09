@@ -1,10 +1,10 @@
 package com.cibo.scalastan
 
-class ParameterTransformSpec extends ScalaStanBaseSpec {
+class TransformedParameterSpec extends ScalaStanBaseSpec {
   describe("ParameterTransform") {
     it("should allow assignment to the result") {
       new ScalaStan {
-        new ParameterTransform(real()) {
+        new TransformedParameter(real()) {
           result := 1
         }
         val model = new Model {}
@@ -14,7 +14,7 @@ class ParameterTransformSpec extends ScalaStanBaseSpec {
 
     it("should allow updating the result") {
       new ScalaStan {
-        new ParameterTransform(real()) {
+        new TransformedParameter(real()) {
           result += 1
         }
         val model = new Model {}
@@ -24,7 +24,7 @@ class ParameterTransformSpec extends ScalaStanBaseSpec {
 
     it("should allow updating the result by index") {
       new ScalaStan {
-        new ParameterTransform(vector(2)) {
+        new TransformedParameter(vector(2)) {
           result(1) := 2.0
         }
         val model = new Model {}
@@ -34,7 +34,7 @@ class ParameterTransformSpec extends ScalaStanBaseSpec {
 
     it("should allow updating the result by slice") {
       new ScalaStan {
-        new ParameterTransform(vector(5)) {
+        new TransformedParameter(vector(5)) {
           result(range(1, 2)) := result(range(3, 4))
         }
         val model = new Model {}

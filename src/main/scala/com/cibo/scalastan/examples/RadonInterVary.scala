@@ -31,11 +31,11 @@ object RadonInterVary extends App with ScalaStan {
   val sigmaBeta = parameter(real(lower = 0, upper = 100))
   val sigmaY = parameter(real(lower = 0, upper = 100))
 
-  val inter = new DataTransform(vector(N)) {
+  val inter = new TransformedData(vector(N)) {
     result := u :* x
   }
 
-  val yhat = new ParameterTransform(vector(N)) {
+  val yhat = new TransformedParameter(vector(N)) {
     for (i <- range(1, N)) {
       result(i) := a(county(i)) + x(i) * b(county(i)) + beta(1) * u(i) + beta(2) * inter(i)
     }

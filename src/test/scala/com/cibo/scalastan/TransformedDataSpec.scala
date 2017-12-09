@@ -1,10 +1,10 @@
 package com.cibo.scalastan
 
-class DataTransformSpec extends ScalaStanBaseSpec {
+class TransformedDataSpec extends ScalaStanBaseSpec {
   describe("DataTransform") {
     it("should allow assignment to result") {
       new ScalaStan {
-        new DataTransform(real()) {
+        new TransformedData(real()) {
           result := 5.0
         }
         val model = new Model {}

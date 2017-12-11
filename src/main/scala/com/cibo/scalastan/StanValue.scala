@@ -85,9 +85,9 @@ abstract class StanValue[T <: StanType] extends StanNode with Implicits {
   ): StanValue[T] = BinaryOperator("^", this, right)
 
   // Element-wise operators.
-  def :*(right: StanValue[T])(implicit ev: IsCompoundType[T]): StanValue[T] =
+  def *:*(right: StanValue[T])(implicit ev: IsCompoundType[T]): StanValue[T] =
     BinaryOperator(".*", this, right)
-  def :/[B <: StanType, R <: StanType](
+  def /:/[B <: StanType, R <: StanType](
     right: StanValue[B]
   )(implicit ev: ElementWiseDivisionAllowed[R, T, B]): StanValue[R]= BinaryOperator("./", this, right)
 

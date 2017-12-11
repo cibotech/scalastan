@@ -67,17 +67,17 @@ case class Horseshoe(
 
   // Local shrinkage parameter.
   private val lambda = new TransformedParameter(vector(p, lower = 0)) {
-    result := aux1Local :* stan.sqrt(aux2Local)
+    result := aux1Local *:* stan.sqrt(aux2Local)
   }
 
   // "Truncated" local shrinkage parameter.
   private val lambdaTilde = new TransformedParameter(vector(p, lower = 0)) {
-    result := stan.sqrt((c ^ 2) * stan.square(lambda) :/ ((c ^ 2) + (tau ^ 2) * stan.square(lambda)))
+    result := stan.sqrt((c ^ 2) * stan.square(lambda) /:/ ((c ^ 2) + (tau ^ 2) * stan.square(lambda)))
   }
 
   // Regression coefficients.
   val beta: StanParameterDeclaration[StanVector] = new TransformedParameter(vector(p)) {
-    result := z :* lambdaTilde * tau
+    result := z *:* lambdaTilde * tau
   }
 
   // Latent function values.

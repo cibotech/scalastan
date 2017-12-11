@@ -136,7 +136,7 @@ and `%`.
 The logical operators `<`, `<=`, `>`, `>=` operate as expected, however, note that test for equality
 is `===` (three `=`s instead of `==`) and test for inequality is `=/=` (instead of `!=`).
 
-Stan supports element-wise multiplication and division, which are `:*` and `:/` in ScalaStan.
+Stan supports element-wise multiplication and division, which are `*:*` and `/:/` in ScalaStan.
 
 The power operator is `^`.
 

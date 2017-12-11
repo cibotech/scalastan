@@ -60,6 +60,21 @@ class ScalaStanSpec extends ScalaStanBaseSpec {
   }
 
   describe("model") {
+    it("allows the same parameter with multiple models") {
+      new ScalaStan {
+        val param = parameter(real())
+        val model1 = new Model {
+          param ~ stan.normal(0, 1)
+        }
+        val model2 = new Model {
+          param ~ stan.normal(2, 3)
+        }
+
+        checkCode(model1, "model { param ~ normal(0,1); }")
+        checkCode(model2, "model { param ~ normal(2,3); }")
+      }
+    }
+
     describe("when") {
       it("generates an if statement") {
         new ScalaStan {

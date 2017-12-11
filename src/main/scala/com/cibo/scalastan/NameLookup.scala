@@ -45,7 +45,7 @@ protected object NameLookup {
         } else {
           false
         }
-      }.map(_.name.decodedName.toString).orElse {
+      }.map(_.name.decodedName.toString.split('$').last).orElse {
         terms.view.flatMap { decl =>
           val instanceOpt = if (decl.isMethod && decl.asMethod.isGetter) {
             Option(mirror.reflectMethod(decl.asMethod).apply())
@@ -56,9 +56,6 @@ protected object NameLookup {
           }
           instanceOpt.filterNot(_.getClass.isSynthetic).flatMap { instance =>
             val innerMirror = ru.runtimeMirror(instance.getClass.getClassLoader).reflect(instance)
-            if (Try(innerMirror.symbol).isFailure) {
-              println("WHAT" + instance)
-            }
             findInInstance(obj, innerMirror, depth + 1)
           }
         }.headOption

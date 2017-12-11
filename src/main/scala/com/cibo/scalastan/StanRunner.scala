@@ -125,25 +125,29 @@ protected object StanRunner {
         val chainSeed = baseSeed + i
         val name = s"$runHash-$seed-$i.csv"
         val fileName = s"${model.dir}/$name"
-        if (cache && new File(fileName).exists) {
-          println(s"Found cached results: $name")
+        val cachedResults = if (cache && new File(fileName).exists) {
           Some(readIterations(fileName))
-        } else {
-          val command = Vector(
-            s"./$modelExecutable",
-            "data", s"file=$dataFileName",
-            "output", s"file=$name",
-            "random", s"seed=$chainSeed"
-          ) ++ method.arguments
-          println("Running " + command.mkString(" "))
-          val pb = new ProcessBuilder(command: _*).directory(model.dir).inheritIO()
-          val rc = pb.start().waitFor()
-          if (rc != 0) {
-            println(s"ERROR: model returned $rc")
-            None
-          } else {
-            Some(readIterations(fileName))
-          }
+        } else None
+        cachedResults match {
+          case Some(r) if r.nonEmpty =>
+            println(s"Found cached results: $name")
+            Some(r)
+          case _                     =>
+            val command = Vector(
+              s"./$modelExecutable",
+              "data", s"file=$dataFileName",
+              "output", s"file=$name",
+              "random", s"seed=$chainSeed"
+            ) ++ method.arguments
+            println("Running " + command.mkString(" "))
+            val pb = new ProcessBuilder(command: _*).directory(model.dir).inheritIO()
+            val rc = pb.start().waitFor()
+            if (rc != 0) {
+              println(s"ERROR: model returned $rc")
+              None
+            } else {
+              Some(readIterations(fileName))
+            }
         }
       }.seq.toVector
 

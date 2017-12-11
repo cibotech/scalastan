@@ -35,7 +35,6 @@ object EightSchools extends App with ScalaStan {
     .withData(y, ys)
     .withData(sigma, sigmas)
     .run(
-      chains = 4,
       seed = 194838
     )
 
@@ -44,7 +43,4 @@ object EightSchools extends App with ScalaStan {
   result.checkTreeDepth(15)
   result.checkEnergy()
   result.checkDivergence()
-
-  val (thetaDiv, thetaNoDiv) = result.partitionByDivergence(theta)
-
 }

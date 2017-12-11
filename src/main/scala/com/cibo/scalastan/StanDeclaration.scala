@@ -94,5 +94,3 @@ case class StanInlineDeclaration[T <: StanType](
   private[scalastan] def emit: String = decl.emitDeclaration
   private[scalastan] def isDerivedFromData: Boolean = false
 }
-
-

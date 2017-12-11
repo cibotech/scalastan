@@ -15,6 +15,9 @@ import com.cibo.scalastan.data.RDataSource
 
 object Dogs extends App with ScalaStan {
 
+  // Dogs example from "Applied Regression Modeling", Gelman and Hill 2007.
+  // Translated from the Stan example model from https://github.com/stan-dev/example-models
+
   val nDogs = data(int(lower = 0))
   val nTrials = data(int(lower = 0))
   val y = data(int(lower = 0, upper = 1)(nDogs, nTrials))
@@ -61,9 +64,5 @@ object Dogs extends App with ScalaStan {
     .withData(rData(y, "y"))
     .run()
 
-  println(results.mean(beta))
-  val pValues = results.mean(p.result)
-  println(pValues(30 - 1)(19 - 1))
   results.summary(System.out)
-
 }

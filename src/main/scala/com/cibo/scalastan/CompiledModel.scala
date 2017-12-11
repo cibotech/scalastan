@@ -72,7 +72,7 @@ abstract class CompiledModel {
 
   /** Run the model and get results. */
   final def run(
-    chains: Int = 1,
+    chains: Int = 4,
     seed: Int = -1,
     cache: Boolean = true,
     method: RunMethod.Method = RunMethod.Sample()

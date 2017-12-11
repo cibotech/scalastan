@@ -48,9 +48,7 @@ case class NaiveBayes(
     for (i <- range(1, k)) {
       phi(i) ~ stan.dirichlet(beta)
     }
-    for (i <- range(1, m)) {
-      z(i) ~ stan.categorical(theta)
-    }
+    z ~ stan.categorical(theta)
     for (i <- w.range) {
       w(i) ~ stan.categorical(phi(z(doc(i))))
     }

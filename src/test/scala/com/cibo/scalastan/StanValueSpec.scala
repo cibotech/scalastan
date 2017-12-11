@@ -68,25 +68,25 @@ class StanValueSpec extends ScalaStanBaseSpec {
   describe(":/") {
     it("can divide vectors") {
       val n = StanLocalDeclaration(StanInt())
-      val r = StanLocalDeclaration(StanVector(n)) :/ StanLocalDeclaration(StanVector(n))
+      val r = StanLocalDeclaration(StanVector(n)) /:/ StanLocalDeclaration(StanVector(n))
       check(r.emit, "(v#) ./ (v#)")
     }
 
     it("can divide scalar by vector") {
       val n = StanLocalDeclaration(StanInt())
-      val r = n :/ StanLocalDeclaration(StanVector(n))
+      val r = n /:/ StanLocalDeclaration(StanVector(n))
       check(r.emit, "(v#) ./ (v#)")
     }
 
     it("can divide matrix by scalar") {
       val n = StanLocalDeclaration(StanInt())
-      val r = StanLocalDeclaration(StanMatrix(n, n)) :/ n
+      val r = StanLocalDeclaration(StanMatrix(n, n)) /:/ n
       check(r.emit, "(v#) ./ (v#)")
     }
 
     it("can not divide scalar by scalar") {
       val r = StanLocalDeclaration(StanReal())
-      "r :/ r" shouldNot compile
+      "r /:/ r" shouldNot compile
     }
   }
 

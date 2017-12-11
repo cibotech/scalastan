@@ -47,6 +47,8 @@ protected trait StanDistributions {
   def binomial[N <: StanType: DiscreteType, T <: StanType: ContinuousType, R <: StanType](
     n: StanValue[N],
     theta: StanValue[T]
+  )(
+    implicit ev: Vectorized2[N, T]
   ): StanDiscreteDistributionWithCdf[R, StanInt] = StanDiscreteDistributionWithCdf("binomial", Seq(n, theta))
 
   def binomial_logit[N <: StanType: DiscreteType, T <: StanType: ContinuousType, R <: StanType](
@@ -56,16 +58,12 @@ protected trait StanDistributions {
     implicit ev: Vectorized2[N, T]
   ): StanDiscreteDistributionWithoutCdf[R, StanInt] = StanDiscreteDistributionWithoutCdf("binomial_logit", Seq(n, alpha))
 
-  def categorical[T <: StanType: ContinuousType, R <: StanType](
-    theta: StanValue[T]
-  )(
-    implicit ev: Vectorized1[T]
+  def categorical[R <: StanType](
+    theta: StanValue[StanVector]
   ): StanDiscreteDistributionWithoutCdf[R, StanInt] = StanDiscreteDistributionWithoutCdf("categorical", Seq(theta))
 
-  def categorical_logit[T <: StanType: ContinuousType, R <: StanType](
-    beta: StanValue[T]
-  )(
-    implicit ev: Vectorized1[T]
+  def categorical_logit[R <: StanType](
+    beta: StanValue[StanVector]
   ): StanDiscreteDistributionWithoutCdf[R, StanInt] = StanDiscreteDistributionWithoutCdf("categorical_logit", Seq(beta))
 
   def cauchy[P <: StanType: ContinuousType, S <: StanType: ContinuousType, R <: StanType](
@@ -140,18 +138,12 @@ protected trait StanDistributions {
     implicit ev: Vectorized2[M, B]
   ): StanContinuousDistribution[R, StanReal] = StanContinuousDistribution("gumbel", Seq(mu, beta))
 
-  def hypergeometric[
-    N <: StanType: DiscreteType,
-    A <: StanType: ContinuousType,
-    B <: StanType: ContinuousType,
-    R <: StanType: DiscreteType
-  ](
-    n: StanValue[N],
-    a: StanValue[A],
-    b: StanValue[B]
-  )(
-    implicit ev: Vectorized3[N, A, B]
-  ): StanDiscreteDistributionWithoutCdf[R, StanInt] = StanDiscreteDistributionWithoutCdf("hypergeometric", Seq(n, a, b))
+  def hypergeometric(
+    n: StanValue[StanInt],
+    a: StanValue[StanInt],
+    b: StanValue[StanInt]
+  ): StanDiscreteDistributionWithoutCdf[StanInt, StanInt] =
+    StanDiscreteDistributionWithoutCdf("hypergeometric", Seq(n, a, b))
 
   def inv_chi_square[N <: StanType: ContinuousType, R <: StanType](
     nu: StanValue[N]

@@ -289,7 +289,7 @@ Running the Model
 Once all inputs are assigned, the model can be run using the `run` method.  This method takes the following
 optional parameters:
 
- - chains: An integer specifying the number of chains to run in parallel.  This defaults to 1.
+ - chains: An integer specifying the number of chains to run in parallel.  This defaults to 4.
  - seed: An integer specifying the first random number seed to use or `-1` to use system time to select one.
    With multiple chains, the chain index is added to the seed to ensure each chain gets a different, but
    deterministic seed.

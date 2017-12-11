@@ -118,7 +118,10 @@ case class StanContinuousDistribution[T <: StanType, R <: StanType] private[scal
   def truncate(
     lower: Option[StanValue[R]] = None,
     upper: Option[StanValue[R]] = None
-  ): StanDistribution[T] = StanContinuousDistribution(name, args, lowerOpt = lower, upperOpt = upper)
+  ): StanContinuousDistribution[T, R] = {
+    require(lowerOpt.isEmpty && upperOpt.isEmpty, "Distribution already truncated")
+    StanContinuousDistribution(name, args, lowerOpt = lower, upperOpt = upper)
+  }
   def rng(implicit gen: InGeneratedQuantityBlock): FunctionNode[R] = FunctionNode(s"${name}_rng", args: _*)
 }
 
@@ -138,7 +141,10 @@ case class StanDiscreteDistributionWithoutCdf[T <: StanType, R <: StanType] priv
   def truncate(
     lower: Option[StanValue[R]] = None,
     upper: Option[StanValue[R]] = None
-  ): StanDistribution[T] = StanDiscreteDistributionWithoutCdf(name, args, lowerOpt = lower, upperOpt = upper)
+  ): StanDiscreteDistributionWithoutCdf[T, R] = {
+    require(lowerOpt.isEmpty && upperOpt.isEmpty, "Distribution already truncated")
+    StanDiscreteDistributionWithoutCdf(name, args, lowerOpt = lower, upperOpt = upper)
+  }
 }
 
 case class StanDiscreteDistributionWithCdf[T <: StanType, R <: StanType] private[scalastan] (
@@ -153,7 +159,10 @@ case class StanDiscreteDistributionWithCdf[T <: StanType, R <: StanType] private
   def truncate(
     lower: Option[StanValue[T]] = None,
     upper: Option[StanValue[T]] = None
-  ): StanDistribution[T] = StanDiscreteDistributionWithCdf(name, args, lowerOpt = lower, upperOpt = upper)
+  ): StanDiscreteDistributionWithCdf[T, R] = {
+    require(lowerOpt.isEmpty && upperOpt.isEmpty, "Distribution already truncated")
+    StanDiscreteDistributionWithCdf(name, args, lowerOpt = lower, upperOpt = upper)
+  }
 }
 
 // A return (or output) statement.

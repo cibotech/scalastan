@@ -6,17 +6,32 @@ scala:
   - 2.11.11
   - 2.12.4
 
-jdk:
-  oraclejdk8
+jdk: oraclejdk8
+
+env:
+  global:
+    - STAN_VERSION=2.17.0
+    - LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/clang-3.9.0/lib
+
+addons:
+  apt:
+    packages:
+      - clang
+
+install:
+  - .travis/install_deps.sh
+  - export PATH="$PATH:$HOME/cmdstan-$STAN_VERSION/bin:$HOME/sbt/bin"
 
 before_cache:
   - find $HOME/.sbt -name "*.lock" | xargs rm
   - find $HOME/.ivy2 -name "ivydata-*.properties" | xargs rm
 
 cache:
-  directories:
-  - $HOME/.ivy2/cache/
-  - $HOME/.sbt/boot/
+  - packages
+  - directories:
+    - $HOME/.ivy2/cache/
+    - $HOME/.sbt
+    - $HOME/cmdstan-$STAN_VERSION
 
 script:
-  - sbt ++$TRAVIS_SCALA_VERSION test
+  - sbt ++$TRAVIS_SCALA_VERSION test it:test

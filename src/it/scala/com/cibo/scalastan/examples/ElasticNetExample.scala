@@ -109,3 +109,5 @@ object ElasticNetExample extends App with ScalaStan {
   results.summary(System.out)
 
 }
+
+class ElasticNetExampleSpec extends AppRunnerSpec(ElasticNetExample)

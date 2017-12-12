@@ -13,7 +13,7 @@ package com.cibo.scalastan.examples
 import com.cibo.scalastan.ScalaStan
 import com.cibo.scalastan.data.RDataSource
 
-object Dogs extends App with ScalaStan {
+object DogsExample extends App with ScalaStan {
 
   // Dogs example from "Applied Regression Modeling", Gelman and Hill 2007.
   // Translated from the Stan example model from https://github.com/stan-dev/example-models
@@ -66,3 +66,5 @@ object Dogs extends App with ScalaStan {
 
   results.summary(System.out)
 }
+
+class DogsExampleSpec extends AppRunnerSpec(DogsExample)

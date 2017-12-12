@@ -2,7 +2,7 @@ package com.cibo.scalastan.examples
 
 import com.cibo.scalastan.{RunMethod, ScalaStan}
 
-object Bernoulli extends App with ScalaStan {
+object BernoulliExample extends App with ScalaStan {
 
   val N = data(int(lower = 0))
   val y = data(int(lower = 0, upper = 1)(N))
@@ -27,4 +27,4 @@ object Bernoulli extends App with ScalaStan {
   results.summary(System.out)
 }
 
-class BernoulliSpec extends AppRunnerSpec(Bernoulli)
+class BernoulliExampleSpec extends AppRunnerSpec(BernoulliExample)

@@ -1,8 +1,8 @@
 package com.cibo.scalastan.examples
 
-import com.cibo.scalastan.ScalaStan
+import com.cibo.scalastan.{RunMethod, ScalaStan}
 
-object LotkaVolterra extends App with ScalaStan {
+object LotkaVolterraExample extends App with ScalaStan {
 
   // Lotka-Volterra for Predator-Prey Populations example from
   // https://github.com/stan-dev/example-models
@@ -105,7 +105,9 @@ object LotkaVolterra extends App with ScalaStan {
     .withData(y, data)
     .withData(y0, data.head)
     .withData(ts, years.map(_ - 1899))
-    .run()
+    .run(method = RunMethod.Sample(samples = 100, warmup = 100))
 
   results.summary(System.out)
 }
+
+class LotkaVolterraExampleSpec extends AppRunnerSpec(LotkaVolterraExample)

@@ -21,16 +21,14 @@ object RDataSource {
 
     private def value: Parser[String] = floatingPointNumber | (stringLiteral ^^ { s => s.tail.dropRight(1) })
 
-    private def valueList: Parser[Vector[String]] =
-      (value ~ "," ~ valueList ^^ { case (n ~ "," ~ ns) => n +: ns }) |
-        (value ^^ { n => Vector(n) })
+    private def valueList: Parser[Vector[String]] = repsep(value, ",") ^^ { _.toVector }
 
     private def label: Parser[String] = (stringLiteral ^^ { s => s.tail.dropRight(1) }) | ident
 
-    private def vector: Parser[Vector[String]] = "c" ~ "(" ~ valueList ~ ")" ^^ { case _ ~ _ ~ ns ~ _ => ns }
+    private def vector: Parser[Vector[String]] = "c" ~> "(" ~ valueList ~ ")" ^^ { case _ ~ ns ~ _ => ns }
 
     private def structure: Parser[(Vector[Int], Vector[String])] =
-      "structure" ~ "(" ~ vector ~ "," ~ ".Dim" ~ "=" ~ vector ~ ")" ^^ { case _ ~ _ ~ vs ~ _ ~ _ ~ _ ~ ds ~ _ =>
+      "structure" ~> "(" ~ vector ~ "," ~ ".Dim" ~ "=" ~ vector ~ ")" ^^ { case _ ~ vs ~ _ ~ _ ~ _ ~ ds ~ _ =>
         (ds.map(_.toInt), vs)
       }
 
@@ -48,8 +46,7 @@ object RDataSource {
       DataValue(name, v._1, v._2)
     }
 
-    private def statement: Parser[DataValue] =
-      (scalarValue | vectorValue | structureValue) ~ opt(";") ^^ { case v ~ _ => v }
+    private def statement: Parser[DataValue] = (scalarValue | vectorValue | structureValue) <~ opt(";")
 
     private def statements: Parser[Seq[DataValue]] = statement.*
 

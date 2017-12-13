@@ -12,7 +12,7 @@ package com.cibo.scalastan.examples
 
 import com.cibo.scalastan.ScalaStan
 
-object Normal extends App with ScalaStan {
+object NormalExample extends App with ScalaStan {
 
   val N = data(int(lower = 0))
   val y = data(vector(N))
@@ -32,3 +32,5 @@ object Normal extends App with ScalaStan {
   println(s"sigma = ${results.mean(sigma)}, ${results.sd(sigma)}, ${results.quantile(sigma, 0.5)}")
 
 }
+
+class NormalExampleSpec extends AppRunnerSpec(NormalExample)

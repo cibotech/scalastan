@@ -17,3 +17,5 @@ object SoftKMeansExample extends App {
 
   println(model.clusterAssignments(results))
 }
+
+class SoftKMeansExampleSpec extends AppRunnerSpec(SoftKMeansExample)

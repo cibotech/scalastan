@@ -1,5 +1,7 @@
 package com.cibo.scalastan
 
+import com.cibo.scalastan.ast.StanParameterDeclaration
+
 class StanTypeSpec extends ScalaStanBaseSpec {
 
   private implicit val ss = new ScalaStan {}

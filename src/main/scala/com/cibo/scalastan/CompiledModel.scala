@@ -12,6 +12,8 @@ package com.cibo.scalastan
 
 import java.io.{File, Writer}
 
+import com.cibo.scalastan.ast.StanDataDeclaration
+
 abstract class CompiledModel {
   private[scalastan] val ss: ScalaStan
   protected val dataMapping: Map[String, DataMapping[_]]

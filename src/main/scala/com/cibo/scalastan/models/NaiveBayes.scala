@@ -50,8 +50,8 @@ case class NaiveBayes(
   private val alpha = data(vector(k, lower = 0))        // Topic prior
   private val beta = data(vector(v, lower = 0))         // Word prior
 
-  val theta: StanParameterDeclaration[StanVector] = parameter(simplex(k))             // Topic prevalence
-  val phi: StanParameterDeclaration[StanArray[StanVector]] = parameter(simplex(v)(k))  // Word distribution for topic k
+  val theta: ParameterDeclaration[StanVector] = parameter(simplex(k))             // Topic prevalence
+  val phi: ParameterDeclaration[StanArray[StanVector]] = parameter(simplex(v)(k))  // Word distribution for topic k
 
   private val model = new Model {
     theta ~ stan.dirichlet(alpha)

@@ -10,6 +10,8 @@
 
 package com.cibo.scalastan
 
+import com.cibo.scalastan.ast.{StanArrayLiteral, StanConstant, StanStringLiteral, StanValue}
+
 import scala.language.implicitConversions
 
 protected trait Implicits {
@@ -28,7 +30,7 @@ protected trait Implicits {
   implicit def stanValue2optValue[T <: StanType](value: StanValue[T]): Option[StanValue[T]] = Some(value)
 
   implicit def seq2array[T <: StanType](values: Seq[StanValue[T]]): StanValue[StanArray[T]] =
-    LiteralArray[StanArray[T]](values)
+    StanArrayLiteral[StanArray[T]](values)
 }
 
 protected object Implicits extends Implicits

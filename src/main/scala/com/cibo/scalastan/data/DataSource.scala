@@ -10,7 +10,8 @@
 
 package com.cibo.scalastan.data
 
-import com.cibo.scalastan.{StanDataDeclaration, StanType}
+import com.cibo.scalastan.StanType
+import com.cibo.scalastan.ast.StanDataDeclaration
 
 protected case class DataValue private[data] (
   name: String,

@@ -10,6 +10,8 @@
 
 package com.cibo.scalastan
 
+import com.cibo.scalastan.ast.StanValue
+
 private sealed trait TemporaryValue[T <: StanType] {
   def create(args: StanValue[StanInt]*): T
 }

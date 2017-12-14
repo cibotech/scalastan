@@ -1,6 +1,7 @@
 package com.cibo.scalastan.data
 
 import com.cibo.scalastan._
+import com.cibo.scalastan.ast.StanDataDeclaration
 
 class CsvDataSourceSpec extends ScalaStanBaseSpec {
 

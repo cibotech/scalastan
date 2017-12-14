@@ -12,6 +12,8 @@ package com.cibo.scalastan
 
 import java.io.{PrintStream, PrintWriter}
 
+import com.cibo.scalastan.ast.{StanDataDeclaration, StanParameterDeclaration}
+
 import scala.util.Try
 
 case class StanResults private (

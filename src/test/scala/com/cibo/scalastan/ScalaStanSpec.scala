@@ -90,11 +90,14 @@ class ScalaStanSpec extends ScalaStanBaseSpec {
         new ScalaStan {
           val model = new Model {
             when(1) {
+              stan.print(1)
             }.when(2) {
+              stan.print(2)
             } otherwise {
+              stan.print(3)
             }
           }
-          checkCode(model, "model { if(1) {} else if(2) {} else {} }")
+          checkCode(model, "model { if(1) { print(1); } else if(2) { print(2); } else { print(3); } }")
         }
       }
     }
@@ -297,7 +300,7 @@ class ScalaStanSpec extends ScalaStanBaseSpec {
               when(1) {
                 break
               }
-            }
+            }.getCode
           }
         }
       }

@@ -1,5 +1,7 @@
 package com.cibo.scalastan
 
+import com.cibo.scalastan.ast._
+
 class StanValueSpec extends ScalaStanBaseSpec {
 
   private implicit val ss = new ScalaStan {}
@@ -199,7 +201,7 @@ class StanValueSpec extends ScalaStanBaseSpec {
     it("can be read") {
       val i1 = StanConstant[StanInt](1)
       val i2 = StanConstant[StanInt](2)
-      val d = StanLocalDeclaration(StanVector(i1)).apply(ValueRange(i1, i2))
+      val d = StanLocalDeclaration(StanVector(i1)).apply(StanValueRange(i1, i2))
       d.emit should fullyMatch regex "v[0-9]+\\[1:2\\]"
     }
   }

@@ -10,6 +10,8 @@
 
 package com.cibo.scalastan
 
+import com.cibo.scalastan.ast.StanDataDeclaration
+
 protected case class DataMapping[T <: StanType] private[scalastan] (
   decl: StanDataDeclaration[T],
   values: T#SCALA_TYPE

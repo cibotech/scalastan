@@ -1,5 +1,6 @@
 package com.cibo.scalastan
 
+import com.cibo.scalastan.ast.StanParameterDeclaration
 import org.scalatest.{FunSpec, Matchers}
 
 trait ScalaStanBaseSpec extends FunSpec with Matchers {

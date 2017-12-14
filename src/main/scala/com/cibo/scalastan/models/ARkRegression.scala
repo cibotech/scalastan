@@ -11,6 +11,7 @@
 package com.cibo.scalastan.models
 
 import com.cibo.scalastan._
+import com.cibo.scalastan.ast.StanParameterDeclaration
 
 case class ARkRegression(
   xs: Seq[Seq[Double]],                       // Inputs

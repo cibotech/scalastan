@@ -10,6 +10,8 @@
 
 package com.cibo.scalastan
 
+import com.cibo.scalastan.ast.{StanContinuousDistribution, StanDiscreteDistributionWithCdf, StanDiscreteDistributionWithoutCdf, StanValue}
+
 protected trait StanDistributions {
 
   def beta[A <: StanType: ContinuousType, B <: StanType: ContinuousType, R <: StanType](

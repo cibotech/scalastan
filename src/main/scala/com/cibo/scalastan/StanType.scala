@@ -10,6 +10,8 @@
 
 package com.cibo.scalastan
 
+import com.cibo.scalastan.ast.StanValue
+
 sealed trait StanType {
 
   // Our type (for apply).

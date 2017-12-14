@@ -10,6 +10,8 @@
 
 package com.cibo.scalastan
 
+import com.cibo.scalastan.ast.{StanLocalDeclaration, StanNode, StanParameterDeclaration}
+
 import scala.annotation.implicitNotFound
 
 protected sealed trait TypeCheck

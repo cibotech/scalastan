@@ -1,5 +1,7 @@
 package com.cibo.scalastan
 
+import com.cibo.scalastan.ast.StanLocalDeclaration
+
 class StanNodeSpec extends ScalaStanBaseSpec with ScalaStan {
 
   private val v1 = StanLocalDeclaration[StanReal](StanReal())

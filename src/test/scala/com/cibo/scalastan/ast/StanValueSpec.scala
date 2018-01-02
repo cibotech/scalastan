@@ -1,6 +1,6 @@
-package com.cibo.scalastan
+package com.cibo.scalastan.ast
 
-import com.cibo.scalastan.ast._
+import com.cibo.scalastan._
 
 class StanValueSpec extends ScalaStanBaseSpec {
 

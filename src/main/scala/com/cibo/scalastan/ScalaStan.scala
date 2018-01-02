@@ -33,6 +33,8 @@ trait ScalaStan extends Implicits { ss =>
 
   protected implicit val _scalaStan: ScalaStan = this
 
+  private[scalastan] var identifiers: Set[String] = Set.empty
+
   private var idCounter: Int = 0
   private[scalastan] val dataValues = ArrayBuffer[StanDataDeclaration[_]]()
   private val parameterValues = ArrayBuffer[StanParameterDeclaration[_]]()

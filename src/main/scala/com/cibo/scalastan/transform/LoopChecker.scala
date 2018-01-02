@@ -13,7 +13,10 @@ package com.cibo.scalastan.transform
 import com.cibo.scalastan.ast._
 
 // Make sure all "break" and "continue" statements are in loops.
-object LoopChecker extends StanTransform[Int] {
+object LoopChecker extends StanTransform {
+
+  type STATE = Int
+
   protected val initialState = 0 // Number of loops
 
   override protected def handleWhile(w: StanWhileLoop, state: Int): StanStatement = {

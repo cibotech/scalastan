@@ -38,11 +38,12 @@ class ScalaStanSpec extends ScalaStanBaseSpec {
       new ScalaStan {
         val model = new Model {
           for (i <- range(1, 2)) {
+            stan.print(i)
           }
           val x = local(int())
           x += 1
         }
-        checkCode(model, "model { int x; for(v# in 1:2) { } x += 1; }")
+        checkCode(model, "model { int x; for(v# in 1:2) { print(v#); } x += 1; }")
       }
     }
 
@@ -80,9 +81,10 @@ class ScalaStanSpec extends ScalaStanBaseSpec {
         new ScalaStan {
           val model = new Model {
             when(1) {
+              stan.print(1)
             }
           }
-          checkCode(model, "model { if(1) { } }")
+          checkCode(model, "model { if(1) { print(1); } }")
         }
       }
 

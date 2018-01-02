@@ -32,6 +32,15 @@ sealed trait StanType {
   // The Scala analog to this type used for summary statistics.
   private[scalastan] type SUMMARY_TYPE
 
+  // Get a copy of this type that is real-valued.
+  private[scalastan] def realType: StanType
+
+  // Get the type constructor for the next type.
+  private[scalastan] def next: NEXT_TYPE
+
+  // Get the type constructor for the element type.
+  private[scalastan] def element: ELEMENT_TYPE
+
   // Emit the name and bounds for this type.
   private[scalastan] def typeName: String
 
@@ -121,9 +130,6 @@ sealed trait StanType {
   final private[scalastan] def isDerivedFromData: Boolean =
     lower.forall(_.isDerivedFromData) && upper.forall(_.isDerivedFromData) && getIndices.forall(_.isDerivedFromData)
 
-  // Get the type constructor for the next type.
-  private[scalastan] def next: NEXT_TYPE
-
   def apply(): StanArray[THIS_TYPE] = {
     StanArray(None, this.asInstanceOf[THIS_TYPE])
   }
@@ -155,11 +161,15 @@ sealed trait StanType {
     StanArray(dim1, StanArray(dim2, StanArray(dim3, StanArray(dim4, this.asInstanceOf[THIS_TYPE]))))
 }
 
-trait StanScalarType extends StanType {
+trait StanScalarType[T <: StanScalarType[T]] extends StanType { self: T =>
+  protected type THIS_TYPE = T
+  private[scalastan] type ELEMENT_TYPE = T
   private[scalastan] type SUMMARY_TYPE = Double
   private[scalastan] type NEXT_TYPE = StanVoid
   private[scalastan] type REAL_TYPE = StanReal
-  final private[scalastan] def next: StanVoid = StanVoid()
+  private[scalastan] def realType: StanType = StanReal()
+  private[scalastan] def next: StanVoid = StanVoid()
+  private[scalastan] def element: T = self
 }
 
 trait StanCompoundType extends StanType
@@ -175,13 +185,15 @@ case class StanVoid private[scalastan] (
   private[scalastan] type REAL_TYPE = StanReal
   private[scalastan] type SCALA_TYPE = Unit
   private[scalastan] type SUMMARY_TYPE = Unit
+  private[scalastan] def realType: StanType = StanVoid()
+  private[scalastan] def next: StanVoid = this
+  private[scalastan] def element: StanVoid = this
   private[scalastan] def typeName: String = "void"
   private[scalastan] def getData(data: Unit): Seq[String] = Seq.empty
   private[scalastan] def getDims(data: Unit): Seq[Int] = Seq.empty
   private[scalastan] def parse(name: String, values: Map[String, String]): Unit = ()
   private[scalastan] def parse(dims: Seq[Int], values: Seq[String]): Unit = ()
   private[scalastan] def combine(values: Seq[Seq[SCALA_TYPE]])(func: Seq[Seq[Double]] => Double): Unit = ()
-  final private[scalastan] def next: StanVoid = this
 }
 
 case class StanString private[scalastan] () extends StanType {
@@ -193,25 +205,25 @@ case class StanString private[scalastan] () extends StanType {
   private[scalastan] type SUMMARY_TYPE = String
   private[scalastan] val lower: Option[StanValue[StanString]] = None
   private[scalastan] val upper: Option[StanValue[StanString]] = None
+  private[scalastan] def realType: StanType = StanVoid()
+  private[scalastan] def next: StanVoid = StanVoid()
+  private[scalastan] def element: StanString = this
   private[scalastan] def typeName: String = "string"
   private[scalastan] def getData(data: String): Seq[String] = Seq(s""""$data"""")
   private[scalastan] def getDims(data: String): Seq[Int] = Seq.empty
   private[scalastan] def parse(name: String, values: Map[String, String]): String = values(name)
   private[scalastan] def parse(dims: Seq[Int], values: Seq[String]): String = ""
   private[scalastan] def combine(values: Seq[Seq[SCALA_TYPE]])(func: Seq[Seq[Double]] => Double): String = ""
-  final private[scalastan] def next: StanVoid = StanVoid()
 }
 
-abstract class StanDiscreteType extends StanScalarType {
+abstract class StanDiscreteType[T <: StanDiscreteType[T]] extends StanScalarType[StanDiscreteType[T]] {
   private[scalastan] def typeName: String = s"int$emitBounds"
 }
 
 case class StanInt private[scalastan] (
   private[scalastan] val lower: Option[StanValue[StanInt]] = None,
   private[scalastan] val upper: Option[StanValue[StanInt]] = None
-) extends StanDiscreteType {
-  protected type THIS_TYPE = StanInt
-  private[scalastan] type ELEMENT_TYPE = StanInt
+) extends StanDiscreteType[StanInt] {
   private[scalastan] type SCALA_TYPE = Int
   private[scalastan] def getDims(data: Int): Seq[Int] = Seq.empty
   private[scalastan] def getData(data: Int): Seq[String] = Seq(data.toString)
@@ -224,9 +236,7 @@ case class StanInt private[scalastan] (
     func(values.map(_.map(_.toDouble)))
 }
 
-case class StanCategorical private[scalastan] () extends StanDiscreteType {
-  protected type THIS_TYPE = StanCategorical
-  private[scalastan] type ELEMENT_TYPE = StanCategorical
+case class StanCategorical private[scalastan] () extends StanDiscreteType[StanCategorical] {
   private[scalastan] type SCALA_TYPE = String
 
   private[scalastan] val lower: Option[StanValue[ELEMENT_TYPE]] = None
@@ -263,6 +273,9 @@ case class StanArray[CONTAINED <: StanType] private[scalastan] (
   private[scalastan] val upper: Option[StanValue[CONTAINED#ELEMENT_TYPE]] =
     inner.upper.asInstanceOf[Option[StanValue[CONTAINED#ELEMENT_TYPE]]]
 
+  private[scalastan] def element: ELEMENT_TYPE = inner.element
+  private[scalastan] def realType: StanType = StanArray(dim, inner.realType)
+
   override private[scalastan] def emitDims: Seq[String] = dim.map(_.emit).getOrElse("") +: inner.emitDims
   override private[scalastan] def getIndices: Seq[StanValue[StanInt]] = dim.get +: inner.getIndices
   private[scalastan] def typeName: String = inner.typeName
@@ -271,7 +284,7 @@ case class StanArray[CONTAINED <: StanType] private[scalastan] (
   private[scalastan] def getDims(data: SCALA_TYPE): Seq[Int] = {
     if (data.nonEmpty) {
       data.length +: inner.getDims(data.head.asInstanceOf[inner.SCALA_TYPE])
-    } else if (inner.isInstanceOf[StanScalarType]) {
+    } else if (inner.isInstanceOf[StanScalarType[_]]) {
       Seq(data.length)
     } else {
       data.length +: inner.getDims(Seq.empty.asInstanceOf[inner.SCALA_TYPE])
@@ -317,9 +330,7 @@ case class StanArray[CONTAINED <: StanType] private[scalastan] (
 case class StanReal private[scalastan] (
   private[scalastan] val lower: Option[StanValue[StanReal]] = None,
   private[scalastan] val upper: Option[StanValue[StanReal]] = None
-) extends StanScalarType {
-  protected type THIS_TYPE = StanReal
-  private[scalastan] type ELEMENT_TYPE = StanReal
+) extends StanScalarType[StanReal] {
   private[scalastan] type SCALA_TYPE = Double
   private[scalastan] def typeName: String = s"real$emitBounds"
   private[scalastan] def getData(data: Double): Seq[String] = Seq(data.toString)
@@ -338,6 +349,9 @@ trait StanVectorLike extends StanVectorOrMatrix {
   private[scalastan] type REAL_TYPE = THIS_TYPE
   private[scalastan] type SCALA_TYPE = Seq[Double]
   private[scalastan] type SUMMARY_TYPE = Seq[Double]
+
+  final private[scalastan] def realType: StanType = this
+  final private[scalastan] def element: ELEMENT_TYPE = StanReal()
 
   protected val dim: StanValue[StanInt]
 
@@ -426,6 +440,9 @@ case class StanMatrix private[scalastan] (
   private[scalastan] type REAL_TYPE = StanMatrix
   private[scalastan] type SCALA_TYPE = Seq[Seq[Double]]
   private[scalastan] type SUMMARY_TYPE = Seq[Seq[Double]]
+
+  private[scalastan] def realType: StanType = this
+  private[scalastan] def element: ELEMENT_TYPE = StanReal()
 
   private[scalastan] def typeName: String = s"${constraint.name}$emitBounds${constraint.emitSizes(rows, cols)}"
   private[scalastan] def getData(data: Seq[Seq[Double]]): Seq[String] = data.transpose.flatMap(_.map(_.toString))

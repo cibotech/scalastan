@@ -55,14 +55,15 @@ case class StanAssignment private[scalastan] (
   private[scalastan] val op: StanAssignment.Operator = StanAssignment.Assign
 ) extends StanStatement {
 
-  private def assignedValue(v: StanValue[_]): StanDeclaration[_ <: StanType] = v match {
-    case d: StanDeclaration[_] => d
+  private def assignedValue(v: StanValue[_ <: StanType]): Option[StanDeclaration[_]] = v match {
+    case d: StanDeclaration[_] => Some(d)
     case a: Assignable[_]      => assignedValue(a.value)
+    case t: StanTargetValue    => None
     case _                     => throw new IllegalStateException(s"invalid assigned value: $v")
   }
 
   private[scalastan] def inputs: Seq[StanDeclaration[_]] = lhs.inputs ++ rhs.inputs
-  private[scalastan] def outputs: Seq[StanDeclaration[_]] = Seq(assignedValue(lhs))
+  private[scalastan] def outputs: Seq[StanDeclaration[_]] = assignedValue(lhs).toSeq
   private[scalastan] def emit(pw: PrintWriter, indent: Int): Unit = {
     write(pw, indent, s"${lhs.emit} ${op.name} ${rhs.emit};")
   }
@@ -77,12 +78,16 @@ object StanAssignment {
   case object Divide extends Operator("/=")
 }
 
+sealed abstract class StanLoop extends StanStatement {
+  private[scalastan] val body: StanStatement
+}
+
 // "for" loop
 case class StanForLoop private[scalastan] (
   private[scalastan] val decl: StanLocalDeclaration[StanInt],
   private[scalastan] val range: StanValueRange,
   private[scalastan] val body: StanStatement
-) extends StanStatement {
+) extends StanLoop {
   private[scalastan] def inputs: Seq[StanDeclaration[_]] = decl +: range.inputs
   private[scalastan] def outputs: Seq[StanDeclaration[_]] = decl +: range.outputs
   private[scalastan] def emit(pw: PrintWriter, indent: Int): Unit = {
@@ -96,7 +101,7 @@ case class StanForLoop private[scalastan] (
 case class StanWhileLoop private[scalastan] (
   private[scalastan] val cond: StanValue[StanInt],
   private[scalastan] val body: StanStatement
-) extends StanStatement {
+) extends StanLoop {
   private[scalastan] def inputs: Seq[StanDeclaration[_]] = cond.inputs
   private[scalastan] def outputs: Seq[StanDeclaration[_]] = cond.outputs
   private[scalastan] def emit(pw: PrintWriter, indent: Int): Unit = {
@@ -155,7 +160,7 @@ case class StanSampleStatement[T <: StanType, R <: StanType] private[scalastan] 
 
 // A return (or output) statement.
 case class StanReturnStatement private[scalastan] (
-  protected val result: StanValue[_ <: StanType]
+  private[scalastan] val result: StanValue[_ <: StanType]
 ) extends StanStatement {
   private[scalastan] def inputs: Seq[StanDeclaration[_]] = result.inputs
   private[scalastan] def outputs: Seq[StanDeclaration[_]] = result.outputs

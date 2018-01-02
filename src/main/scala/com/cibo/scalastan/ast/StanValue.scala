@@ -21,6 +21,8 @@ abstract class StanValue[T <: StanType] extends StanNode with Implicits {
   // This is used to determine if assignment is allowed.
   private[scalastan] type DECL_TYPE <: StanDeclaration[_]
 
+  private[scalastan] val returnType: StanType
+
   private[scalastan] def inputs: Seq[StanDeclaration[_]]
   private[scalastan] def outputs: Seq[StanDeclaration[_]]
 
@@ -33,25 +35,25 @@ abstract class StanValue[T <: StanType] extends StanNode with Implicits {
   def unary_-(): StanValue[T] = StanUnaryOperator("-", this)
 
   // Logical functions.
-  def ===[R <: StanScalarType](right: StanValue[R])(implicit ev: LogicalAllowed[T]): StanValue[StanInt] =
-    StanBinaryOperator("==", this, right)
-  def =/=[R <: StanScalarType](right: StanValue[R])(implicit ev: LogicalAllowed[T]): StanValue[StanInt] =
-    StanBinaryOperator("!=", this, right)
-  def <[R <: StanScalarType](right: StanValue[R])(implicit ev: LogicalAllowed[T]): StanValue[StanInt] =
-    StanBinaryOperator("<", this, right)
-  def <=[R <: StanScalarType](right: StanValue[R])(implicit ev: LogicalAllowed[T]): StanValue[StanInt] =
-    StanBinaryOperator("<=", this, right)
-  def >[R <: StanScalarType](right: StanValue[R])(implicit ev: LogicalAllowed[T]): StanValue[StanInt] =
-    StanBinaryOperator(">", this, right)
-  def >=[R <: StanScalarType](right: StanValue[R])(implicit ev: LogicalAllowed[T]): StanValue[StanInt] =
-    StanBinaryOperator(">=", this, right)
+  def ===[R <: StanScalarType[R]](right: StanValue[R])(implicit ev: LogicalAllowed[T]): StanValue[StanInt] =
+    StanBinaryOperator("==", StanInt(), this, right)
+  def =/=[R <: StanScalarType[R]](right: StanValue[R])(implicit ev: LogicalAllowed[T]): StanValue[StanInt] =
+    StanBinaryOperator("!=", StanInt(), this, right)
+  def <[R <: StanScalarType[R]](right: StanValue[R])(implicit ev: LogicalAllowed[T]): StanValue[StanInt] =
+    StanBinaryOperator("<", StanInt(), this, right)
+  def <=[R <: StanScalarType[R]](right: StanValue[R])(implicit ev: LogicalAllowed[T]): StanValue[StanInt] =
+    StanBinaryOperator("<=", StanInt(), this, right)
+  def >[R <: StanScalarType[R]](right: StanValue[R])(implicit ev: LogicalAllowed[T]): StanValue[StanInt] =
+    StanBinaryOperator(">", StanInt(), this, right)
+  def >=[R <: StanScalarType[R]](right: StanValue[R])(implicit ev: LogicalAllowed[T]): StanValue[StanInt] =
+    StanBinaryOperator(">=", StanInt(), this, right)
 
   // Boolean operators.
   def unary_!()(implicit ev: LogicalAllowed[T]): StanValue[StanInt] = StanUnaryOperator("!", this)
-  def ||[R <: StanScalarType](right: StanValue[R])(implicit ev: LogicalAllowed[T]): StanValue[StanInt] =
-    StanBinaryOperator("||", this, right)
-  def &&[R <: StanScalarType](right: StanValue[R])(implicit ev: LogicalAllowed[T]): StanValue[StanInt] =
-    StanBinaryOperator("&&", this, right)
+  def ||[R <: StanScalarType[R]](right: StanValue[R])(implicit ev: LogicalAllowed[T]): StanValue[StanInt] =
+    StanBinaryOperator("||", StanInt(), this, right)
+  def &&[R <: StanScalarType[R]](right: StanValue[R])(implicit ev: LogicalAllowed[T]): StanValue[StanInt] =
+    StanBinaryOperator("&&", StanInt(), this, right)
 
   def +[B <: StanType, R <: StanType](
     right: StanValue[B]
@@ -144,7 +146,7 @@ trait ReadOnlyIndex[T <: StanType] { self: StanValue[T] =>
 
 trait Assignable[T <: StanType] { self: StanValue[T] =>
 
-  private[scalastan] val value: StanValue[_]
+  private[scalastan] val value: StanValue[_ <: StanType]
 
   def :=[R <: StanType](right: StanValue[R])(
     implicit code: CodeBuilder,
@@ -218,8 +220,9 @@ trait Updatable[T <: StanType] extends Incrementable[T] { self: StanValue[T] =>
 }
 
 case class StanCall[T <: StanType] private[scalastan] (
-  private val name: String,
-  private val args: StanValue[_]*
+  private[scalastan] val returnType: StanType,
+  private[scalastan] val name: String,
+  private[scalastan] val args: StanValue[_]*
 ) extends StanValue[T] with ReadOnlyIndex[T] {
   private[scalastan] def inputs: Seq[StanDeclaration[_]] = args.flatMap(_.inputs)
   private[scalastan] def outputs: Seq[StanDeclaration[_]] = args.flatMap(_.outputs)
@@ -231,13 +234,15 @@ case class StanCall[T <: StanType] private[scalastan] (
 }
 
 case class StanGetTarget private[scalastan] () extends StanValue[StanReal] {
+  private[scalastan] val returnType: StanReal = StanReal()
   private[scalastan] def inputs: Seq[StanDeclaration[_]] = Seq.empty
   private[scalastan] def outputs: Seq[StanDeclaration[_]] = Seq.empty
   private[scalastan] def isDerivedFromData: Boolean = false
   private[scalastan] def emit: String = "target()"
 }
 
-case class StanTargetValue private[scalastan] () extends StanValue[StanReal] with Incrementable[StanReal] {
+case class StanTargetValue private[scalastan] () extends StanValue[StanVoid] with Incrementable[StanVoid] {
+  private[scalastan] val returnType: StanVoid = StanVoid()
   private[scalastan] def inputs: Seq[StanDeclaration[_]] = Seq.empty
   private[scalastan] def outputs: Seq[StanDeclaration[_]] = Seq.empty
   private[scalastan] def isDerivedFromData: Boolean = false
@@ -251,6 +256,7 @@ case class StanDistributionNode[T <: StanType, R <: StanType] private[scalastan]
   private val sep: String,
   private val args: Seq[StanValue[_]]
 ) extends StanValue[R] with ReadOnlyIndex[R] {
+  private[scalastan] val returnType: StanType = StanVoid()
   private[scalastan] def inputs: Seq[StanDeclaration[_]] = y.inputs ++ args.flatMap(_.inputs)
   private[scalastan] def outputs: Seq[StanDeclaration[_]] = Seq.empty
   private[scalastan] def isDerivedFromData: Boolean = false
@@ -264,6 +270,7 @@ case class StanUnaryOperator[T <: StanType, R <: StanType] private[scalastan] (
   private val symbol: String,
   private val right: StanValue[T]
 ) extends StanValue[R] with ReadOnlyIndex[R] {
+  private[scalastan] val returnType: StanType = right.returnType
   private[scalastan] def inputs: Seq[StanDeclaration[_]] = right.inputs
   private[scalastan] def outputs: Seq[StanDeclaration[_]] = right.outputs
   private[scalastan] def isDerivedFromData: Boolean = right.isDerivedFromData
@@ -271,10 +278,11 @@ case class StanUnaryOperator[T <: StanType, R <: StanType] private[scalastan] (
 }
 
 case class StanBinaryOperator[T <: StanType, L <: StanType, R <: StanType] private[scalastan] (
-  private val symbol: String,
-  private val left: StanValue[L],
-  private val right: StanValue[R],
-  private val parens: Boolean = true
+  private[scalastan] val symbol: String,
+  private[scalastan] val returnType: StanType,
+  private[scalastan] val left: StanValue[L],
+  private[scalastan] val right: StanValue[R],
+  private[scalastan] val parens: Boolean = true
 ) extends StanValue[T] with ReadOnlyIndex[T] {
   private[scalastan] def inputs: Seq[StanDeclaration[_]] = left.inputs ++ right.inputs
   private[scalastan] def outputs: Seq[StanDeclaration[_]] = left.outputs ++ right.outputs
@@ -350,8 +358,9 @@ case class StanConstant[T <: StanType] private[scalastan] (
 }
 
 case class StanArrayLiteral[T <: StanType] private[scalastan] (
-  private val values: Seq[StanValue[T#NEXT_TYPE]]
+  private[scalastan] val values: Seq[StanValue[T#NEXT_TYPE]]
 ) extends StanValue[T] with ReadOnlyIndex[T] {
+  private[scalastan] val returnType: StanType = StanArray(StanConstant[StanInt](values.length), values.head.returnType)
   private[scalastan] def inputs: Seq[StanDeclaration[_]] = values.flatMap(_.inputs)
   private[scalastan] def outputs: Seq[StanDeclaration[_]] = values.flatMap(_.outputs)
   private[scalastan] def isDerivedFromData: Boolean = true
@@ -359,8 +368,9 @@ case class StanArrayLiteral[T <: StanType] private[scalastan] (
 }
 
 case class StanStringLiteral private[scalastan] (
-  private val value: String
+  private[scalastan] val value: String
 ) extends StanValue[StanString] {
+  private[scalastan] val returnType: StanType = StanString()
   private[scalastan] def inputs: Seq[StanDeclaration[_]] = Seq.empty
   private[scalastan] def outputs: Seq[StanDeclaration[_]] = Seq.empty
   private[scalastan] def isDerivedFromData: Boolean = true
@@ -368,8 +378,9 @@ case class StanStringLiteral private[scalastan] (
 }
 
 case class StanLiteral private[scalastan] (
-  private val value: String
+  private[scalastan] val value: String
 ) extends StanValue[StanVoid] {
+  private[scalastan] val returnType: StanType = StanVoid()
   private[scalastan] def inputs: Seq[StanDeclaration[_]] = Seq.empty
   private[scalastan] def outputs: Seq[StanDeclaration[_]] = Seq.empty
   private[scalastan] def isDerivedFromData: Boolean = true

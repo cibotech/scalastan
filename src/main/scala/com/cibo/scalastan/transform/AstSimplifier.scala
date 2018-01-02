@@ -12,7 +12,8 @@ package com.cibo.scalastan.transform
 import com.cibo.scalastan.ast.{StanBlock, StanForLoop, StanIfStatement, StanStatement}
 
 // Simplify the AST (remove empty blocks, etc.).
-object AstSimplifier extends StanTransform[Unit] {
+object AstSimplifier extends StanTransform {
+  type STATE = Unit
   protected val initialState: Unit = ()
 
   private def isEmpty(s: StanStatement): Boolean = s match {
@@ -21,7 +22,8 @@ object AstSimplifier extends StanTransform[Unit] {
   }
 
   override protected def handleBlock(b: StanBlock, state: Unit): StanStatement = {
-    if (b.children.size == 1) b.children.head else b
+    val newChildren = b.children.map(c => dispatch(c, state))
+    if (newChildren.size == 1) newChildren.head else StanBlock(newChildren)
   }
 
   override protected def handleIf(i: StanIfStatement, state: Unit): StanStatement = {

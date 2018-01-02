@@ -160,16 +160,16 @@ protected trait StanDistributions {
     implicit ev: Vectorized2[A, B]
   ): StanContinuousDistribution[R, StanReal] = StanContinuousDistribution("inv_gamma", Seq(alpha, beta))
 
-  def inv_wishart[N <: StanScalarType](
+  def inv_wishart[N <: StanScalarType[N]](
     nu: StanValue[N],
     sigma: StanValue[StanMatrix]
   ): StanContinuousDistribution[StanMatrix, StanMatrix] = StanContinuousDistribution("inv_wishart", Seq(nu, sigma))
 
-  def lkj_corr[E <: StanScalarType](
+  def lkj_corr[E <: StanScalarType[E]](
     eta: StanValue[E]
   ): StanContinuousDistribution[StanMatrix, StanMatrix] = StanContinuousDistribution("lkj_corr", Seq(eta))
 
-  def lkj_corr_cholesky[E <: StanScalarType](
+  def lkj_corr_cholesky[E <: StanScalarType[E]](
     eta: StanValue[E]
   ): StanContinuousDistribution[StanMatrix, StanMatrix] = StanContinuousDistribution("lkj_corr_cholesky", Seq(eta))
 
@@ -225,7 +225,7 @@ protected trait StanDistributions {
     implicit ev1: IsVectorLikeOrArrayVectorLike[M]
   ): StanContinuousDistribution[R, StanVector] = StanContinuousDistribution("multi_normal_prec", Seq(mu, omega))
 
-  def multi_student_t[N <: StanScalarType, M <: StanVectorLike: ContinuousType, R <: StanType](
+  def multi_student_t[N <: StanScalarType[N], M <: StanVectorLike: ContinuousType, R <: StanType](
     nu: StanValue[N],
     mu: StanValue[M],
     sigma: StanValue[StanMatrix]
@@ -262,7 +262,7 @@ protected trait StanDistributions {
     implicit ev: Vectorized2[A, B]
   ): StanContinuousDistribution[R, StanReal] = StanContinuousDistribution("normal", Seq(mu, sigma))
 
-  def ordered_logistic[E <: StanScalarType](
+  def ordered_logistic[E <: StanScalarType[E]](
     eta: StanValue[E],
     c: StanValue[StanVector]
   ): StanDiscreteDistributionWithoutCdf[StanInt, StanInt] =
@@ -366,7 +366,7 @@ protected trait StanDistributions {
     implicit ev: Vectorized4[A, T, B, D]
   ): StanContinuousDistribution[R, StanReal] = StanContinuousDistribution("wiener", Seq(alpha, tau, beta, delta))
 
-  def wishart[N <: StanScalarType](
+  def wishart[N <: StanScalarType[N]](
     nu: StanValue[N],
     sigma: StanValue[StanMatrix]
   ): StanContinuousDistribution[StanMatrix, StanMatrix] = StanContinuousDistribution("wishart", Seq(nu, sigma))

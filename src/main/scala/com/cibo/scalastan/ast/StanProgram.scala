@@ -21,6 +21,18 @@ case class StanProgram(
   generatedQuantities: Seq[StanGeneratedQuantity],
   model: StanStatement
 ) {
+
+  println("DATA")
+  data.foreach { d => println(s"${d.id} -> ${d.name}") }
+  println("PARAMETERS")
+  parameters.foreach { d => println(s"${d.id} -> ${d.name}") }
+
+  val rd = new com.cibo.scalastan.transform.ReachingDefs
+  transformedParameters.foreach { tp =>
+    println(s"PARAMETER ${tp.result.id} -> ${tp.result.name}")
+    println(rd.solve(tp.code))
+  }
+
   private[scalastan] def emit(writer: PrintWriter): Unit = {
     if (functions.nonEmpty) {
       writer.println("functions {")

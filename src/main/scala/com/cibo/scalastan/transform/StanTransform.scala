@@ -12,11 +12,15 @@ package com.cibo.scalastan.transform
 
 import com.cibo.scalastan.ast._
 
-trait StanTransform[STATE] {
+trait StanTransform {
+
+  type STATE
 
   protected val initialState: STATE
 
   final def run(program: StanProgram): StanProgram = handleProgram(program, initialState)
+
+  final def run(code: StanStatement): StanStatement = dispatch(code, initialState)
 
   protected def handleProgram(program: StanProgram, state: STATE): StanProgram = StanProgram(
     data = program.data,

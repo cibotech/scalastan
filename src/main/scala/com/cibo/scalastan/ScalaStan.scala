@@ -232,7 +232,7 @@ trait ScalaStan extends Implicits { ss =>
 
     def apply(args: StanValue[_]*): StanCall[RETURN_TYPE] = {
       markUsed()
-      val node = StanCall[RETURN_TYPE](result.emit, args: _*)
+      val node = StanCall[RETURN_TYPE](returnType, result.emit, args: _*)
       if (returnType == StanVoid()) {
         _code.append(StanValueStatement(node))
       }

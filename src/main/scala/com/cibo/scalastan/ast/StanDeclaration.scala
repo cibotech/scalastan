@@ -51,7 +51,7 @@ case class StanParameterDeclaration[T <: StanType] private[scalastan] (
 )(implicit ss: ScalaStan) extends StanDeclaration[T] with Assignable[T] with Updatable[T] {
   require(typeConstructor.isDerivedFromData,
     "parameter declaration bounds must be derived from data declarations or constant")
-  private[scalastan] val value: StanDeclaration[_] = this
+  private[scalastan] val value: StanDeclaration[_ <: StanType] = this
   private[scalastan] type DECL_TYPE = StanParameterDeclaration[T]
   private[scalastan] def isDerivedFromData: Boolean = false
 
@@ -95,7 +95,7 @@ case class StanLocalDeclaration[T <: StanType] private[scalastan] (
   protected val internalNameFunc: () => Option[String] = () => None,
   private val derivedFromData: Boolean = false
 )(implicit ss: ScalaStan) extends StanDeclaration[T] with Assignable[T] with Updatable[T] {
-  private[scalastan] val value: StanValue[_] = this
+  private[scalastan] val value: StanValue[_ <: StanType] = this
   private[scalastan] type DECL_TYPE = StanLocalDeclaration[T]
   private[scalastan] def isDerivedFromData: Boolean = derivedFromData
 }

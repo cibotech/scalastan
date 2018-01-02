@@ -27,18 +27,24 @@ protected object IsCompoundType {
 protected sealed class IsScalarType[T <: StanType]
 
 protected object IsScalarType {
-  implicit def IsScalarType[T <: StanScalarType] = new IsScalarType[T]
+  implicit def IsScalarType[T <: StanScalarType[T]] = new IsScalarType[T]
 }
 
 @implicitNotFound("multiplication not allowed for ${R} = ${A} * ${B}")
-protected sealed class MultiplicationAllowed[R <: StanType, A <: StanType, B <: StanType] extends TypeCheck
+protected sealed class MultiplicationAllowed[R <: StanType, A <: StanType, B <: StanType] extends TypeCheck {
+  def resultType(left: A, right: B): StanType = {
+    (left, right) match {
+      case (_: StanInt, _: StanInt) => StanInt()
+    }
+  }
+}
 
 protected object MultiplicationAllowed {
   implicit val riMultiplication = new MultiplicationAllowed[StanReal, StanReal, StanInt]
   implicit val irMultiplication = new MultiplicationAllowed[StanReal, StanInt, StanReal]
-  implicit def scalarMultiplication[T <: StanScalarType] = new MultiplicationAllowed[T, T, T]
-  implicit def scalarVectorMultiplication[S <: StanScalarType, V <: StanCompoundType] = new MultiplicationAllowed[V, S, V]
-  implicit def vectorScalarMultiplication[S <: StanScalarType, V <: StanCompoundType] = new MultiplicationAllowed[V, V, S]
+  implicit def scalarMultiplication[T <: StanScalarType[T]] = new MultiplicationAllowed[T, T, T]
+  implicit def scalarVectorMultiplication[S <: StanScalarType[S], V <: StanCompoundType] = new MultiplicationAllowed[V, S, V]
+  implicit def vectorScalarMultiplication[S <: StanScalarType[S], V <: StanCompoundType] = new MultiplicationAllowed[V, V, S]
   implicit val matVecMultiplication = new MultiplicationAllowed[StanVector, StanMatrix, StanVector]
   implicit val rvMatMultiplication = new MultiplicationAllowed[StanRowVector, StanRowVector, StanMatrix]
   implicit val rvVecMultiplication = new MultiplicationAllowed[StanReal, StanRowVector, StanVector]
@@ -51,9 +57,9 @@ protected sealed class DivisionAllowed[R <: StanType, A <: StanType, B <: StanTy
 protected object DivisionAllowed {
   implicit val riDivision = new DivisionAllowed[StanReal, StanReal, StanInt]
   implicit val irDivision = new DivisionAllowed[StanReal, StanInt, StanReal]
-  implicit def scalarDivision[T <: StanScalarType] = new DivisionAllowed[T, T, T]
-  implicit def vecScalarDivision[V <: StanVectorLike, T <: StanScalarType] = new DivisionAllowed[V, V, T]
-  implicit def matScalarDivision[T <: StanScalarType] = new DivisionAllowed[StanMatrix, StanMatrix, T]
+  implicit def scalarDivision[T <: StanScalarType[T]] = new DivisionAllowed[T, T, T]
+  implicit def vecScalarDivision[V <: StanVectorLike, T <: StanScalarType[T]] = new DivisionAllowed[V, V, T]
+  implicit def matScalarDivision[T <: StanScalarType[T]] = new DivisionAllowed[StanMatrix, StanMatrix, T]
   implicit val vecMatDivision = new DivisionAllowed[StanRowVector, StanRowVector, StanMatrix]
   implicit val matMatDivision = new DivisionAllowed[StanMatrix, StanMatrix, StanMatrix]
 }
@@ -71,8 +77,8 @@ protected sealed class ElementWiseDivisionAllowed[R <: StanType, A <: StanType, 
 
 protected object ElementWiseDivisionAllowed {
   implicit def sameTypeDivision[T <: StanCompoundType] = new ElementWiseDivisionAllowed[T, T, T]
-  implicit def csDivision[C <: StanCompoundType, S <: StanScalarType] = new ElementWiseDivisionAllowed[C, C, S]
-  implicit def scDivision[C <: StanCompoundType, S <: StanScalarType] = new ElementWiseDivisionAllowed[C, S, C]
+  implicit def csDivision[C <: StanCompoundType, S <: StanScalarType[S]] = new ElementWiseDivisionAllowed[C, C, S]
+  implicit def scDivision[C <: StanCompoundType, S <: StanScalarType[S]] = new ElementWiseDivisionAllowed[C, S, C]
 }
 
 @implicitNotFound("addition not allowed for ${R} = ${A} + ${B}")
@@ -82,8 +88,8 @@ protected object AdditionAllowed {
   implicit val riAddition = new AdditionAllowed[StanReal, StanReal, StanInt]
   implicit val irAddition = new AdditionAllowed[StanReal, StanInt, StanReal]
   implicit def sameTypeAddition[T <: StanType] = new AdditionAllowed[T, T, T]
-  implicit def scalarVectorAddtion[V <: StanCompoundType, S <: StanScalarType] = new AdditionAllowed[V, S, V]
-  implicit def vectorScalarAddtion[V <: StanCompoundType, S <: StanScalarType] = new AdditionAllowed[V, V, S]
+  implicit def scalarVectorAddtion[V <: StanCompoundType, S <: StanScalarType[S]] = new AdditionAllowed[V, S, V]
+  implicit def vectorScalarAddtion[V <: StanCompoundType, S <: StanScalarType[S]] = new AdditionAllowed[V, V, S]
 }
 
 @implicitNotFound("modulus not allowed for ${T} (only int)")
@@ -151,7 +157,7 @@ protected sealed class CanConvert[FROM <: StanType, TO <: StanType]
 
 protected object CanConvert {
   implicit def compoundType[T <: StanCompoundType] = new CanConvert[T, T]
-  implicit def scalar2real[T <: StanScalarType] = new CanConvert[T, StanReal]
+  implicit def scalar2real[T <: StanScalarType[T]] = new CanConvert[T, StanReal]
   implicit val int2int = new CanConvert[StanInt, StanInt]
 }
 
@@ -218,7 +224,7 @@ protected object IsVectorLikeOrArrayVectorLike {
 protected sealed class Is0or1Dimensional[T <: StanType] extends TypeCheck
 
 protected object Is0or1Dimensional {
-  implicit def isScalar[T <: StanScalarType] = new Is0or1Dimensional[T]
+  implicit def isScalar[T <: StanScalarType[T]] = new Is0or1Dimensional[T]
   implicit def isVectorLike[T <: StanVectorLike] = new Is0or1Dimensional[T]
   implicit val isIntArray = new Is0or1Dimensional[StanArray[StanInt]]
   implicit val isRealArray = new Is0or1Dimensional[StanArray[StanReal]]

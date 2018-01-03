@@ -6,15 +6,14 @@ Requirements
 ============
 ScalaStan depends on [Scala](http://www.scala-lang.org), [SBT](http://www.scala-sbt.org), and
 [CmdStan](http://mc-stan.org/users/interfaces/cmdstan).
-On macOS, these can be installed via [Homebrew](https://brew.sh):
-```
-brew tap homebrew/science
-brew install cmdstan sbt
-```
+
+The `CMDSTAN_HOME` environment variable should be set to the location of the CmdStan installation.
+Alternatively, ScalaStan will work if `PATH` contains `stanc` within a valid CmdStan installation.
 
 Project Structure
 =================
  - `com.cibo.scalastan` contains the ScalaStan DSL (most importantly, the `ScalaStan` trait).
+ - `com.cibo.scalastan.ast` contains the ScalaStan abstract syntax tree.
  - `com.cibo.scalastan.data` contains parsers for various data sources (R, for example).
  - `com.cibo.scalastan.models` contains reusable ScalaStan models.
  - Examples can be found in the `com.cibo.scalastan.examples` package in the integration test (`it`) source directory.  Run an example using the command `sbt it:run` and choosing from the available examples.

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 CiBO Technologies - All Rights Reserved
+ * Copyright (c) 2017 - 2018 CiBO Technologies - All Rights Reserved
  * You may use, distribute, and modify this code under the
  * terms of the BSD 3-Clause license.
  *
@@ -25,13 +25,13 @@ case class SoftKMeans(
   private val k = data(int(lower = 1))    // Number of clusters
   private val y = data(vector(d)(n))
 
-  val mu: StanParameterDeclaration[StanArray[StanVector]] = parameter(vector(d)(k))  // Cluster means
+  val mu: ParameterDeclaration[StanArray[StanVector]] = parameter(vector(d)(k))  // Cluster means
 
   private val negLogK = new TransformedData(real(upper = 0)) {
     result := -stan.log(k)
   }
 
-  val softZ: StanParameterDeclaration[StanArray[StanArray[StanReal]]] = new TransformedParameter(real(upper = 0)(n, k)) {
+  val softZ: ParameterDeclaration[StanArray[StanArray[StanReal]]] = new TransformedParameter(real(upper = 0)(n, k)) {
     for (i <- range(1, n)) {
       for (j <- range(1, k)) {
         result(i, j) := negLogK - 0.5 * stan.dotSelf(mu(j) - y(i))

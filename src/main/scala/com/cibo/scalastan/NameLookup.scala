@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 CiBO Technologies - All Rights Reserved
+ * Copyright (c) 2017 - 2018 CiBO Technologies - All Rights Reserved
  * You may use, distribute, and modify this code under the
  * terms of the BSD 3-Clause license.
  *
@@ -23,7 +23,16 @@ protected trait NameLookup {
   private lazy val defaultName: String = s"v${_id}"
 
   // A user-facing name to use for this identifier.
-  lazy val name: String = _userName.getOrElse(defaultName)
+  lazy val name: String = {
+    val realName = _userName.getOrElse(defaultName)
+    val uniqueName = if (_ss.identifiers.contains(realName)) {
+      Stream.from(1).map(i => s"${realName}_$i").find(n => !_ss.identifiers.contains(n)).get
+    } else {
+      realName
+    }
+    _ss.identifiers += uniqueName
+    uniqueName
+  }
 }
 
 protected object NameLookup {

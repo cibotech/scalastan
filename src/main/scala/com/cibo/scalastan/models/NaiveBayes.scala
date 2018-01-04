@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 CiBO Technologies - All Rights Reserved
+ * Copyright (c) 2017 - 2018 CiBO Technologies - All Rights Reserved
  * You may use, distribute, and modify this code under the
  * terms of the BSD 3-Clause license.
  *
@@ -50,8 +50,8 @@ case class NaiveBayes(
   private val alpha = data(vector(k, lower = 0))        // Topic prior
   private val beta = data(vector(v, lower = 0))         // Word prior
 
-  val theta: StanParameterDeclaration[StanVector] = parameter(simplex(k))             // Topic prevalence
-  val phi: StanParameterDeclaration[StanArray[StanVector]] = parameter(simplex(v)(k))  // Word distribution for topic k
+  val theta: ParameterDeclaration[StanVector] = parameter(simplex(k))             // Topic prevalence
+  val phi: ParameterDeclaration[StanArray[StanVector]] = parameter(simplex(v)(k))  // Word distribution for topic k
 
   private val model = new Model {
     theta ~ stan.dirichlet(alpha)

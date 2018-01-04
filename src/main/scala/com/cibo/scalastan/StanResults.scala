@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 CiBO Technologies - All Rights Reserved
+ * Copyright (c) 2017 - 2018 CiBO Technologies - All Rights Reserved
  * You may use, distribute, and modify this code under the
  * terms of the BSD 3-Clause license.
  *
@@ -11,6 +11,8 @@
 package com.cibo.scalastan
 
 import java.io.{PrintStream, PrintWriter}
+
+import com.cibo.scalastan.ast.{StanDataDeclaration, StanParameterDeclaration}
 
 import scala.util.Try
 

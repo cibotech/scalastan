@@ -15,6 +15,10 @@ scalaVersion        := crossScalaVersions.value.head
 
 scalacOptions ++= Seq("-unchecked", "-deprecation", "-feature")
 
+fork := true
+
+javaOptions += "-Xmx2G"
+
 Defaults.itSettings
 lazy val root = project.in(file(".")).configs(IntegrationTest)
 

@@ -1,6 +1,7 @@
 package com.cibo.scalastan.data
 
 import com.cibo.scalastan._
+import com.cibo.scalastan.ast.StanDataDeclaration
 import org.scalatest.{FunSpec, Matchers}
 
 class RDataSourceSpec extends FunSpec with Matchers with ScalaStan {

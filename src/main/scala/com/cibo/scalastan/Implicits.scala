@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 CiBO Technologies - All Rights Reserved
+ * Copyright (c) 2017 - 2018 CiBO Technologies - All Rights Reserved
  * You may use, distribute, and modify this code under the
  * terms of the BSD 3-Clause license.
  *
@@ -9,6 +9,8 @@
  */
 
 package com.cibo.scalastan
+
+import com.cibo.scalastan.ast.{StanArrayLiteral, StanConstant, StanStringLiteral, StanValue}
 
 import scala.language.implicitConversions
 
@@ -28,7 +30,7 @@ protected trait Implicits {
   implicit def stanValue2optValue[T <: StanType](value: StanValue[T]): Option[StanValue[T]] = Some(value)
 
   implicit def seq2array[T <: StanType](values: Seq[StanValue[T]]): StanValue[StanArray[T]] =
-    LiteralArray[StanArray[T]](values)
+    StanArrayLiteral[StanArray[T]](values)
 }
 
 protected object Implicits extends Implicits

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 CiBO Technologies - All Rights Reserved
+ * Copyright (c) 2017 - 2018 CiBO Technologies - All Rights Reserved
  * You may use, distribute, and modify this code under the
  * terms of the BSD 3-Clause license.
  *
@@ -8,7 +8,9 @@
  * or at https://opensource.org/licenses/BSD-3-Clause
  */
 
-package com.cibo.scalastan
+package com.cibo.scalastan.ast
+
+import com.cibo.scalastan._
 
 sealed abstract class StanDeclaration[T <: StanType](implicit ss: ScalaStan) extends StanValue[T] with NameLookup {
   private[scalastan] val typeConstructor: T
@@ -17,13 +19,16 @@ sealed abstract class StanDeclaration[T <: StanType](implicit ss: ScalaStan) ext
   protected def _userName: Option[String] = internalNameFunc().orElse(NameLookup.lookupName(this))
   protected val _ss: ScalaStan = ss
 
+  private[scalastan] def inputs: Seq[StanDeclaration[_]] = Seq.empty
+  private[scalastan] def outputs: Seq[StanDeclaration[_]] = Seq.empty
+
   private[scalastan] def emit: String = name
   private[scalastan] def emitDeclaration: String = typeConstructor.emitDeclaration(name)
   private[scalastan] def emitFunctionDeclaration: String = typeConstructor.emitFunctionDeclaration(name)
 
   def size(implicit ev: T <:< StanCompoundType): StanValue[StanInt] = dims.head
 
-  def range(implicit ev: T <:< StanCompoundType): ValueRange = ValueRange(1, size)
+  def range(implicit ev: T <:< StanCompoundType): StanValueRange = StanValueRange(1, size)
 
   def dims: Seq[StanValue[StanInt]] = typeConstructor.getIndices
 }
@@ -46,6 +51,7 @@ case class StanParameterDeclaration[T <: StanType] private[scalastan] (
 )(implicit ss: ScalaStan) extends StanDeclaration[T] with Assignable[T] with Updatable[T] {
   require(typeConstructor.isDerivedFromData,
     "parameter declaration bounds must be derived from data declarations or constant")
+  private[scalastan] val value: StanDeclaration[_] = this
   private[scalastan] type DECL_TYPE = StanParameterDeclaration[T]
   private[scalastan] def isDerivedFromData: Boolean = false
 
@@ -84,13 +90,7 @@ case class StanLocalDeclaration[T <: StanType] private[scalastan] (
   protected val internalNameFunc: () => Option[String] = () => None,
   private val derivedFromData: Boolean = false
 )(implicit ss: ScalaStan) extends StanDeclaration[T] with Assignable[T] with Updatable[T] {
+  private[scalastan] val value: StanValue[_] = this
   private[scalastan] type DECL_TYPE = StanLocalDeclaration[T]
   private[scalastan] def isDerivedFromData: Boolean = derivedFromData
-}
-
-case class StanInlineDeclaration[T <: StanType](
-  protected val decl: StanLocalDeclaration[T]
-) extends StanValue[T] {
-  private[scalastan] def emit: String = decl.emitDeclaration
-  private[scalastan] def isDerivedFromData: Boolean = false
 }

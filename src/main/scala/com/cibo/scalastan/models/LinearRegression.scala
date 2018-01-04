@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 CiBO Technologies - All Rights Reserved
+ * Copyright (c) 2017 - 2018 CiBO Technologies - All Rights Reserved
  * You may use, distribute, and modify this code under the
  * terms of the BSD 3-Clause license.
  *
@@ -21,12 +21,12 @@ case class LinearRegression(
 
   private val n = data(int(lower = 0))  // Number of observations
   private val p = data(int(lower = 0))  // Number of parameters
-  private val x: StanDataDeclaration[StanMatrix] = data(matrix(n, p))   // Inputs
-  private val y: StanDataDeclaration[StanVector] = data(vector(n))      // Outputs
+  private val x: DataDeclaration[StanMatrix] = data(matrix(n, p))   // Inputs
+  private val y: DataDeclaration[StanVector] = data(vector(n))      // Outputs
 
-  val beta0: StanParameterDeclaration[StanReal] = parameter(real())             // Offset
-  val beta: StanParameterDeclaration[StanVector] = parameter(vector(p))         // Coefficients
-  val sigma: StanParameterDeclaration[StanReal] = parameter(real(lower = 0))    // Error
+  val beta0: ParameterDeclaration[StanReal] = parameter(real())             // Offset
+  val beta: ParameterDeclaration[StanVector] = parameter(vector(p))         // Coefficients
+  val sigma: ParameterDeclaration[StanReal] = parameter(real(lower = 0))    // Error
 
   private val model = new Model {
     sigma ~ stan.cauchy(0, 1)

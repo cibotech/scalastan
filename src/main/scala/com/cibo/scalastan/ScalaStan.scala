@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 CiBO Technologies - All Rights Reserved
+ * Copyright (c) 2017 - 2018 CiBO Technologies - All Rights Reserved
  * You may use, distribute, and modify this code under the
  * terms of the BSD 3-Clause license.
  *
@@ -13,10 +13,15 @@ package com.cibo.scalastan
 import java.io._
 import java.nio.file.{Files, Path, Paths}
 
+import com.cibo.scalastan.ast._
+
 import scala.language.implicitConversions
 import scala.collection.mutable.ArrayBuffer
 
 trait ScalaStan extends Implicits { ss =>
+
+  type ParameterDeclaration[T <: StanType] = StanParameterDeclaration[T]
+  type DataDeclaration[T <: StanType] = StanDataDeclaration[T]
 
   protected object stan extends StanFunctions with StanDistributions
 
@@ -27,6 +32,8 @@ trait ScalaStan extends Implicits { ss =>
   private val stanFileName: String = s"$modelExecutable.stan"
 
   protected implicit val _scalaStan: ScalaStan = this
+
+  private[scalastan] var identifiers: Set[String] = Set.empty
 
   private var idCounter: Int = 0
   private[scalastan] val dataValues = ArrayBuffer[StanDataDeclaration[_]]()
@@ -46,7 +53,7 @@ trait ScalaStan extends Implicits { ss =>
   private[scalastan] def parameters: Seq[StanParameterDeclaration[_]] =
     parameterValues ++ transformedParameters.map(_.result) ++ generatedQuantities.map(_.result)
 
-  def data[T <: StanType](typeConstructor: T): StanDataDeclaration[T] = {
+  def data[T <: StanType](typeConstructor: T): DataDeclaration[T] = {
     val v = StanDataDeclaration[T](typeConstructor)
     dataValues += v
     v
@@ -54,7 +61,7 @@ trait ScalaStan extends Implicits { ss =>
 
   def parameter[T <: StanType](
     typeConstructor: T
-  )(implicit ev: T#ELEMENT_TYPE =:= StanReal): StanParameterDeclaration[T] = {
+  )(implicit ev: T#ELEMENT_TYPE =:= StanReal): ParameterDeclaration[T] = {
     val v = StanParameterDeclaration[T](typeConstructor)
     parameterValues += v
     v
@@ -123,11 +130,11 @@ trait ScalaStan extends Implicits { ss =>
     transform.result
   }
 
-  implicit def paramTransform2Value[T <: StanType](transform: TransformedParameter[T]): StanParameterDeclaration[T] = {
+  implicit def paramTransform2Value[T <: StanType](transform: TransformedParameter[T]): ParameterDeclaration[T] = {
     transform.result
   }
 
-  implicit def generatedQuntity2Value[T <: StanType](quantity: GeneratedQuantity[T]): StanParameterDeclaration[T] = {
+  implicit def generatedQuntity2Value[T <: StanType](quantity: GeneratedQuantity[T]): ParameterDeclaration[T] = {
     quantity.result
   }
 
@@ -135,133 +142,76 @@ trait ScalaStan extends Implicits { ss =>
 
   trait StanCode {
 
-    protected implicit val _codeBuffer: ArrayBuffer[StanNode] = ArrayBuffer[StanNode]()
+    protected implicit val _code: CodeBuilder = new CodeBuilder
 
     def local[T <: StanType](typeConstructor: T): StanLocalDeclaration[T] = {
       if (typeConstructor.lower.isDefined || typeConstructor.upper.isDefined) {
         throw new IllegalStateException("local variables may not have constraints")
       }
 
-      // Local declarations need to go at the top of the block.
-      // Here we insert after the last EnterScope, the last declaration, or at the beginning making sure
-      // to insert at the current scope level.
-      val levels = _codeBuffer.scanLeft(0) { (level, node) =>
-        node match {
-          case _: EnterScope => level + 1
-          case _: LeaveScope => level - 1
-          case _             => level
-        }
-      }
       val decl = StanLocalDeclaration[T](typeConstructor)
-      val insertionPoint = _codeBuffer.zip(levels).lastIndexWhere { case (node, level) =>
-        node match {
-          case _: EnterScope               => level + 1 == levels.last
-          case _: StanInlineDeclaration[_] => level == levels.last
-          case _                           => false
-        }
-      }
-      _codeBuffer.insert(insertionPoint + 1, StanInlineDeclaration(decl))
+      _code.insert(StanInlineDeclaration(decl))
       decl
     }
 
     case class when(cond: StanValue[StanInt])(block: => Unit) {
-      _codeBuffer += IfStatement(cond)
+      _code.enter()
       block
-      _codeBuffer += LeaveScope()
+      _code.leave(code => ast.StanIfStatement(Seq((cond, StanBlock(code))), None))
 
-      def when(otherCond: StanValue[StanInt])(otherBlock: => Unit): when = {
-        _codeBuffer += ElseIfStatement(otherCond)
+      def when(cond: StanValue[StanInt])(otherBlock: => Unit): when = {
+        _code.enter()
         otherBlock
-        _codeBuffer += LeaveScope()
+        _code.handleElseIf(cond)
         this
       }
 
       def otherwise(otherBlock: => Unit): Unit = {
-        _codeBuffer += ElseStatement()
+        _code.enter()
         otherBlock
-        _codeBuffer += LeaveScope()
+        _code.handleElse()
       }
     }
 
-    def range(start: StanValue[StanInt], end: StanValue[StanInt]): ValueRange = ValueRange(start, end)
+    def range(start: StanValue[StanInt], end: StanValue[StanInt]): StanValueRange = StanValueRange(start, end)
 
     def loop(cond: StanValue[StanInt])(body: => Unit): Unit = {
-      _codeBuffer += WhileLoop(cond)
+      _code.enter()
       body
-      _codeBuffer += LeaveScope()
-    }
-
-    private def inLoop: Boolean = {
-      _codeBuffer.foldLeft(Seq.empty[StanNode]) { (stack, node) =>
-        node match {
-          case _: WhileLoop      => node +: stack
-          case _: ForLoop[_]     => node +: stack
-          case _: IfStatement[_] => node +: stack
-          case _: LeaveScope     => stack.tail
-          case _                 => stack
-        }
-      }.exists { node =>
-        node.isInstanceOf[WhileLoop] || node.isInstanceOf[ForLoop[_]]
-      }
+      _code.leave(children => ast.StanWhileLoop(cond, StanBlock(children)))
     }
 
     def break: Unit = {
-      if (!inLoop) {
-        throw new IllegalStateException("'break' must be in a loop")
-      }
-      _codeBuffer += BreakNode()
+      _code.append(StanBreakStatement())
     }
 
     def continue: Unit = {
-      if (!inLoop) {
-        throw new IllegalStateException("'continue' must be in a loop")
-      }
-      _codeBuffer += ContinueNode()
+      _code.append(StanContinueStatement())
     }
 
     private[ScalaStan] def emitTopLevelLocals(writer: PrintWriter): Unit = {
       // Values have to be declared before code.  Since we treat transformations
       // differently, we need to make a special pass to combine the top-level locals.
-      var indent: Int = 0
-      _codeBuffer.foreach { c =>
-        if (c.isInstanceOf[LeaveScope]) {
-          indent -= 1
-        }
-        if (indent == 0 && c.isInstanceOf[StanInlineDeclaration[_]]) {
-          writer.print(c.emit)
-          writer.println(c.terminator)
-        }
-        if (c.isInstanceOf[EnterScope]) {
-          indent += 1
+      _code.results.children.foreach { child =>
+        if (child.isInstanceOf[StanInlineDeclaration]) {
+          child.emit(writer, 1)
         }
       }
-      require(indent == 0)
     }
 
     private[ScalaStan] def emitCode(writer: PrintWriter): Unit = {
-      val indentSpaces = 2
-      var indent: Int = 0
-      _codeBuffer.foreach { c =>
-        if (c.isInstanceOf[LeaveScope]) {
-          indent -= 1
-        }
-        if (indent != 0 || !c.isInstanceOf[StanInlineDeclaration[_]]) {
-          writer.print(" " * (indentSpaces * (indent + 1)))
-          writer.print(c.emit)
-          writer.println(c.terminator)
-        }
-        if (c.isInstanceOf[EnterScope]) {
-          indent += 1
+      _code.results.children.foreach { child =>
+        if (!child.isInstanceOf[StanInlineDeclaration]) {
+          child.emit(writer, 1)
         }
       }
-      require(indent == 0)
     }
   }
 
   abstract class Function[RETURN_TYPE <: StanType](returnType: RETURN_TYPE = StanVoid()) extends StanCode {
 
     private[scalastan] val result = StanLocalDeclaration[RETURN_TYPE](returnType)
-    private val inputs = new ArrayBuffer[StanLocalDeclaration[_]]()
+    private val inputs = new ArrayBuffer[StanLocalDeclaration[_ <: StanType]]()
 
     def input[T <: StanType](typeConstructor: T): StanLocalDeclaration[T] = {
       val decl = StanLocalDeclaration[T](typeConstructor)
@@ -270,7 +220,7 @@ trait ScalaStan extends Implicits { ss =>
     }
 
     def output(value: StanValue[RETURN_TYPE]): Unit = {
-      _codeBuffer += ReturnNode(value)
+      _code.append(StanReturnStatement(value))
     }
 
     private[scalastan] def markUsed(): Unit = {
@@ -280,22 +230,20 @@ trait ScalaStan extends Implicits { ss =>
       }
     }
 
-    def apply(args: StanValue[_]*): FunctionNode[RETURN_TYPE] = {
+    def apply(args: StanValue[_]*): StanCall[RETURN_TYPE] = {
       markUsed()
-      val node = FunctionNode[RETURN_TYPE](result.emit, args: _*)
+      val node = StanCall[RETURN_TYPE](result.emit, args: _*)
       if (returnType == StanVoid()) {
-        _codeBuffer += node
+        _code.append(StanValueStatement(node))
       }
       node
     }
 
-    private[ScalaStan] def emit(writer: PrintWriter): Unit = {
-      val params = inputs.map(_.emitFunctionDeclaration).mkString(",")
-      writer.println(s"${returnType.emitFunctionDeclaration} ${result.emit}($params) {")
-      emitTopLevelLocals(writer)
-      emitCode(writer)
-      writer.println("}")
-    }
+    private[scalastan] def generate: StanFunctionDeclaration = StanFunctionDeclaration(
+      result,
+      inputs,
+      _code.results
+    )
   }
 
   abstract class TransformBase[T <: StanType, D <: StanDeclaration[T]] extends StanCode with NameLookup {
@@ -312,6 +260,8 @@ trait ScalaStan extends Implicits { ss =>
     if (!transformedData.exists(_._id == _id)) {
       transformedData += this
     }
+
+    private[scalastan] def generate: StanTransformedData = StanTransformedData(result, _code.results)
   }
 
   abstract class TransformedParameter[T <: StanType](
@@ -323,6 +273,8 @@ trait ScalaStan extends Implicits { ss =>
     if (!transformedParameters.exists(_._id == _id)) {
       transformedParameters += this
     }
+
+    private[scalastan] def generate: StanTransformedParameter = StanTransformedParameter(result, _code.results)
   }
 
   abstract class GeneratedQuantity[T <: StanType](typeConstructor: T) extends TransformBase[T, StanParameterDeclaration[T]] {
@@ -332,21 +284,24 @@ trait ScalaStan extends Implicits { ss =>
     if (!generatedQuantities.exists(_._id == _id)) {
       generatedQuantities += this
     }
-  }
 
-  private def emitDeclarations(
-    writer: PrintWriter,
-    decls: Seq[StanDeclaration[_]]
-  ): Unit = {
-    decls.foreach { decl =>
-      writer.println(s"  ${decl.emitDeclaration};")
-    }
+    private[scalastan] def generate: StanGeneratedQuantity = StanGeneratedQuantity(result, _code.results)
   }
 
   trait Model extends StanCode {
 
     // Log probability function.
-    final def target: TargetValue = TargetValue()
+    final def target: StanTargetValue = StanTargetValue()
+
+    private def program: StanProgram = StanProgram(
+      dataValues,
+      parameterValues,
+      functions.map(_.generate),
+      transformedData.map(_.generate),
+      transformedParameters.map(_.generate),
+      generatedQuantities.map(_.generate),
+      _code.results
+    )
 
     final def emit(ps: PrintStream): Unit = {
       val pw = new PrintWriter(ps)
@@ -355,50 +310,14 @@ trait ScalaStan extends Implicits { ss =>
     }
 
     def emit(writer: PrintWriter): Unit = {
+      val transforms = Seq(
+        transform.LoopChecker,
+        transform.AstSimplifier
 
-      if (functions.nonEmpty) {
-        writer.println("functions {")
-        functions.foreach(t => t.emitTopLevelLocals(writer))
-        functions.foreach(f => f.emit(writer))
-        writer.println("}")
-      }
-
-      writer.println("data {")
-      emitDeclarations(writer, dataValues)
-      writer.println("}")
-
-      if (transformedData.nonEmpty) {
-        writer.println("transformed data {")
-        emitDeclarations(writer, transformedData.map(_.result))
-        transformedData.foreach(t => t.emitTopLevelLocals(writer))
-        transformedData.foreach(t => t.emitCode(writer))
-        writer.println("}")
-      }
-
-      writer.println("parameters {")
-      emitDeclarations(writer, parameterValues)
-      writer.println("}")
-
-      if (transformedParameters.nonEmpty) {
-        writer.println("transformed parameters {")
-        emitDeclarations(writer, transformedParameters.map(_.result))
-        transformedParameters.foreach(t => t.emitTopLevelLocals(writer))
-        transformedParameters.foreach(t => t.emitCode(writer))
-        writer.println("}")
-      }
-
-      writer.println("model {")
-      emitTopLevelLocals(writer)
-      emitCode(writer)
-      writer.println("}")
-
-      if (generatedQuantities.nonEmpty) {
-        writer.println("generated quantities {")
-        emitDeclarations(writer, generatedQuantities.map(_.result))
-        generatedQuantities.foreach(t => t.emitTopLevelLocals(writer))
-        generatedQuantities.foreach(g => g.emitCode(writer))
-        writer.println("}")
-      }
+      )
+      transforms.foldLeft(program) { case (old, transform) =>
+        transform.run(old)
+      }.emit(writer)
     }
 
     private[scalastan] def getCode: String = {

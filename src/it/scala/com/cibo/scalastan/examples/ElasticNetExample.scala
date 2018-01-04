@@ -19,25 +19,25 @@ object ElasticNetExample extends App with ScalaStan {
 
   // Linear regression by minimizing the squared error.
   trait LeastSquaresLike extends Model {
-    val x: StanDataDeclaration[StanMatrix]
-    val y: StanDataDeclaration[StanVector]
-    val beta: StanParameterDeclaration[StanVector]
+    val x: DataDeclaration[StanMatrix]
+    val y: DataDeclaration[StanVector]
+    val beta: ParameterDeclaration[StanVector]
 
     target += -stan.dotSelf(y - x * beta)
   }
 
   // Add a Ridge penalty (penalize the Euclidean length of the coefficients).
   trait RidgePenaltyLike extends Model {
-    val ridgeLambda: StanDataDeclaration[StanReal]
-    val beta: StanParameterDeclaration[StanVector]
+    val ridgeLambda: DataDeclaration[StanReal]
+    val beta: ParameterDeclaration[StanVector]
 
     target += -ridgeLambda * stan.dotSelf(beta)
   }
 
   // Add a Lasso penalty (penalize the sum of the absolute coefficients).
   trait LassoPenaltyLike extends Model {
-    val lassoLambda: StanDataDeclaration[StanReal]
-    val beta: StanParameterDeclaration[StanVector]
+    val lassoLambda: DataDeclaration[StanReal]
+    val beta: ParameterDeclaration[StanVector]
 
     for (i <- beta.range) {
       target += -lassoLambda * stan.fabs(beta(i))
@@ -46,37 +46,37 @@ object ElasticNetExample extends App with ScalaStan {
 
   // Model to perform least squares regression.
   case class LeastSquaresRegression(
-    x: StanDataDeclaration[StanMatrix],
-    y: StanDataDeclaration[StanVector],
-    beta: StanParameterDeclaration[StanVector]
+    x: DataDeclaration[StanMatrix],
+    y: DataDeclaration[StanVector],
+    beta: ParameterDeclaration[StanVector]
   ) extends LeastSquaresLike
 
   // Model to perform Ridge regression.
   // This uses the least squares trait along with the Ridge penalty.
   case class RidgeRegression(
-    x: StanDataDeclaration[StanMatrix],
-    y: StanDataDeclaration[StanVector],
-    beta: StanParameterDeclaration[StanVector],
-    ridgeLambda: StanDataDeclaration[StanReal]
+    x: DataDeclaration[StanMatrix],
+    y: DataDeclaration[StanVector],
+    beta: ParameterDeclaration[StanVector],
+    ridgeLambda: DataDeclaration[StanReal]
   ) extends LeastSquaresLike with RidgePenaltyLike
 
   // Model to perform Lasso regression.
   // This uses the least squares trait along with the Lasso penalty.
   case class LassoRegression(
-    x: StanDataDeclaration[StanMatrix],
-    y: StanDataDeclaration[StanVector],
-    beta: StanParameterDeclaration[StanVector],
-    lassoLambda: StanDataDeclaration[StanReal]
+    x: DataDeclaration[StanMatrix],
+    y: DataDeclaration[StanVector],
+    beta: ParameterDeclaration[StanVector],
+    lassoLambda: DataDeclaration[StanReal]
   ) extends LeastSquaresLike with LassoPenaltyLike
 
   // Model to perform Elastic Net regression.
   // This uses the least squares trait along with both the Ridge and Lasso penalties.
   case class ElasticNetRegression(
-    x: StanDataDeclaration[StanMatrix],
-    y: StanDataDeclaration[StanVector],
-    beta: StanParameterDeclaration[StanVector],
-    ridgeLambda: StanDataDeclaration[StanReal],
-    lassoLambda: StanDataDeclaration[StanReal]
+    x: DataDeclaration[StanMatrix],
+    y: DataDeclaration[StanVector],
+    beta: ParameterDeclaration[StanVector],
+    ridgeLambda: DataDeclaration[StanReal],
+    lassoLambda: DataDeclaration[StanReal]
   ) extends LeastSquaresLike with RidgePenaltyLike with LassoPenaltyLike {
     val betaElasticNet = new GeneratedQuantity(vector(stan.cols(x))) {
       result := (1 + ridgeLambda) * beta

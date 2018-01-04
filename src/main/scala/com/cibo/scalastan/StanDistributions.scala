@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 CiBO Technologies - All Rights Reserved
+ * Copyright (c) 2017 - 2018 CiBO Technologies - All Rights Reserved
  * You may use, distribute, and modify this code under the
  * terms of the BSD 3-Clause license.
  *
@@ -9,6 +9,8 @@
  */
 
 package com.cibo.scalastan
+
+import com.cibo.scalastan.ast.{StanContinuousDistribution, StanDiscreteDistributionWithCdf, StanDiscreteDistributionWithoutCdf, StanValue}
 
 protected trait StanDistributions {
 

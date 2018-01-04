@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 CiBO Technologies - All Rights Reserved
+ * Copyright (c) 2017 - 2018 CiBO Technologies - All Rights Reserved
  * You may use, distribute, and modify this code under the
  * terms of the BSD 3-Clause license.
  *
@@ -11,6 +11,8 @@
 package com.cibo.scalastan
 
 import java.io._
+import java.nio.file.{Files, Paths}
+import java.util.regex.Pattern
 
 import scala.collection.JavaConverters._
 
@@ -32,33 +34,60 @@ protected object StanRunner {
 
     private val modelExecutable: String = "model"
     private val stanFileName: String = s"$modelExecutable.stan"
+    private lazy val CMDSTAN_HOME: Option[String] = sys.env.get("CMDSTAN_HOME")
 
-    private def findStan: String = {
-      val pb = new ProcessBuilder("which", "stanc")
-      val process = pb.start()
-      val reader = new BufferedReader(new InputStreamReader(process.getInputStream))
-      val rc = process.waitFor()
-      if (rc != 0) {
-        throw new IllegalStateException("stanc not found")
-      }
-      val stancFile = new File(reader.lines.iterator.asScala.toStream.last).getCanonicalFile
-      stancFile.getParentFile.getParentFile.getAbsolutePath
+    // Find a file in the path.
+    // Returns the full path to the file.
+    private def findInPath(file: String): Option[String] = {
+      System.getenv("PATH").split(Pattern.quote(File.pathSeparator)).map { p =>
+        Paths.get(p).resolve(file)
+      }.find(Files.isExecutable).map(_.toFile.getCanonicalPath)
     }
 
-    private def stanc(dir: File): Unit = {
-      val pb = new ProcessBuilder("stanc", stanFileName).directory(dir).inheritIO()
+    // Look up the absolute path to "stanc", if it's in PATH.
+    private def findStancInPath: Option[String] = {
+      Stream("stanc", "stanc.exe").view.map(findInPath).collectFirst {
+        case Some(p) => p
+      }
+    }
+
+    // The Stan home directory.
+    private lazy val stanHome: String = {
+      // First check if CMDSTAN_HOME is set.
+      // If CMDSTAN_HOME is not set, we attempt to infer it by looking up stanc.
+      CMDSTAN_HOME.orElse {
+        findStancInPath.map(p => new File(p).getParentFile.getParentFile.getAbsolutePath)
+      }.getOrElse {
+        throw new IllegalStateException("could not locate Stan")
+      }
+    }
+
+    // Location of the "stanc" program.
+    private lazy val stanc: String = s"$stanHome/bin/stanc"
+
+    // The make program to use.
+    private lazy val make: String = {
+      Stream("gmake", "make", "gmake.exe", "make.exe").map(findInPath).collectFirst {
+        case Some(p) => p
+      }.getOrElse {
+        throw new IllegalStateException("could not locate make")
+      }
+    }
+
+    private def runStanc(dir: File): Unit = {
+      val pb = new ProcessBuilder(stanc, stanFileName).directory(dir).inheritIO()
       val rc = pb.start().waitFor()
       if (rc != 0) {
-        throw new IllegalStateException(s"stanc returned $rc")
+        throw new IllegalStateException(s"$stanc returned $rc")
       }
     }
 
-    private def make(dir: File, stanDir: String): Unit = {
+    private def runMake(dir: File): Unit = {
       val target = s"$dir/$modelExecutable"
-      val pb = new ProcessBuilder("make", target).directory(new File(stanDir)).inheritIO()
+      val pb = new ProcessBuilder(make, target).directory(new File(stanHome)).inheritIO()
       val rc = pb.start().waitFor()
       if (rc != 0) {
-        throw new IllegalStateException(s"make returned $rc")
+        throw new IllegalStateException(s"$make returned $rc")
       }
     }
 
@@ -89,8 +118,7 @@ protected object StanRunner {
     }
 
     def compile(ss: ScalaStan, model: ScalaStan#Model): CmdStanCompiledModel = {
-      val stanDir = findStan
-      println(s"found stan in $stanDir")
+      println(s"found stan in $stanHome")
 
       // Generate the code.
       val dir = model.generate
@@ -98,8 +126,8 @@ protected object StanRunner {
       if (new File(s"${dir.getPath}/$modelExecutable").canExecute) {
         println("found existing executable")
       } else {
-        stanc(dir)
-        make(dir, stanDir)
+        runStanc(dir)
+        runMake(dir)
       }
 
       CmdStanCompiledModel(dir, ss)

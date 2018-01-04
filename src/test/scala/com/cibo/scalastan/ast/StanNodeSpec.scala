@@ -1,4 +1,6 @@
-package com.cibo.scalastan
+package com.cibo.scalastan.ast
+
+import com.cibo.scalastan.{ScalaStan, ScalaStanBaseSpec, StanInt, StanReal}
 
 class StanNodeSpec extends ScalaStanBaseSpec with ScalaStan {
 

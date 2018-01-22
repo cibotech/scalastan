@@ -2,13 +2,11 @@ package com.cibo.scalastan.transform
 
 import com.cibo.scalastan.ast._
 
-case class AnalysisResult[T](private val mapping: Map[Int, Set[T]]) {
+case class AnalysisResult[T](mapping: Map[Int, Set[T]]) {
   def lookup(node: StanNode): Set[T] = mapping(node.id)
 }
 
-trait StanAnalysis {
-
-  type T
+abstract class StanAnalysis[T](root: StanStatement) {
 
   // True if this if the analysis should go forward, false for backward.
   protected val forward: Boolean
@@ -59,11 +57,16 @@ trait StanAnalysis {
         // We connect the previous link to the block (already done), the block to the first statement, and
         // the last statement to the next link.
         val start: (Map[Int, Set[Int]], StanStatement) = (newLinks, code)
-        block.children.sliding(2).foldLeft(start) { case ((oldLinks, prev), cs) =>
+        val (childrenLinks, newPrev) = block.children.sliding(2).foldLeft(start) { case ((oldLinks, prev), cs) =>
           val child = cs.head
           val newNext = cs.tail.headOption.orElse(nextOpt)
           (getControlFlow(child, Some(prev), newNext, breakOpt, continueOpt, oldLinks), child)
-        }._1
+        }
+        if (block.children.nonEmpty) {
+          getControlFlow(block.children.last, Some(newPrev), nextOpt, breakOpt, continueOpt, childrenLinks)
+        } else {
+          childrenLinks
+        }
       case loop: StanLoop            =>
         // We connect the previous statement to the loop (already done),
         // the loop to the first statement in the body (done by calling getControlFlow on the body with
@@ -83,7 +86,10 @@ trait StanAnalysis {
         }.getOrElse(withConds)
       case _: StanBreakStatement     =>
         // A break connects to the statement after the loop.
-        addLink(code, breakOpt.get, newLinks)
+        // Note that there may be no such statement if the loop is the last statement in the program.
+        breakOpt.foldLeft(newLinks) { case (ls, b) =>
+          addLink(code, b, ls)
+        }
       case _: StanContinueStatement  =>
         // A continue connects to the loop header.
         addLink(code, continueOpt.get, newLinks)
@@ -96,18 +102,11 @@ trait StanAnalysis {
     }
   }
 
-  private def getStatements(code: StanStatement): Seq[StanStatement] = {
-    val inner = code match {
-      case block: StanBlock      => block.children.flatMap(child => getStatements(child))
-      case loop: StanLoop        => getStatements(loop.body)
-      case cond: StanIfStatement =>
-        cond.conds.flatMap(c => getStatements(c._2)) ++ cond.otherwise.map(getStatements).getOrElse(Seq.empty)
-      case _                     => Seq.empty
-    }
-    code +: inner
-  }
+  protected lazy val statementMap: Map[Int, StanStatement] = StanProgram.getStatements(root).map { statement =>
+    statement.id -> statement
+  }.toMap
 
-  final def solve(root: StanStatement): AnalysisResult[T] = {
+  lazy val solve: AnalysisResult[T] = {
     val outLinks: Map[Int, Set[Int]] = getControlFlow(root)
     val inLinks: Map[Int, Set[Int]] = outLinks.toSeq.flatMap { case (parent, children) =>
       children.map(child => child -> parent)
@@ -115,21 +114,19 @@ trait StanAnalysis {
 
     val inputs: Map[Int, Set[Int]] = if (forward) inLinks else outLinks     // Inputs to a statement.
     val outputs: Map[Int, Set[Int]] = if (forward) outLinks else inLinks    // Outputs of a statement.
-    val statements = getStatements(root)
-    val mapping = statements.map(s => s.id -> s).toMap  // Mapping from ID to statement.
 
     var before = Map[Int, Set[T]]()   // State before the statement
     var after = Map[Int, Set[T]]()    // State after the statement
     var todo = Set[Int]()             // Work list.
 
-    statements.foreach { statement =>
+    statementMap.values.foreach { statement =>
       before += (statement.id -> init(statement))
       after += (statement.id -> init(statement))
       todo += statement.id
     }
 
     while (todo.nonEmpty) {
-      val statement = mapping(todo.head)
+      val statement = statementMap(todo.head)
       todo -= statement.id
       val in = inputs.getOrElse(statement.id, Set.empty)
       val temp = if (in.nonEmpty) {

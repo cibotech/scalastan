@@ -13,53 +13,56 @@ package com.cibo.scalastan.ast
 import com.cibo.scalastan._
 
 sealed abstract class StanDeclaration[T <: StanType](implicit ss: ScalaStan) extends StanValue[T] with NameLookup {
-  private[scalastan] val typeConstructor: T
+  val returnType: T
+  val internalNameFunc: Function0[Option[String]]
 
-  protected val internalNameFunc: Function0[Option[String]]
   protected def _userName: Option[String] = internalNameFunc().orElse(NameLookup.lookupName(this))
   protected val _ss: ScalaStan = ss
 
-  private[scalastan] def inputs: Seq[StanDeclaration[_]] = Seq.empty
-  private[scalastan] def outputs: Seq[StanDeclaration[_]] = Seq.empty
-
   private[scalastan] def emit: String = name
-  private[scalastan] def emitDeclaration: String = typeConstructor.emitDeclaration(name)
-  private[scalastan] def emitFunctionDeclaration: String = typeConstructor.emitFunctionDeclaration(name)
+  private[scalastan] def emitDeclaration: String = returnType.emitDeclaration(name)
+  private[scalastan] def emitFunctionDeclaration: String = returnType.emitFunctionDeclaration(name)
 
   def size(implicit ev: T <:< StanCompoundType): StanValue[StanInt] = dims.head
 
   def range(implicit ev: T <:< StanCompoundType): StanValueRange = StanValueRange(1, size)
 
-  def dims: Seq[StanValue[StanInt]] = typeConstructor.getIndices
+  def dims: Seq[StanValue[StanInt]] = returnType.getIndices
 }
 
 case class StanDataDeclaration[T <: StanType] private[scalastan] (
-  private[scalastan] val typeConstructor: T,
-  protected val internalNameFunc: () => Option[String] = () => None
-)(implicit ss: ScalaStan) extends StanDeclaration[T] with ReadOnlyIndex[T] {
-  require(typeConstructor.isDerivedFromData,
+  returnType: T,
+  internalNameFunc: () => Option[String] = () => None,
+  id: Int = StanNode.getNextId
+)(implicit ss: ScalaStan) extends StanDeclaration[T] {
+  require(returnType.isDerivedFromData,
     "data declaration bounds must be derived from other data declarations or constant")
   private[scalastan] type DECL_TYPE = StanDataDeclaration[T]
   private[scalastan] def isDerivedFromData: Boolean = true
+  private[scalastan] def inputs: Seq[StanDeclaration[_]] = Seq(this)
+  private[scalastan] def outputs: Seq[StanDeclaration[_]] = Seq.empty
 }
 
 case class StanParameterDeclaration[T <: StanType] private[scalastan] (
-  private[scalastan] val typeConstructor: T,
-  protected val internalNameFunc: () => Option[String] = () => None,
-  private[scalastan] val rootOpt: Option[StanParameterDeclaration[_ <: StanType]] = None,
-  private[scalastan] val indices: Seq[Int] = Seq.empty
-)(implicit ss: ScalaStan) extends StanDeclaration[T] with Assignable[T] with Updatable[T] {
-  require(typeConstructor.isDerivedFromData,
+  returnType: T,
+  internalNameFunc: () => Option[String] = () => None,
+  rootOpt: Option[StanParameterDeclaration[_ <: StanType]] = None,
+  indices: Seq[Int] = Seq.empty,
+  id: Int = StanNode.getNextId
+)(implicit ss: ScalaStan) extends StanDeclaration[T] with Updatable[T] {
+  require(returnType.isDerivedFromData,
     "parameter declaration bounds must be derived from data declarations or constant")
   private[scalastan] val value: StanDeclaration[_ <: StanType] = this
   private[scalastan] type DECL_TYPE = StanParameterDeclaration[T]
   private[scalastan] def isDerivedFromData: Boolean = false
+  override private[scalastan] def inputs: Seq[StanDeclaration[_]] = Seq(this)
+  override private[scalastan] def outputs: Seq[StanDeclaration[_]] = Seq(this)
 
   private[scalastan] def root: StanParameterDeclaration[_ <: StanType] = rootOpt.getOrElse(this)
 
   def get(index: Int)(implicit ev: IsCompoundType[T]): StanParameterDeclaration[T#NEXT_TYPE] = {
     val newName = s"$name[$index]"
-    StanParameterDeclaration(typeConstructor.next, () => Some(newName), Some(root), indices :+ index)
+    StanParameterDeclaration(returnType.next, () => Some(newName), Some(root), indices :+ index)
   }
 
   def get(
@@ -68,7 +71,7 @@ case class StanParameterDeclaration[T <: StanType] private[scalastan] (
   )(implicit ev: IsCompoundType[T#NEXT_TYPE]): StanParameterDeclaration[T#NEXT_TYPE#NEXT_TYPE] = {
     val args = Seq(index1, index2)
     val newName = args.mkString(s"$name[", ",", "]")
-    StanParameterDeclaration(typeConstructor.next.next, () => Some(newName), Some(root), indices ++ args)
+    StanParameterDeclaration(returnType.next.next, () => Some(newName), Some(root), indices ++ args)
   }
 
   def get(
@@ -76,7 +79,7 @@ case class StanParameterDeclaration[T <: StanType] private[scalastan] (
   )(implicit ev: IsCompoundType[T#NEXT_TYPE#NEXT_TYPE]): StanParameterDeclaration[T#NEXT_TYPE#NEXT_TYPE#NEXT_TYPE] = {
     val args = Seq(index1, index2, index3)
     val newName = args.mkString(s"$name[", ",", "]")
-    StanParameterDeclaration(typeConstructor.next.next.next, () => Some(newName), Some(root), indices ++ args)
+    StanParameterDeclaration(returnType.next.next.next, () => Some(newName), Some(root), indices ++ args)
   }
 
   def get(
@@ -86,16 +89,20 @@ case class StanParameterDeclaration[T <: StanType] private[scalastan] (
   ): StanParameterDeclaration[T#NEXT_TYPE#NEXT_TYPE#NEXT_TYPE#NEXT_TYPE] = {
     val args = Seq(index1, index2, index3, index4)
     val newName = args.mkString(s"$name[", ",", "]")
-    StanParameterDeclaration(typeConstructor.next.next.next.next, () => Some(newName), Some(root), indices ++ args)
+    StanParameterDeclaration(returnType.next.next.next.next, () => Some(newName), Some(root), indices ++ args)
   }
 }
 
 case class StanLocalDeclaration[T <: StanType] private[scalastan] (
-  private[scalastan] val typeConstructor: T,
-  protected val internalNameFunc: () => Option[String] = () => None,
-  private val derivedFromData: Boolean = false
-)(implicit ss: ScalaStan) extends StanDeclaration[T] with Assignable[T] with Updatable[T] {
+  returnType: T,
+  internalNameFunc: () => Option[String] = () => None,
+  derivedFromData: Boolean = false,
+  id: Int = StanNode.getNextId
+)(implicit ss: ScalaStan) extends StanDeclaration[T] with Updatable[T] {
   private[scalastan] val value: StanValue[_ <: StanType] = this
   private[scalastan] type DECL_TYPE = StanLocalDeclaration[T]
   private[scalastan] def isDerivedFromData: Boolean = derivedFromData
+  override private[scalastan] def emitDeclaration: String = returnType.unconstrained.emitDeclaration(name)
+  override private[scalastan] def inputs: Seq[StanDeclaration[_]] = Seq(this)
+  override private[scalastan] def outputs: Seq[StanDeclaration[_]] = Seq(this)
 }

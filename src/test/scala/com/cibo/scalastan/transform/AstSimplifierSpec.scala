@@ -1,24 +1,28 @@
 package com.cibo.scalastan.transform
 
 import com.cibo.scalastan.{ScalaStan, ScalaStanBaseSpec, StanInt}
-import com.cibo.scalastan.ast.{StanBlock, StanIfStatement, StanLocalDeclaration, StanReturnStatement}
+import com.cibo.scalastan.ast._
 
 class AstSimplifierSpec extends ScalaStanBaseSpec {
   describe("AstSimplifier") {
     it("simplifies nested blocks") {
       new ScalaStan {
         val returnStatement = StanReturnStatement(StanLocalDeclaration(StanInt()))
-        val code = StanBlock(Seq(StanBlock(Seq(returnStatement))))
-        val simplified = AstSimplifier.run(code)
-        simplified shouldBe returnStatement
+        val code = StanProgram(model = StanBlock(Seq(StanBlock(Seq(returnStatement)))))
+        val simplifier = new AstSimplifier()
+        val simplified = simplifier.run(code)
+        simplified.model shouldBe returnStatement
       }
     }
 
     it("removes empty conditionals") {
       new ScalaStan {
-        val code = StanIfStatement(Seq((StanLocalDeclaration(StanInt()), StanBlock(Seq.empty))), None)
-        val simplified = AstSimplifier.run(code)
-        simplified shouldBe StanBlock(Seq.empty)
+        val code = StanProgram(
+          model = StanIfStatement(Seq((StanLocalDeclaration(StanInt()), StanBlock(Seq.empty))), None)
+        )
+        val simplifier = new AstSimplifier()
+        val simplified = simplifier.run(code)
+        simplified.model shouldBe StanBlock(Seq.empty)
       }
     }
   }

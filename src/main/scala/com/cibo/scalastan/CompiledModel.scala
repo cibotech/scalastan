@@ -54,7 +54,7 @@ abstract class CompiledModel {
     }
 
     // Look up and set the size parameters.
-    val (withDecls, _) = decl.typeConstructor.getIndices.foldLeft((this, conv: Any)) { case ((old, d), dim) =>
+    val (withDecls, _) = decl.returnType.getIndices.foldLeft((this, conv: Any)) { case ((old, d), dim) =>
       val ds = d.asInstanceOf[Seq[_]]
       val next = if (ds.nonEmpty) ds.head else Seq.empty
       dim match {

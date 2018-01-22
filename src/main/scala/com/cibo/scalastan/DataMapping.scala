@@ -18,7 +18,7 @@ protected case class DataMapping[T <: StanType] private[scalastan] (
 ) {
   private[scalastan] def emit: String = {
     val nameStr = decl.emit
-    val dataStr = decl.typeConstructor.emitData(values.asInstanceOf[decl.typeConstructor.SCALA_TYPE])
+    val dataStr = decl.returnType.emitData(values.asInstanceOf[decl.returnType.SCALA_TYPE])
     s"$nameStr <- $dataStr"
   }
 }

@@ -130,7 +130,7 @@ case class DataSource private[data] (
   /** Read the specified data declaration using the named data value. */
   def read[T <: StanType](decl: StanDataDeclaration[T], name: String = ""): T#SCALA_TYPE = {
     raw.get(name) match {
-      case Some(value) => decl.typeConstructor.parse(value.dims, value.values)
+      case Some(value) => decl.returnType.parse(value.dims, value.values)
       case None        => throw new IllegalArgumentException(s"$name not found")
     }
   }
@@ -146,9 +146,9 @@ case class DataSource private[data] (
     name: String,
     data: T#SCALA_TYPE
   ): DataSource = {
-    val converted = data.asInstanceOf[decl.typeConstructor.SCALA_TYPE]
-    val dims = decl.typeConstructor.getDims(converted).toVector
-    val values = decl.typeConstructor.getData(converted).toVector
+    val converted = data.asInstanceOf[decl.returnType.SCALA_TYPE]
+    val dims = decl.returnType.getDims(converted).toVector
+    val values = decl.returnType.getData(converted).toVector
     copy(rawSeq :+ DataValue(name, dims, values))
   }
 }

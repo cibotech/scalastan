@@ -14,6 +14,7 @@ import java.io._
 import java.nio.file.{Files, Path, Paths}
 
 import com.cibo.scalastan.ast._
+import com.cibo.scalastan.transform.{LoopChecker, StanTransform}
 
 import scala.language.implicitConversions
 import scala.collection.mutable.ArrayBuffer
@@ -230,9 +231,9 @@ trait ScalaStan extends Implicits { ss =>
       }
     }
 
-    def apply(args: StanValue[_]*): StanCall[RETURN_TYPE] = {
+    def apply(args: StanValue[_ <: StanType]*): StanCall[RETURN_TYPE] = {
       markUsed()
-      val node = StanCall[RETURN_TYPE](returnType, result.emit, args: _*)
+      val node = StanCall[RETURN_TYPE](returnType, result.emit, args)
       if (returnType == StanVoid()) {
         _code.append(StanValueStatement(node))
       }
@@ -288,12 +289,15 @@ trait ScalaStan extends Implicits { ss =>
     private[scalastan] def generate: StanGeneratedQuantity = StanGeneratedQuantity(result, _code.results)
   }
 
+  /** Trait providing the Stan Model DSL. */
   trait Model extends StanCode {
 
     // Log probability function.
-    final def target: StanTargetValue = StanTargetValue()
+    final protected def target: StanTargetValue = StanTargetValue()
 
-    private def program: StanProgram = StanProgram(
+    def emit(writer: PrintWriter): Unit = TransformedModel(this).emit(writer)
+
+    private[scalastan] def program: StanProgram = StanProgram(
       dataValues,
       parameterValues,
       functions.map(_.generate),
@@ -307,17 +311,6 @@ trait ScalaStan extends Implicits { ss =>
       val pw = new PrintWriter(ps)
       emit(pw)
       pw.flush()
-    }
-
-    def emit(writer: PrintWriter): Unit = {
-      val transforms = Seq(
-        transform.LoopChecker,
-        transform.AstSimplifier
-
-      )
-      transforms.foldLeft(program) { case (old, transform) =>
-        transform.run(old)
-      }.emit(writer)
     }
 
     private[scalastan] def getCode: String = {
@@ -367,13 +360,31 @@ trait ScalaStan extends Implicits { ss =>
         Files.createDirectories(dir.toPath)
         val codeFile = new File(s"${dir.getPath}/$stanFileName")
         val codeWriter = new PrintWriter(codeFile)
-        emit(codeWriter)
+        codeWriter.print(str)
         codeWriter.close()
       }
       dir
     }
 
-    final def compile[M <: CompiledModel](implicit runner: StanRunner[M]): CompiledModel = runner.compile(ss, this)
+    def transform(t: StanTransform): Model = TransformedModel(this).transform(t)
+
+    def compile[M <: CompiledModel](implicit runner: StanRunner[M]): CompiledModel =
+      TransformedModel(this).compile(runner)
+  }
+
+  case class TransformedModel private (
+    model: Model,
+    transforms: Seq[StanTransform] = Seq(new LoopChecker)
+  ) extends Model {
+    override final def transform(t: StanTransform): TransformedModel = TransformedModel(model, transforms :+ t)
+
+    override final def emit(writer: PrintWriter): Unit = {
+      val transformedProgram = transforms.foldLeft(model.program) { (prev, t) => t.run(prev) }
+      transformedProgram.emit(writer)
+    }
+
+    override final def compile[M <: CompiledModel](implicit runner: StanRunner[M]): CompiledModel =
+      runner.compile(ss, this)
   }
 
   private case class BlackBoxModel private (

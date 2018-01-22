@@ -13,9 +13,9 @@ package com.cibo.scalastan.ast
 import com.cibo.scalastan._
 
 // A distribution (Normal, etc.)
-abstract class StanDistribution[T <: StanType, R <: StanType] extends StanNode {
+sealed abstract class StanDistribution[T <: StanType, R <: StanType] extends StanNode {
   protected val name: String
-  protected val args: Seq[StanValue[_]]
+  private[scalastan] val args: Seq[StanValue[_ <: StanType]]
   protected val lowerOpt: Option[StanValue[_]]
   protected val upperOpt: Option[StanValue[_]]
 
@@ -38,9 +38,11 @@ abstract class StanDistribution[T <: StanType, R <: StanType] extends StanNode {
 
 case class StanContinuousDistribution[T <: StanType, R <: StanType] private[scalastan] (
   protected val name: String,
-  protected val args: Seq[StanValue[_]],
+  protected val rngType: R,
+  protected val args: Seq[StanValue[_ <: StanType]],
   protected val lowerOpt: Option[StanValue[R]] = None,
-  protected val upperOpt: Option[StanValue[R]] = None
+  protected val upperOpt: Option[StanValue[R]] = None,
+  protected val id: Int = StanNode.getNextId
 ) extends StanDistribution[T, R] {
   def lpdf(y: StanValue[T]): StanValue[StanReal] = StanDistributionNode(s"${name}_lpdf", y, "|", args)
   def cdf(y: StanValue[T]): StanValue[StanReal] = StanDistributionNode(s"${name}_cdf", y, ",", args)
@@ -51,38 +53,43 @@ case class StanContinuousDistribution[T <: StanType, R <: StanType] private[scal
     upper: Option[StanValue[R]] = None
   ): StanContinuousDistribution[T, R] = {
     require(lowerOpt.isEmpty && upperOpt.isEmpty, "Distribution already truncated")
-    StanContinuousDistribution(name, args, lowerOpt = lower, upperOpt = upper)
+    StanContinuousDistribution(name, rngType, args, lowerOpt = lower, upperOpt = upper)
   }
-  def rng(implicit gen: InGeneratedQuantityBlock): StanCall[R] = StanCall(s"${name}_rng", args: _*)
+  def rng(implicit gen: InGeneratedQuantityBlock): StanCall[R] = StanCall(rngType, s"${name}_rng", args)
 }
 
-abstract class StanDiscreteDistribution[T <: StanType, R <: StanType] extends StanDistribution[T, R] {
+sealed abstract class StanDiscreteDistribution[T <: StanType, R <: StanType] extends StanDistribution[T, R] {
+  protected val rngType: R
   def lpmf(
     y: StanValue[T]
   ): StanValue[StanReal] = StanDistributionNode(s"${name}_lpmf", y, "|", args)
-  def rng(implicit gen: InGeneratedQuantityBlock): StanCall[R] = StanCall(s"${name}_rng", args: _*)
+  def rng(implicit gen: InGeneratedQuantityBlock): StanCall[R] = StanCall(rngType, s"${name}_rng", args)
 }
 
 case class StanDiscreteDistributionWithoutCdf[T <: StanType, R <: StanType] private[scalastan] (
-  protected val name: String,
-  protected val args: Seq[StanValue[_]],
-  protected val lowerOpt: Option[StanValue[R]] = None,
-  protected val upperOpt: Option[StanValue[R]] = None
+  name: String,
+  rngType: R,
+  args: Seq[StanValue[_ <: StanType]],
+  lowerOpt: Option[StanValue[R]] = None,
+  upperOpt: Option[StanValue[R]] = None,
+  id: Int = StanNode.getNextId
 ) extends StanDiscreteDistribution[T, R] {
   def truncate(
     lower: Option[StanValue[R]] = None,
     upper: Option[StanValue[R]] = None
   ): StanDiscreteDistributionWithoutCdf[T, R] = {
     require(lowerOpt.isEmpty && upperOpt.isEmpty, "Distribution already truncated")
-    StanDiscreteDistributionWithoutCdf(name, args, lowerOpt = lower, upperOpt = upper)
+    StanDiscreteDistributionWithoutCdf(name, rngType, args, lowerOpt = lower, upperOpt = upper)
   }
 }
 
 case class StanDiscreteDistributionWithCdf[T <: StanType, R <: StanType] private[scalastan] (
-  protected val name: String,
-  protected val args: Seq[StanValue[_]],
-  protected val lowerOpt: Option[StanValue[T]] = None,
-  protected val upperOpt: Option[StanValue[T]] = None
+  name: String,
+  rngType: R,
+  args: Seq[StanValue[_ <: StanType]],
+  lowerOpt: Option[StanValue[T]] = None,
+  upperOpt: Option[StanValue[T]] = None,
+  id: Int = StanNode.getNextId
 ) extends StanDiscreteDistribution[T, R] {
   def cdf(y: StanValue[T]): StanValue[StanReal] = StanDistributionNode(s"${name}_cdf", y, ",", args)
   def lcdf(y: StanValue[T]): StanValue[StanReal] = StanDistributionNode(s"${name}_lcdf", y, "|", args)
@@ -92,7 +99,7 @@ case class StanDiscreteDistributionWithCdf[T <: StanType, R <: StanType] private
     upper: Option[StanValue[T]] = None
   ): StanDiscreteDistributionWithCdf[T, R] = {
     require(lowerOpt.isEmpty && upperOpt.isEmpty, "Distribution already truncated")
-    StanDiscreteDistributionWithCdf(name, args, lowerOpt = lower, upperOpt = upper)
+    StanDiscreteDistributionWithCdf(name, rngType, args, lowerOpt = lower, upperOpt = upper)
   }
 }
 

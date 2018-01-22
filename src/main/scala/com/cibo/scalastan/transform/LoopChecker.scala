@@ -10,34 +10,39 @@
 
 package com.cibo.scalastan.transform
 
+import com.cibo.scalastan.ScalaStan
 import com.cibo.scalastan.ast._
 
 // Make sure all "break" and "continue" statements are in loops.
-object LoopChecker extends StanTransform {
+class LoopChecker(implicit val ss: ScalaStan) extends StanTransform {
 
-  type STATE = Int
+  private var state = 0
 
-  protected val initialState = 0 // Number of loops
-
-  override protected def handleWhile(w: StanWhileLoop, state: Int): StanStatement = {
-    super.handleWhile(w, state + 1)
+  override protected def handleWhile(w: StanWhileLoop): StanStatement = {
+    state += 1
+    val newWhile = super.handleWhile(w)
+    state -= 1
+    newWhile
   }
 
-  override protected def handleFor(f: StanForLoop, state: Int): StanStatement = {
-    super.handleFor(f, state + 1)
+  override protected def handleFor(f: StanForLoop): StanStatement = {
+    state += 1
+    val newFor = super.handleFor(f)
+    state -= 1
+    newFor
   }
 
-  override protected def handleBreak(b: StanBreakStatement, state: Int): StanStatement = {
+  override protected def handleBreak(b: StanBreakStatement): StanStatement = {
     if (state == 0) {
       throw new IllegalStateException("'break' statement must be in a loop")
     }
-    super.handleBreak(b, state)
+    super.handleBreak(b)
   }
 
-  override protected def handleContinue(c: StanContinueStatement, state: Int): StanStatement = {
+  override protected def handleContinue(c: StanContinueStatement): StanStatement = {
     if (state == 0) {
       throw new IllegalStateException("'continue' statement must be in a loop")
     }
-    super.handleContinue(c, state)
+    super.handleContinue(c)
   }
 }

@@ -57,12 +57,15 @@ case class StanParameterDeclaration[T <: StanType] private[scalastan] (
 
   private[scalastan] def root: StanParameterDeclaration[_ <: StanType] = rootOpt.getOrElse(this)
 
-  def get(index: Int): StanParameterDeclaration[T#NEXT_TYPE] = {
+  def get(index: Int)(implicit ev: IsCompoundType[T]): StanParameterDeclaration[T#NEXT_TYPE] = {
     val newName = s"$name[$index]"
     StanParameterDeclaration(typeConstructor.next, () => Some(newName), Some(root), indices :+ index)
   }
 
-  def get(index1: Int, index2: Int): StanParameterDeclaration[T#NEXT_TYPE#NEXT_TYPE] = {
+  def get(
+    index1: Int,
+    index2: Int
+  )(implicit ev: IsCompoundType[T#NEXT_TYPE]): StanParameterDeclaration[T#NEXT_TYPE#NEXT_TYPE] = {
     val args = Seq(index1, index2)
     val newName = args.mkString(s"$name[", ",", "]")
     StanParameterDeclaration(typeConstructor.next.next, () => Some(newName), Some(root), indices ++ args)
@@ -70,7 +73,7 @@ case class StanParameterDeclaration[T <: StanType] private[scalastan] (
 
   def get(
     index1: Int, index2: Int, index3: Int
-  ): StanParameterDeclaration[T#NEXT_TYPE#NEXT_TYPE#NEXT_TYPE] = {
+  )(implicit ev: IsCompoundType[T#NEXT_TYPE#NEXT_TYPE]): StanParameterDeclaration[T#NEXT_TYPE#NEXT_TYPE#NEXT_TYPE] = {
     val args = Seq(index1, index2, index3)
     val newName = args.mkString(s"$name[", ",", "]")
     StanParameterDeclaration(typeConstructor.next.next.next, () => Some(newName), Some(root), indices ++ args)
@@ -78,6 +81,8 @@ case class StanParameterDeclaration[T <: StanType] private[scalastan] (
 
   def get(
     index1: Int, index2: Int, index3: Int, index4: Int
+  )(
+    implicit ev: IsCompoundType[T#NEXT_TYPE#NEXT_TYPE#NEXT_TYPE]
   ): StanParameterDeclaration[T#NEXT_TYPE#NEXT_TYPE#NEXT_TYPE#NEXT_TYPE] = {
     val args = Seq(index1, index2, index3, index4)
     val newName = args.mkString(s"$name[", ",", "]")

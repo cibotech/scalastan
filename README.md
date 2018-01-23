@@ -10,6 +10,13 @@ ScalaStan depends on [Scala](http://www.scala-lang.org), [SBT](http://www.scala-
 The `CMDSTAN_HOME` environment variable should be set to the location of the CmdStan installation.
 Alternatively, ScalaStan will work if `PATH` contains `stanc` within a valid CmdStan installation.
 
+ScalaStan Dependency
+====================
+To use ScalaStan, add the following to your build:
+```scala
+libraryDependences += "com.cibo" %% "scalastan" % "0.4.0"
+```
+
 Project Structure
 =================
  - `com.cibo.scalastan` contains the ScalaStan DSL (most importantly, the `ScalaStan` trait).

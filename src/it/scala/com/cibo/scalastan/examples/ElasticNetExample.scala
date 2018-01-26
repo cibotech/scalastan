@@ -23,7 +23,7 @@ object ElasticNetExample extends App with ScalaStan {
     val y: DataDeclaration[StanVector]
     val beta: ParameterDeclaration[StanVector]
 
-    target += -stan.dotSelf(y - x * beta)
+    target += -stan.dot_self(y - x * beta)
   }
 
   // Add a Ridge penalty (penalize the Euclidean length of the coefficients).
@@ -31,7 +31,7 @@ object ElasticNetExample extends App with ScalaStan {
     val ridgeLambda: DataDeclaration[StanReal]
     val beta: ParameterDeclaration[StanVector]
 
-    target += -ridgeLambda * stan.dotSelf(beta)
+    target += -ridgeLambda * stan.dot_self(beta)
   }
 
   // Add a Lasso penalty (penalize the sum of the absolute coefficients).

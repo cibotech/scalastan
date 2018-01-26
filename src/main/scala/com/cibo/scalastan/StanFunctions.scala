@@ -264,7 +264,7 @@ protected trait StanFunctions {
     x: StanValue[T],
     y: StanValue[T]
   ): StanValue[StanVector] = StanCall("rows_dot_product", x, y)
-  def dotSelf[T <: StanVectorLike](x: StanValue[T]): StanValue[StanReal] = StanCall("dot_self", x)
+  def dot_self[T <: StanVectorLike](x: StanValue[T]): StanValue[StanReal] = StanCall("dot_self", x)
   def columns_dot_self[T <: StanVectorOrMatrix](
     x: StanValue[T]
   ): StanValue[StanRowVector] = StanCall("columns_dot_self", x)

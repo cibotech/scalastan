@@ -499,7 +499,7 @@ protected trait StanFunctions {
     theta: StanValue[StanArray[StanReal]],
     xr: StanValue[StanArray[StanReal]],
     xi: StanValue[StanArray[StanInt]]
-  ): StanValue[StanArray[StanReal]] = {
+  ): StanValue[StanArray[StanArray[StanReal]]] = {
     ode.markUsed()
     StanCall("integrate_ode_bdf", StanLiteral(ode.result.emit), initialState, initialTime, times, theta, xr, xi)
   }

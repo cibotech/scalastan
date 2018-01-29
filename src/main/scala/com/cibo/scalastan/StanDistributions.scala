@@ -130,7 +130,7 @@ protected trait StanDistributions {
     w: StanValue[StanMatrix],
     m0: StanValue[StanVector],
     c0: StanValue[StanMatrix]
-  ): StanContinuousDistribution[StanMatrix, StanMatrix] =
+  ): StanContinuousDistribution[StanMatrix, StanVoid] =
     StanContinuousDistribution("gaussian_dlm_obs", Seq(f, g, v, w, m0, c0))
 
   def gumbel[M <: StanType: ContinuousType, B <: StanType: ContinuousType, R <: StanType](
@@ -210,7 +210,7 @@ protected trait StanDistributions {
   )(
     implicit ev1: IsVectorLikeOrArrayVectorLike[M],
     ev2: IsVectorLikeOrArrayVectorLike[R]
-  ): StanContinuousDistribution[R, StanMatrix] = StanContinuousDistribution("multi_normal", Seq(mu, sigma))
+  ): StanContinuousDistribution[R, StanVector] = StanContinuousDistribution("multi_normal", Seq(mu, sigma))
 
   def multi_normal_cholesky[M <: StanType: ContinuousType, R <: StanType](
     mu: StanValue[M],
@@ -218,7 +218,7 @@ protected trait StanDistributions {
   )(
     implicit ev1: IsVectorLikeOrArrayVectorLike[M],
     ev2: IsVectorLikeOrArrayVectorLike[R]
-  ): StanContinuousDistribution[R, StanMatrix] = StanContinuousDistribution("multi_normal_cholesky", Seq(mu, l))
+  ): StanContinuousDistribution[R, StanVector] = StanContinuousDistribution("multi_normal_cholesky", Seq(mu, l))
 
   def multi_normal_precision[M <: StanType: ContinuousType, R <: StanType](
     mu: StanValue[M],
@@ -226,7 +226,7 @@ protected trait StanDistributions {
   )(
     implicit ev1: IsVectorLikeOrArrayVectorLike[M],
     ev2: IsVectorLikeOrArrayVectorLike[R]
-  ): StanContinuousDistribution[R, StanMatrix] = StanContinuousDistribution("multi_normal_prec", Seq(mu, omega))
+  ): StanContinuousDistribution[R, StanVector] = StanContinuousDistribution("multi_normal_prec", Seq(mu, omega))
 
   def multi_student_t[N <: StanScalarType, M <: StanVectorLike: ContinuousType, R <: StanType](
     nu: StanValue[N],
@@ -235,7 +235,7 @@ protected trait StanDistributions {
   )(
     implicit ev1: IsVectorLikeOrArrayVectorLike[N],
     ev2: IsVectorLikeOrArrayVectorLike[R]
-  ): StanContinuousDistribution[R, StanMatrix] = StanContinuousDistribution("multi_student_t", Seq(nu, mu, sigma))
+  ): StanContinuousDistribution[R, StanVector] = StanContinuousDistribution("multi_student_t", Seq(nu, mu, sigma))
 
   def neg_binomial[A <: StanType: ContinuousType, B <: StanType: ContinuousType, R <: StanType](
     alpha: StanValue[A],

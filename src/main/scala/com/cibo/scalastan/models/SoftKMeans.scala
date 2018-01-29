@@ -34,7 +34,7 @@ case class SoftKMeans(
   val softZ: ParameterDeclaration[StanArray[StanArray[StanReal]]] = new TransformedParameter(real(upper = 0)(n, k)) {
     for (i <- range(1, n)) {
       for (j <- range(1, k)) {
-        result(i, j) := negLogK - 0.5 * stan.dotSelf(mu(j) - y(i))
+        result(i, j) := negLogK - 0.5 * stan.dot_self(mu(j) - y(i))
       }
     }
   }

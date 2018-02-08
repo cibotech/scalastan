@@ -208,24 +208,21 @@ protected trait StanDistributions {
     mu: StanValue[M],
     sigma: StanValue[StanMatrix]
   )(
-    implicit ev1: IsVectorLikeOrArrayVectorLike[M],
-    ev2: IsVectorLikeOrArrayVectorLike[R]
+    implicit ev1: IsVectorLikeOrArrayVectorLike[M]
   ): StanContinuousDistribution[R, StanVector] = StanContinuousDistribution("multi_normal", Seq(mu, sigma))
 
   def multi_normal_cholesky[M <: StanType: ContinuousType, R <: StanType](
     mu: StanValue[M],
     l: StanValue[StanMatrix]
   )(
-    implicit ev1: IsVectorLikeOrArrayVectorLike[M],
-    ev2: IsVectorLikeOrArrayVectorLike[R]
+    implicit ev1: IsVectorLikeOrArrayVectorLike[M]
   ): StanContinuousDistribution[R, StanVector] = StanContinuousDistribution("multi_normal_cholesky", Seq(mu, l))
 
   def multi_normal_precision[M <: StanType: ContinuousType, R <: StanType](
     mu: StanValue[M],
     omega: StanValue[StanMatrix]
   )(
-    implicit ev1: IsVectorLikeOrArrayVectorLike[M],
-    ev2: IsVectorLikeOrArrayVectorLike[R]
+    implicit ev1: IsVectorLikeOrArrayVectorLike[M]
   ): StanContinuousDistribution[R, StanVector] = StanContinuousDistribution("multi_normal_prec", Seq(mu, omega))
 
   def multi_student_t[N <: StanScalarType, M <: StanVectorLike: ContinuousType, R <: StanType](
@@ -233,8 +230,7 @@ protected trait StanDistributions {
     mu: StanValue[M],
     sigma: StanValue[StanMatrix]
   )(
-    implicit ev1: IsVectorLikeOrArrayVectorLike[N],
-    ev2: IsVectorLikeOrArrayVectorLike[R]
+    implicit ev1: IsVectorLikeOrArrayVectorLike[N]
   ): StanContinuousDistribution[R, StanVector] = StanContinuousDistribution("multi_student_t", Seq(nu, mu, sigma))
 
   def neg_binomial[A <: StanType: ContinuousType, B <: StanType: ContinuousType, R <: StanType](

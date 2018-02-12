@@ -14,7 +14,7 @@ ScalaStan Dependency
 ====================
 To use ScalaStan, add the following to your build:
 ```scala
-libraryDependences += "com.cibo" %% "scalastan" % "0.5.0"
+libraryDependences += "com.cibo" %% "scalastan" % "0.5.1"
 ```
 
 Project Structure

@@ -9,7 +9,7 @@ class AstSimplifierSpec extends ScalaStanBaseSpec {
       new ScalaStan {
         val returnStatement = StanReturnStatement(StanLocalDeclaration(StanInt()))
         val code = StanProgram(model = StanBlock(Seq(StanBlock(Seq(returnStatement)))))
-        val simplifier = new AstSimplifier()
+        val simplifier = AstSimplifier()
         val simplified = simplifier.run(code)
         simplified.model shouldBe returnStatement
       }
@@ -20,7 +20,7 @@ class AstSimplifierSpec extends ScalaStanBaseSpec {
         val code = StanProgram(
           model = StanIfStatement(Seq((StanLocalDeclaration(StanInt()), StanBlock(Seq.empty))), None)
         )
-        val simplifier = new AstSimplifier()
+        val simplifier = AstSimplifier()
         val simplified = simplifier.run(code)
         simplified.model shouldBe StanBlock(Seq.empty)
       }

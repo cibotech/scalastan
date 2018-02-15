@@ -24,7 +24,7 @@ sealed abstract class StanStatement extends StanNode {
   private[scalastan] def emit(pw: PrintWriter, indent: Int): Unit
   protected final def indented(indent: Int, str: String): String = "  " * indent + str
   protected final def write(pw: PrintWriter, indent: Int, line: String): Unit = {
-    pw.println(indented(indent, s"$line // $id"))
+    pw.println(indented(indent, line))
   }
 }
 

@@ -11,7 +11,7 @@ class AstSimplifierSpec extends ScalaStanBaseSpec {
         val code = StanProgram(model = StanBlock(Seq(StanBlock(Seq(returnStatement)))))
         val simplifier = AstSimplifier()
         val simplified = simplifier.run(code)
-        simplified.model shouldBe returnStatement
+        simplified.model shouldBe returnStatement.copy(id = simplified.model.id)
       }
     }
 
@@ -22,7 +22,7 @@ class AstSimplifierSpec extends ScalaStanBaseSpec {
         )
         val simplifier = AstSimplifier()
         val simplified = simplifier.run(code)
-        simplified.model shouldBe StanBlock(Seq.empty)
+        simplified.model shouldBe StanBlock(Seq.empty, simplified.model.id)
       }
     }
   }

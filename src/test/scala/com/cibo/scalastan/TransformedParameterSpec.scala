@@ -8,7 +8,7 @@ class TransformedParameterSpec extends ScalaStanBaseSpec {
           result := 1
         }
         val model = new Model {}
-        checkCode(model, "transformed parameters { real v#; v# = 1; }")
+        checkCode(model, "transformed parameters { real v#; { v# = 1; } }")
       }
     }
 
@@ -18,7 +18,7 @@ class TransformedParameterSpec extends ScalaStanBaseSpec {
           result += 1
         }
         val model = new Model {}
-        checkCode(model, "transformed parameters { real v#; v# += 1; }")
+        checkCode(model, "transformed parameters { real v#; { v# += 1; } }")
       }
     }
 
@@ -28,7 +28,7 @@ class TransformedParameterSpec extends ScalaStanBaseSpec {
           result(1) := 2.0
         }
         val model = new Model {}
-        checkCode(model, "transformed parameters { vector[2] v#; v#[1] = 2.0; }")
+        checkCode(model, "transformed parameters { vector[2] v#; { v#[1] = 2.0; } }")
       }
     }
 
@@ -38,7 +38,7 @@ class TransformedParameterSpec extends ScalaStanBaseSpec {
           result(range(1, 2)) := result(range(3, 4))
         }
         val model = new Model {}
-        checkCode(model, "transformed parameters { vector[5] v#; v#[1:2] = v#[3:4]; }")
+        checkCode(model, "transformed parameters { vector[5] v#; { v#[1:2] = v#[3:4]; } }")
       }
     }
 

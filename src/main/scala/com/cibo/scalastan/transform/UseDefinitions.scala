@@ -22,7 +22,6 @@ case class UseDefinitions(root: StanStatement) {
   }
 
   StanProgram.getStatements(root).foreach(addDefs)
-  println("UD: " + useDefs)
 
   def ud: Map[Int, Set[Int]] = useDefs
   def du: Map[Int, Set[Int]] = defUses

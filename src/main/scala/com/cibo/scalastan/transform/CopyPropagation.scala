@@ -31,7 +31,8 @@ case class CopyPropagation()(implicit val ss: ScalaStan) extends StanTransform {
       // Look up uses of the LHS to be replaced.
       val statements = StanProgram.getStatements(root.get)
       val useDefinitions = UseDefinitions(root.get)
-      val lhsUses = statements.filter(s => useDefinitions.du(a.id).contains(s.id))
+      val uses = useDefinitions.du.getOrElse(a.id, Set.empty)
+      val lhsUses = statements.filter(s => uses.contains(s.id))
 
       // Check that all reaching defs of the LHS reference only this assignment.
       val reachingDefs = ReachingDefs(root.get).solve
@@ -45,7 +46,7 @@ case class CopyPropagation()(implicit val ss: ScalaStan) extends StanTransform {
         reachingDefs.lookup(other).filter(_.decl == rhs.id).map(_.statement) == rhsDefs
       }
 
-      if (refsOk && rhsOk) {
+      if (refsOk && rhsOk && uses.nonEmpty) {
         lhsUses.foreach { use =>
           substitutions += ((use.id, lhs) -> rhs)
         }

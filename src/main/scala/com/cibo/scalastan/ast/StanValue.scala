@@ -115,8 +115,10 @@ abstract class StanValue[T <: StanType] extends StanNode with Implicits {
     implicit code: CodeBuilder,
     ev1: AssignmentAllowed[DECL_TYPE],
     ev2: CanConvert[R, T]
-  ): Unit = {
-    code.append(StanAssignment(this, right))
+  ): StanAssignment = {
+    val assignment = StanAssignment(this, right)
+    code.append(assignment)
+    assignment
   }
 
   def apply[I <: StanType, N <: StanType](

@@ -10,9 +10,20 @@ case class CSE()(implicit val ss: ScalaStan) extends StanTransform {
   private var mapping: Map[Int, StanStatement] = Map.empty
   private var eliminated: Set[Int] = Set.empty
 
+  private def commutative(op: StanBinaryOperator.Operator): Boolean = op match {
+    case StanBinaryOperator.NotEqualTo => true
+    case StanBinaryOperator.EqualTo    => true
+    case StanBinaryOperator.Add        => true
+    case StanBinaryOperator.Multiply   => true
+    case StanBinaryOperator.LogicalAnd => true
+    case StanBinaryOperator.LogicalOr  => true
+    case _                             => false
+  }
+
   private def sameValue[A <: StanType, B <: StanType](a: StanValue[A], b: StanValue[B]): Boolean = (a, b) match {
     case (b1: StanBinaryOperator[_, _, _], b2: StanBinaryOperator[_, _, _]) if b1.op == b2.op                       =>
-      sameValue(b1.left, b2.left) && sameValue(b1.right, b2.right)
+      (sameValue(b1.left, b2.left) && sameValue(b1.right, b2.right)) ||
+        (commutative(b1.op) && sameValue(b1.left, b2.right) && sameValue(b1.right, b2.left))
     case (u1: StanUnaryOperator[_, _], u2: StanUnaryOperator[_, _]) if u1.op == u2.op                               =>
       sameValue(u1.right, u2.right)
     case (i1: StanIndexOperator[_, _, _], i2: StanIndexOperator[_, _, _]) if i1.indices.length == i2.indices.length =>

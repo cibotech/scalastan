@@ -34,7 +34,7 @@ abstract class StanTransform(implicit ss: ScalaStan) {
   }
 
   protected def handleTransformedParameter(
-    transform: StanTransformedParameter,
+    transform: StanTransformedParameter
   ): StanTransformedParameter = transform.copy(code = handleRoot(transform.code))
 
   protected def handleGeneratedQuantity(g: StanGeneratedQuantity): StanGeneratedQuantity = {

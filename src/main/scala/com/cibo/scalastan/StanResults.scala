@@ -52,13 +52,13 @@ case class StanResults private (
   ): T#SCALA_TYPE = model.get(decl)
 
   /** Get all samples by chain and iteration. */
-  def samples[T <: StanType](
+  def samples[T <: StanType, R](
     decl: StanParameterDeclaration[T]
-  ): Seq[Seq[T#SCALA_TYPE]] = {
+  )(implicit ev: R =:= T#SCALA_TYPE): Seq[Seq[R]] = {
     val name = decl.root.emit + (if (decl.indices.nonEmpty) decl.indices.mkString(".", ".", "") else "")
     chains.map { chain =>
       chain.map { values =>
-        decl.typeConstructor.parse(name, values)
+        decl.typeConstructor.parse(name, values).asInstanceOf[R]
       }
     }
   }
@@ -67,16 +67,16 @@ case class StanResults private (
   def best(values: Seq[Seq[Double]]): Double = values.apply(bestChain).apply(bestIndex)
 
   /** Get the best scoring sample. */
-  def best[T <: StanType](decl: StanParameterDeclaration[T]): T#SCALA_TYPE =
+  def best[T <: StanType, R](decl: StanParameterDeclaration[T])(implicit ev: R =:= T#SCALA_TYPE): R =
     samples(decl).apply(bestChain).apply(bestIndex)
 
-  private def combine[T <: StanType](
+  private def combine[T <: StanType, R](
     decl: StanParameterDeclaration[T]
   )(
     func: Seq[Seq[Double]] => Double
-  ): T#SUMMARY_TYPE = {
+  )(implicit ev: R =:= T#SUMMARY_TYPE): R = {
     val tc = decl.typeConstructor
-    tc.combine(samples(decl).asInstanceOf[Seq[Seq[tc.SCALA_TYPE]]])(func)
+    tc.combine(samples(decl).asInstanceOf[Seq[Seq[tc.SCALA_TYPE]]])(func).asInstanceOf[R]
   }
 
   private def meanAndVariance1d(values: Seq[Double]): (Double, Double) = {
@@ -110,7 +110,8 @@ case class StanResults private (
   def mean(values: Seq[Seq[Double]]): Double = mean1d(values.flatten)
 
   /** Get the mean of all samples across all chains and iterations. */
-  def mean[T <: StanType](decl: StanParameterDeclaration[T]): T#SUMMARY_TYPE = combine(decl)(mean)
+  def mean[T <: StanType, R](decl: StanParameterDeclaration[T])(implicit ev: R =:= T#SUMMARY_TYPE): R =
+    combine(decl)(mean)
 
   private def mcse(v: Double, ess: Double): Double = math.sqrt(v) / math.sqrt(ess)
 
@@ -118,20 +119,22 @@ case class StanResults private (
   def mcse(values: Seq[Seq[Double]]): Double = mcse(variance(values), effectiveSampleSize(values))
 
   /** Get the MCSE of a all samples across all chains and iterations. */
-  def mcse[T <: StanType](decl: StanParameterDeclaration[T]): T#SUMMARY_TYPE =
+  def mcse[T <: StanType, R](decl: StanParameterDeclaration[T])(implicit ev: R =:= T#SUMMARY_TYPE): R =
     combine(decl)(mcse)
 
   /** Get the variance of a all samples across all chains and iterations. */
   def variance(values: Seq[Seq[Double]]): Double = variance1d(values.flatten)
 
   /** Get the variance of a all samples across all chains and iterations. */
-  def variance[T <: StanType, R](decl: StanParameterDeclaration[T]): T#SUMMARY_TYPE = combine(decl)(variance)
+  def variance[T <: StanType, R](decl: StanParameterDeclaration[T])(implicit ev: R =:= T#SUMMARY_TYPE): R =
+    combine(decl)(variance)
 
   /** Get the standard deviation of a all samples across all chains and iterations. */
   def sd(values: Seq[Seq[Double]]): Double = math.sqrt(variance(values))
 
   /** Get the standard deviation of a all samples across all chains and iterations. */
-  def sd[T <: StanType](decl: StanParameterDeclaration[T]): T#SUMMARY_TYPE = combine(decl)(sd)
+  def sd[T <: StanType, R](decl: StanParameterDeclaration[T])(implicit ev: R =:= T#SUMMARY_TYPE): R =
+    combine(decl)(sd)
 
   private def quantileSorted(frac: Double)(sortedValues: Seq[Double]): Double = {
     val index = math.min((sortedValues.size.toDouble * frac).round.toInt, sortedValues.size - 1)
@@ -145,7 +148,10 @@ case class StanResults private (
   }
 
   /** Get the specified quantile of all samples across all chains and iterations. */
-  def quantile[T <: StanType](decl: StanParameterDeclaration[T], prob: Double = 0.5): T#SUMMARY_TYPE = {
+  def quantile[T <: StanType, R](
+    decl: StanParameterDeclaration[T],
+    prob: Double = 0.5
+  )(implicit ev: R =:= T#SUMMARY_TYPE): R = {
     require(prob > 0.0 && prob < 1.0)
     combine(decl)(vs => quantile(vs, prob))
   }
@@ -154,13 +160,15 @@ case class StanResults private (
   def min(values: Seq[Seq[Double]]): Double = values.flatten.min
 
   /** Get the minimum of all samples across all chains and iterations. */
-  def min[T <: StanType](decl: StanParameterDeclaration[T]): T#SUMMARY_TYPE = combine(decl)(min)
+  def min[T <: StanType, R](decl: StanParameterDeclaration[T])(implicit ev: R =:= T#SUMMARY_TYPE): R =
+    combine(decl)(min)
 
   /** Get the maximum of all samples across all chains and iterations. */
   def max(values: Seq[Seq[Double]]): Double = values.flatten.max
 
   /** Get the maximum of all samples across all chains and iterations. */
-  def max[T <: StanType](decl: StanParameterDeclaration[T]): T#SUMMARY_TYPE = combine(decl)(max)
+  def max[T <: StanType, R](decl: StanParameterDeclaration[T])(implicit ev: R =:= T#SUMMARY_TYPE): R =
+    combine(decl)(max)
 
   private def autocovariance(k: Int, x: Seq[Double]): Double = {
     val n = x.size
@@ -187,9 +195,9 @@ case class StanResults private (
   }
 
   /** Get the effective sample size of a parameter. */
-  def effectiveSampleSize[T <: StanType](
+  def effectiveSampleSize[T <: StanType, R](
     decl: StanParameterDeclaration[T]
-  ): T#SUMMARY_TYPE = combine(decl)(effectiveSampleSize)
+  )(implicit ev: R =:= T#SUMMARY_TYPE): R = combine(decl)(effectiveSampleSize)
 
   private def betweenSampleVariance(values: Seq[Seq[Double]]): Double = {
     val m = values.size.toDouble
@@ -218,7 +226,8 @@ case class StanResults private (
   }
 
   /** Get the (split) potential scale reduction factor for a parameter. */
-  def psrf[T <: StanType](decl: StanParameterDeclaration[T]): T#SUMMARY_TYPE = combine(decl)(psrf)
+  def psrf[T <: StanType, R](decl: StanParameterDeclaration[T])(implicit ev: R =:= T#SUMMARY_TYPE): R =
+    combine(decl)(psrf)
 
   private def cleanName(name: String, mapping: Map[String, String]): Option[String] = {
     if (name.endsWith("__")) {
@@ -259,9 +268,9 @@ case class StanResults private (
   }
 
   /** Partition iterations into (divergent, non-divergent) samples. */
-  def partitionByDivergence[T <: StanType](
+  def partitionByDivergence[T <: StanType, R](
     decl: StanParameterDeclaration[T]
-  ): (Seq[T#SCALA_TYPE], Seq[T#SCALA_TYPE]) = {
+  )(implicit ev: R =:= T#SCALA_TYPE): (Seq[R], Seq[R]) = {
     val partitioned = samples(decl).flatten.zip(divergent.flatten).partition { case (_, d) => d > 0.0 }
     (partitioned._1.map(_._1), partitioned._2.map(_._1))
   }

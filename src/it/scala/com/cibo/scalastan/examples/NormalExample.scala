@@ -28,7 +28,8 @@ object NormalExample extends App with ScalaStan {
   val results = model
     .withData(y, dataset)
     .run()
-  println(s"mu = ${results.mean(mu)}")
+  val muMean: Double = results.mean(mu)
+  println(s"mu = $muMean")
   println(s"sigma = ${results.mean(sigma)}, ${results.sd(sigma)}, ${results.quantile(sigma, 0.5)}")
 
 }

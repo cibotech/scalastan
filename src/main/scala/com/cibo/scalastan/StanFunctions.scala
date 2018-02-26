@@ -100,7 +100,7 @@ protected trait StanFunctions {
   // Hyperbolic Trigonometric functions (40.10).
   def cosh[T <: StanType](x: StanValue[T]): StanValue[T] = StanCall("cosh", x)
   def sinh[T <: StanType](x: StanValue[T]): StanValue[T] = StanCall("sinh", x)
-  def tanh[T <: StanType](x: StanValue[T]): StanValue[T] = StanCall("sinh", x)
+  def tanh[T <: StanType](x: StanValue[T]): StanValue[T] = StanCall("tanh", x)
   def acosh[T <: StanType](x: StanValue[T]): StanValue[T] = StanCall("acosh", x)
   def asinh[T <: StanType](x: StanValue[T]): StanValue[T] = StanCall("asinh", x)
   def atanh[T <: StanType](x: StanValue[T]): StanValue[T] = StanCall("atanh", x)

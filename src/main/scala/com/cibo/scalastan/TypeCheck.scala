@@ -329,3 +329,12 @@ protected object IndexAllowed {
   implicit def dereference[T <: StanType, I <: StanInt] = new IndexAllowed[T, I, T#NEXT_TYPE]
   implicit def combine1[T <: StanType, I <: StanArray[StanInt]] = new IndexAllowed[T, I, T]
 }
+
+@implicitNotFound("invalid sample statement")
+protected sealed class SampleAllowed[T <: StanType, SUPPORT <: StanType]
+
+protected object SampleAllowed {
+  implicit def sameType[T <: StanType] = new SampleAllowed[T, T]
+  implicit def vectorized[T <: StanVectorLike, SUPPORT <: StanScalarType] = new SampleAllowed[T, SUPPORT]
+  implicit def arrayVectorized[T <: StanScalarType, SUPPORT <: StanScalarType] = new SampleAllowed[StanArray[T], SUPPORT]
+}

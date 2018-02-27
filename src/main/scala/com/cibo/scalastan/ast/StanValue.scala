@@ -98,11 +98,11 @@ abstract class StanValue[T <: StanType] extends StanNode with Implicits {
     right: StanValue[B]
   )(implicit ev: ElementWiseDivisionAllowed[R, T, B]): StanValue[R]= StanBinaryOperator("./", this, right)
 
-  def ~(dist: StanDistribution[T])(
+  def ~[R <: StanType](dist: StanDistribution[T, R])(
     implicit code: CodeBuilder,
-    ev: Is0or1Dimensional[T]
+    ev: SampleAllowed[T, R]
   ): Unit = {
-    code.append(StanSampleStatement[T](this, dist))
+    code.append(StanSampleStatement[T, R](this, dist))
   }
 
   def t[R <: StanType](implicit e: TransposeAllowed[T, R]): StanValue[R] = StanTranspose(this)

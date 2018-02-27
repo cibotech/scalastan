@@ -144,9 +144,9 @@ case class StanContinueStatement private[scalastan] () extends StanStatement {
 }
 
 // Sample from a distribution: "var ~ dist()"
-case class StanSampleStatement[T <: StanType] private[scalastan] (
+case class StanSampleStatement[T <: StanType, R <: StanType] private[scalastan] (
   private val left: StanValue[T],
-  private val right: StanDistribution[T]
+  private val right: StanDistribution[T, R]
 ) extends StanStatement {
   private[scalastan] def inputs: Seq[StanDeclaration[_]] = left.inputs ++ right.inputs
   private[scalastan] def outputs: Seq[StanDeclaration[_]] = left.outputs ++ right.outputs

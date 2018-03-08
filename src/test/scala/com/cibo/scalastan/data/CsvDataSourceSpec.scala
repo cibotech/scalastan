@@ -90,5 +90,12 @@ class CsvDataSourceSpec extends ScalaStanBaseSpec {
 
       src.readVector("one") shouldBe Vector(1.0)
     }
+
+    it("can read raw string values") {
+      val data = "one\na\nb"
+      val src = CsvDataSource.fromString(data)
+
+      src.readRaw("one") shouldBe Vector("a", "b")
+    }
   }
 }

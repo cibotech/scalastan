@@ -13,7 +13,7 @@ package com.cibo.scalastan.ast
 import com.cibo.scalastan._
 
 // A distribution (Normal, etc.)
-abstract class StanDistribution[T <: StanType] extends StanNode {
+abstract class StanDistribution[T <: StanType, R <: StanType] extends StanNode {
   protected val name: String
   protected val args: Seq[StanValue[_]]
   protected val lowerOpt: Option[StanValue[_]]
@@ -41,7 +41,7 @@ case class StanContinuousDistribution[T <: StanType, R <: StanType] private[scal
   protected val args: Seq[StanValue[_]],
   protected val lowerOpt: Option[StanValue[R]] = None,
   protected val upperOpt: Option[StanValue[R]] = None
-) extends StanDistribution[T] {
+) extends StanDistribution[T, R] {
   def lpdf(y: StanValue[T]): StanValue[StanReal] = StanDistributionNode(s"${name}_lpdf", y, "|", args)
   def cdf(y: StanValue[T]): StanValue[StanReal] = StanDistributionNode(s"${name}_cdf", y, ",", args)
   def lcdf(y: StanValue[T]): StanValue[StanReal] = StanDistributionNode(s"${name}_lcdf", y, "|", args)
@@ -56,7 +56,7 @@ case class StanContinuousDistribution[T <: StanType, R <: StanType] private[scal
   def rng(implicit gen: InGeneratedQuantityBlock): StanCall[R] = StanCall(s"${name}_rng", args: _*)
 }
 
-abstract class StanDiscreteDistribution[T <: StanType, R <: StanType] extends StanDistribution[T] {
+abstract class StanDiscreteDistribution[T <: StanType, R <: StanType] extends StanDistribution[T, R] {
   def lpmf(
     y: StanValue[T]
   ): StanValue[StanReal] = StanDistributionNode(s"${name}_lpmf", y, "|", args)

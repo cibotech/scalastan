@@ -61,17 +61,17 @@ trait StanTransform[STATE] {
   protected def handleModel(statement: StanStatement, state: STATE): StanStatement = dispatch(statement, state)
 
   protected def dispatch(statement: StanStatement, state: STATE): StanStatement = statement match {
-    case t: StanBlock              => handleBlock(t, state)
-    case v: StanValueStatement     => handleValue(v, state)
-    case a: StanAssignment         => handleAssignment(a, state)
-    case f: StanForLoop            => handleFor(f, state)
-    case w: StanWhileLoop          => handleWhile(w, state)
-    case i: StanIfStatement        => handleIf(i, state)
-    case b: StanBreakStatement     => handleBreak(b, state)
-    case c: StanContinueStatement  => handleContinue(c, state)
-    case s: StanSampleStatement[_] => handleSample(s, state)
-    case r: StanReturnStatement    => handleReturn(r, state)
-    case d: StanInlineDeclaration  => handleDecl(d, state)
+    case t: StanBlock                 => handleBlock(t, state)
+    case v: StanValueStatement        => handleValue(v, state)
+    case a: StanAssignment            => handleAssignment(a, state)
+    case f: StanForLoop               => handleFor(f, state)
+    case w: StanWhileLoop             => handleWhile(w, state)
+    case i: StanIfStatement           => handleIf(i, state)
+    case b: StanBreakStatement        => handleBreak(b, state)
+    case c: StanContinueStatement     => handleContinue(c, state)
+    case s: StanSampleStatement[_, _] => handleSample(s, state)
+    case r: StanReturnStatement       => handleReturn(r, state)
+    case d: StanInlineDeclaration     => handleDecl(d, state)
   }
 
   protected def handleBlock(b: StanBlock, state: STATE): StanStatement =
@@ -96,7 +96,7 @@ trait StanTransform[STATE] {
 
   protected def handleContinue(c: StanContinueStatement, state: STATE): StanStatement = c
 
-  protected def handleSample(s: StanSampleStatement[_], state: STATE): StanStatement = s
+  protected def handleSample(s: StanSampleStatement[_, _], state: STATE): StanStatement = s
 
   protected def handleReturn(r: StanReturnStatement, state: STATE): StanStatement = r
 

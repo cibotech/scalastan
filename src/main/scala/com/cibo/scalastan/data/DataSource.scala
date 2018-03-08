@@ -42,6 +42,9 @@ case class DataSource private[data] (
   /** Get the dimensions of a particular data value. */
   def dims(name: String = ""): Seq[Int] = raw(name).dims
 
+  /** Get the raw string values from a column. */
+  def readRaw(name: String = ""): Vector[String] = raw(name).values
+
   /** Read a data value as a vector. */
   def readVector(name: String = ""): Vector[Double] = raw(name).toVector
 

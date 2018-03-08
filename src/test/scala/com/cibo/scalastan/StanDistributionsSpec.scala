@@ -37,4 +37,16 @@ class StanDistributionsSpec extends ScalaStanBaseSpec {
       }
     }
   }
+
+  describe("lkj_corr_cholesky") {
+    it("should work") {
+      new ScalaStan {
+        val y = data(matrix(5, 5))
+        val model = new Model {
+          y ~ stan.lkj_corr_cholesky(5)
+        }
+        checkCode(model, "model { y ~ lkj_corr_cholesky(5); }")
+      }
+    }
+  }
 }

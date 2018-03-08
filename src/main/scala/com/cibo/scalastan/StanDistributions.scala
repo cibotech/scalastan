@@ -169,9 +169,9 @@ protected trait StanDistributions {
     eta: StanValue[E]
   ): StanContinuousDistribution[StanMatrix, StanMatrix] = StanContinuousDistribution("lkj_corr", Seq(eta))
 
-  def lkj_cholesky[E <: StanScalarType](
+  def lkj_corr_cholesky[E <: StanScalarType](
     eta: StanValue[E]
-  ): StanContinuousDistribution[StanMatrix, StanMatrix] = StanContinuousDistribution("lkj_cholesky", Seq(eta))
+  ): StanContinuousDistribution[StanMatrix, StanMatrix] = StanContinuousDistribution("lkj_corr_cholesky", Seq(eta))
 
   def logistic[M <: StanType: ContinuousType, S <: StanType: ContinuousType, R <: StanType](
     mu: StanValue[M],

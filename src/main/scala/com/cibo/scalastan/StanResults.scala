@@ -18,7 +18,9 @@ import scala.util.Try
 
 case class StanResults private (
   private val chains: Vector[Vector[Map[String, String]]],
-  private val model: CompiledModel
+  private val model: CompiledModel,
+  stanOutput: String,
+  stanErrorOutput: String
 ) {
 
   require(chains.nonEmpty, "No results")

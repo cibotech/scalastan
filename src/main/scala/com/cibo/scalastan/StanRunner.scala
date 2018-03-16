@@ -11,10 +11,12 @@
 package com.cibo.scalastan
 
 import java.io._
+import java.lang.ProcessBuilder.Redirect
 import java.nio.file.{Files, Paths}
 import java.util.regex.Pattern
 
 import scala.collection.JavaConverters._
+import scala.io.Source
 
 protected trait StanRunner[M <: CompiledModel] {
   def compile(ss: ScalaStan, model: ScalaStan#Model): CompiledModel
@@ -149,6 +151,8 @@ protected object StanRunner {
       val runHash = dataWriter.sha.update(method.toString).digest
 
       val baseSeed = if (seed < 0) (System.currentTimeMillis % Int.MaxValue).toInt else seed
+      val tempOutput = File.createTempFile("scalastan-out", ".tmp")
+      val tempError  = File.createTempFile("scalastan-err", ".tmp")
       val results = (0 until chains).par.flatMap { i =>
         val chainSeed = baseSeed + i
         val name = s"$runHash-$seed-$i.csv"
@@ -168,7 +172,11 @@ protected object StanRunner {
               "random", s"seed=$chainSeed"
             ) ++ method.arguments
             println("Running " + command.mkString(" "))
-            val pb = new ProcessBuilder(command: _*).directory(model.dir).inheritIO()
+            val pb = new ProcessBuilder(command: _*)
+              .directory(model.dir)
+              .redirectInput(Redirect.INHERIT)
+              .redirectOutput(Redirect.appendTo(tempOutput))
+              .redirectError(Redirect.appendTo(tempError))
             val rc = pb.start().waitFor()
             if (rc != 0) {
               println(s"ERROR: model returned $rc")
@@ -179,7 +187,11 @@ protected object StanRunner {
         }
       }.seq.toVector
 
-      StanResults(results, model)
+      val stanOutput = Source.fromFile(tempOutput).getLines.mkString("\n")
+      tempOutput.delete()
+      val stanErrorOutput = Source.fromFile(tempError).getLines.mkString("\n")
+      tempError.delete()
+      StanResults(results, model, stanOutput, stanErrorOutput)
     }
   }
 }

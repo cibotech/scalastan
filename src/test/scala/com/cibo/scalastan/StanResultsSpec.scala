@@ -42,7 +42,7 @@ class StanResultsSpec extends ScalaStanBaseSpec {
     s"${TestScalaStan.v3.emit}.3.2" -> 332
   ).mapValues(_.toString)
 
-  val results = StanResults(Vector(Vector(testData1, testData2)), model, "", "")
+  val results = StanResults(Vector(Vector(testData1, testData2)), model)
 
   describe("samples") {
     it("returns all scalar samples") {

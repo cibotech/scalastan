@@ -64,7 +64,15 @@ object DogsExample extends App with ScalaStan {
     .withData(rData(y, "y"))
     .run()
 
-  results.summary(System.out)
+  //results.summary(System.out)
+  for { (processOutput, i) <- results.chainOutputs.zipWithIndex } {
+    println(s"chain output $i:")
+    println("Error:")
+    println(processOutput.error)
+    println()
+    println("Output:")
+    println(processOutput.output)
+  }
 }
 
 class DogsExampleSpec extends AppRunnerSpec(DogsExample)

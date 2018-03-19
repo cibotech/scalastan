@@ -14,9 +14,9 @@ import java.io._
 import java.lang.ProcessBuilder.Redirect
 import java.nio.file.{Files, Paths}
 import java.util.regex.Pattern
+import java.util.stream.Collectors
 
 import scala.collection.JavaConverters._
-import scala.io.Source
 
 protected trait StanRunner[M <: CompiledModel] {
   def compile(ss: ScalaStan, model: ScalaStan#Model): CompiledModel
@@ -151,47 +151,60 @@ protected object StanRunner {
       val runHash = dataWriter.sha.update(method.toString).digest
 
       val baseSeed = if (seed < 0) (System.currentTimeMillis % Int.MaxValue).toInt else seed
-      val tempOutput = File.createTempFile("scalastan-out", ".tmp")
-      val tempError  = File.createTempFile("scalastan-err", ".tmp")
-      val results = (0 until chains).par.flatMap { i =>
+      val results: Vector[ChainResult] = (0 until chains).par.map { i =>
         val chainSeed = baseSeed + i
         val name = s"$runHash-$seed-$i.csv"
         val fileName = s"${model.dir}/$name"
+
         val cachedResults = if (cache && new File(fileName).exists) {
           Some(readIterations(fileName))
         } else None
+
         cachedResults match {
           case Some(r) if r.nonEmpty =>
             println(s"Found cached results: $name")
-            Some(r)
-          case _                     =>
-            val command = Vector(
-              s"./$modelExecutable",
-              "data", s"file=$dataFileName",
-              "output", s"file=$name",
-              "random", s"seed=$chainSeed"
-            ) ++ method.arguments
-            println("Running " + command.mkString(" "))
-            val pb = new ProcessBuilder(command: _*)
-              .directory(model.dir)
-              .redirectInput(Redirect.INHERIT)
-              .redirectOutput(Redirect.appendTo(tempOutput))
-              .redirectError(Redirect.appendTo(tempError))
-            val rc = pb.start().waitFor()
-            if (rc != 0) {
-              println(s"ERROR: model returned $rc")
-              None
-            } else {
-              Some(readIterations(fileName))
-            }
+            ChainResult(Some(r), None)
+          case _ =>
+            runChain(model, method, dataFileName, chainSeed, name, fileName)
         }
       }.seq.toVector
 
-      val stanOutput = Source.fromFile(tempOutput).getLines.mkString("\n")
-      tempOutput.delete()
-      val stanErrorOutput = Source.fromFile(tempError).getLines.mkString("\n")
-      tempError.delete()
-      StanResults(results, model, stanOutput, stanErrorOutput)
+      StanResults(results.flatMap(_.result), model, results.flatMap(_.processOutput))
+    }
+
+    private case class ChainResult(result: Option[Vector[Map[String, String]]], processOutput: Option[ProcessOutput])
+
+    def toString(inputStream: InputStream): String = {
+      new BufferedReader(new InputStreamReader(inputStream)).lines.collect(Collectors.joining("\n"))
+    }
+
+    private def runChain(model: CmdStanCompiledModel,
+                             method: RunMethod.Method,
+                             dataFileName: String,
+                             chainSeed: Int,
+                             name: String,
+                             fileName: String): ChainResult = {
+      val command = Vector(
+        s"./$modelExecutable",
+        "data", s"file=$dataFileName",
+        "output", s"file=$name",
+        "random", s"seed=$chainSeed"
+      ) ++ method.arguments
+      println("Running " + command.mkString(" "))
+      val pb = new ProcessBuilder(command: _*)
+        .directory(model.dir)
+        .redirectInput(Redirect.INHERIT)
+      val process: Process = pb.start()
+      val rc = process.waitFor()
+      val processOutput = ProcessOutput(toString(process.getErrorStream), toString(process.getInputStream))
+      if (rc != 0) {
+        println(s"ERROR: model returned $rc")
+        ChainResult(None, Some(processOutput))
+      } else {
+        ChainResult(Some(readIterations(fileName)), Some(processOutput))
+      }
     }
   }
 }
+
+case class ProcessOutput(error: String, output: String)

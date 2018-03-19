@@ -48,7 +48,7 @@ trait ScalaStanBaseSpec extends FunSpec with Matchers {
       cache: Boolean,
       method: RunMethod.Method
     ): StanResults = {
-      StanResults((0 until chains).map(_ => model.data).toVector, model, "", "")
+      StanResults((0 until chains).map(_ => model.data).toVector, model)
     }
   }
 

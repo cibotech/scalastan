@@ -1,9 +1,9 @@
 package com.cibo.scalastan
 
 import com.cibo.scalastan.models.LinearRegression
-import org.scalatest.FunSpec
+import org.scalatest.{Assertion, FunSpec, Matchers}
 
-class StanRunnerSpec extends FunSpec {
+class StanRunnerSpec extends FunSpec with Matchers {
   describe("StanRunner") {
     it("captures standard output in results") {
       println("Start StanRunner test")
@@ -13,10 +13,10 @@ class StanRunnerSpec extends FunSpec {
 
       val model: LinearRegression = LinearRegression(xs, ys)
       val results: StanResults = model.compile.run(chains = 4, seed = -1, cache = false)
-      println("Stan output:")
-      println(results.stanOutput)
-      println("Stan error output:")
-      println(results.stanErrorOutput)
+
+      results.chainOutputs.size shouldBe 4
+      results.chainOutputs.map(_.error should have length 0) // If it runs without hiccups
+      results.chainOutputs.map(_.output.length should be > 2000)
     }
   }
 }

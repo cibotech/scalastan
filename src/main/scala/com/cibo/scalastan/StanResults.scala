@@ -19,7 +19,7 @@ import scala.util.Try
 case class StanResults private (
   private val chains: Vector[Vector[Map[String, String]]],
   private val model: CompiledModel,
-  chainOutputs: Seq[ProcessOutput] = Seq.empty[ProcessOutput]) {
+  chainOutputs: Seq[ProcessResult] = Seq.empty[ProcessResult]) {
 
   require(chains.nonEmpty, "No results")
 

@@ -25,5 +25,6 @@ lazy val root = project.in(file(".")).configs(IntegrationTest)
 libraryDependencies ++= Seq(
   "org.scala-lang.modules" %% "scala-parser-combinators" % "1.0.6",
   "org.scala-lang"         %  "scala-reflect"            % scalaVersion.value,
-  "org.scalatest"          %% "scalatest"                % "3.0.0" % "test,it"
+  "org.scalatest"          %% "scalatest"                % "3.0.0" % "test,it",
+  "com.nrinaudo"           %% "kantan.csv"               % "0.4.0"
 )

@@ -1,4 +1,4 @@
-package com.cibo.scalastan.transform
+package com.cibo.scalastan.analysis
 
 import com.cibo.scalastan.ast.StanStatement
 

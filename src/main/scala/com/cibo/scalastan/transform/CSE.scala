@@ -1,5 +1,6 @@
 package com.cibo.scalastan.transform
 
+import com.cibo.scalastan.analysis.AvailableExpressions
 import com.cibo.scalastan.{ScalaStan, StanType}
 import com.cibo.scalastan.ast._
 

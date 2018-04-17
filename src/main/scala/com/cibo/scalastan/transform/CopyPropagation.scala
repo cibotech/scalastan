@@ -1,6 +1,7 @@
 package com.cibo.scalastan.transform
 
 import com.cibo.scalastan.ScalaStan
+import com.cibo.scalastan.analysis.{ReachingDefs, UseDefinitions}
 import com.cibo.scalastan.ast._
 
 // Propagate copies to eliminate unnecessary temporaries.

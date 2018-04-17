@@ -13,8 +13,9 @@ package com.cibo.scalastan
 import java.io._
 import java.nio.file.{Files, Path, Paths}
 
+import com.cibo.scalastan.analysis.LoopChecker
 import com.cibo.scalastan.ast._
-import com.cibo.scalastan.transform.{LoopChecker, StanTransform}
+import com.cibo.scalastan.transform.StanTransform
 
 import scala.language.implicitConversions
 import scala.collection.mutable.ArrayBuffer

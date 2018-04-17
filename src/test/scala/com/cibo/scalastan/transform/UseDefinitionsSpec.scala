@@ -1,5 +1,6 @@
 package com.cibo.scalastan.transform
 
+import com.cibo.scalastan.analysis.UseDefinitions
 import com.cibo.scalastan.{ScalaStan, ScalaStanBaseSpec}
 
 class UseDefinitionsSpec extends ScalaStanBaseSpec {

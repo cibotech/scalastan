@@ -21,9 +21,11 @@ libraryDependences += "com.cibo" %% "scalastan" % "0.5.4"
 Project Structure
 =================
  - `com.cibo.scalastan` contains the ScalaStan DSL (most importantly, the `ScalaStan` trait).
+ - `com.cibo.scalastan.analysis` contains analyses for ScalaStan models.
  - `com.cibo.scalastan.ast` contains the ScalaStan abstract syntax tree.
  - `com.cibo.scalastan.data` contains parsers for various data sources (R, for example).
  - `com.cibo.scalastan.models` contains reusable ScalaStan models.
+ - `com.cibo.scalastan.transform` contains ScalaStan transformations (optimizations, etc.).
  - Examples can be found in the `com.cibo.scalastan.examples` package in the integration test (`it`) source directory.  Run an example using the command `sbt it:run` and choosing from the available examples.
 
 Usage

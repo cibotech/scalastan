@@ -1,4 +1,5 @@
-package com.cibo.scalastan.transform
+package com.cibo.scalastan.analysis
+
 import com.cibo.scalastan.ast.{StanAssignment, StanDeclaration, StanStatement}
 
 case class AvailableExpressions(_root: StanStatement) extends StanAnalysis[Int](_root) {

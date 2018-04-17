@@ -9,6 +9,8 @@
  */
 
 package com.cibo.scalastan.data
+import kantan.csv._
+import kantan.csv.ops._
 
 object CsvDataSource {
 
@@ -20,8 +22,9 @@ object CsvDataSource {
   }
 
   def fromString(content: String, separator: Char = ','): DataSource = {
-    val lines = content.split('\n').map(_.split(separator).map(strip))
-    val header = lines.head
+    val config = rfc.copy(cellSeparator = separator)
+    val lines = content.asUnsafeCsvReader[Vector[String]](config).toSeq
+    val header = lines.head.map(strip)
     val body = lines.tail.toVector
     val len = body.length
     val values = header.zipWithIndex.map { case (name, index) =>

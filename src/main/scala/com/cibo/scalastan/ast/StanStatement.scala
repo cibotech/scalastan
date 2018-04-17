@@ -193,9 +193,9 @@ case class StanContinueStatement private[scalastan] (
 
 // Sample from a distribution: "var ~ dist()"
 case class StanSampleStatement[T <: StanType, R <: StanType] private[scalastan] (
-  private val left: StanValue[T],
-  private val right: StanDistribution[T],
-  protected val id: Int = StanNode.getNextId
+  left: StanValue[T],
+  right: StanDistribution[T, R],
+  id: Int = StanNode.getNextId
 ) extends StanStatement {
   private[scalastan] def inputs: Seq[StanDeclaration[_]] = left.inputs ++ right.inputs
   private[scalastan] def outputs: Seq[StanDeclaration[_]] = Seq.empty

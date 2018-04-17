@@ -39,10 +39,10 @@ sealed abstract class StanDistribution[T <: StanType, R <: StanType] extends Sta
 case class StanContinuousDistribution[T <: StanType, R <: StanType] private[scalastan] (
   protected val name: String,
   protected val rngType: R,
-  protected val args: Seq[StanValue[_ <: StanType]],
+  args: Seq[StanValue[_ <: StanType]],
   protected val lowerOpt: Option[StanValue[R]] = None,
   protected val upperOpt: Option[StanValue[R]] = None,
-  protected val id: Int = StanNode.getNextId
+  val id: Int = StanNode.getNextId
 ) extends StanDistribution[T, R] {
   def lpdf(y: StanValue[T]): StanValue[StanReal] = StanDistributionNode(s"${name}_lpdf", y, "|", args)
   def cdf(y: StanValue[T]): StanValue[StanReal] = StanDistributionNode(s"${name}_cdf", y, ",", args)

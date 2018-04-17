@@ -54,7 +54,7 @@ case class SplitExpressions()(implicit val ss: ScalaStan) extends StanTransform 
     StanBlock(statements :+ StanReturnStatement(value))
   }
 
-  override protected def handleSample[T <: StanType](s: StanSampleStatement[T]): StanStatement = {
+  override protected def handleSample[T <: StanType, R <: StanType](s: StanSampleStatement[T, R]): StanStatement = {
     val (lhsValue, lhsStatements) = handleLHS(s.left)
     val (rhsValue, rhsStatements) = handleDistribution(s.right)
     StanBlock(
@@ -94,14 +94,14 @@ case class SplitExpressions()(implicit val ss: ScalaStan) extends StanTransform 
     )
   }
 
-  private def handleDistribution[T <: StanType](
-    dist: StanDistribution[T]
-  ): (StanDistribution[T], Seq[StanStatement]) = {
+  private def handleDistribution[T <: StanType, R <: StanType](
+    dist: StanDistribution[T, R]
+  ): (StanDistribution[T, R], Seq[StanStatement]) = {
     val newArgs = dist.args.map(a => splitExpression(a))
-    val newDist: StanDistribution[T] = dist match {
-      case c: StanContinuousDistribution[T, _]          => c.copy(args = newArgs.map(_._1))
-      case dc: StanDiscreteDistributionWithCdf[T, _]    => dc.copy(args = newArgs.map(_._1))
-      case dn: StanDiscreteDistributionWithoutCdf[T, _] => dn.copy(args = newArgs.map(_._1))
+    val newDist: StanDistribution[T, R] = dist match {
+      case c: StanContinuousDistribution[T, R]          => c.copy(args = newArgs.map(_._1))
+      case dc: StanDiscreteDistributionWithCdf[T, R]    => dc.copy(args = newArgs.map(_._1))
+      case dn: StanDiscreteDistributionWithoutCdf[T, R] => dn.copy(args = newArgs.map(_._1))
     }
     (newDist, newArgs.flatMap(_._2))
   }

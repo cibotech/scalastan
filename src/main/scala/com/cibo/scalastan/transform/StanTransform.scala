@@ -46,17 +46,17 @@ abstract class StanTransform(implicit ss: ScalaStan) {
   protected def handleRoot(statement: StanStatement): StanStatement = dispatch(statement)
 
   protected def dispatch(statement: StanStatement): StanStatement = statement match {
-    case t: StanBlock              => handleBlock(t)
-    case v: StanValueStatement     => handleValue(v)
-    case a: StanAssignment         => handleAssignment(a)
-    case f: StanForLoop            => handleFor(f)
-    case w: StanWhileLoop          => handleWhile(w)
-    case i: StanIfStatement        => handleIf(i)
-    case b: StanBreakStatement     => handleBreak(b)
-    case c: StanContinueStatement  => handleContinue(c)
-    case s: StanSampleStatement[_] => handleSample(s)
-    case r: StanReturnStatement    => handleReturn(r)
-    case d: StanInlineDeclaration  => handleDecl(d)
+    case t: StanBlock                 => handleBlock(t)
+    case v: StanValueStatement        => handleValue(v)
+    case a: StanAssignment            => handleAssignment(a)
+    case f: StanForLoop               => handleFor(f)
+    case w: StanWhileLoop             => handleWhile(w)
+    case i: StanIfStatement           => handleIf(i)
+    case b: StanBreakStatement        => handleBreak(b)
+    case c: StanContinueStatement     => handleContinue(c)
+    case s: StanSampleStatement[_, _] => handleSample(s)
+    case r: StanReturnStatement       => handleReturn(r)
+    case d: StanInlineDeclaration     => handleDecl(d)
   }
 
   protected def handleRange(v: StanValueRange): StanValueRange =
@@ -98,7 +98,7 @@ abstract class StanTransform(implicit ss: ScalaStan) {
 
   protected def handleContinue(c: StanContinueStatement): StanStatement = c
 
-  protected def handleSample[T <: StanType](s: StanSampleStatement[T]): StanStatement = {
+  protected def handleSample[T <: StanType, R <: StanType](s: StanSampleStatement[T, R]): StanStatement = {
     val lhs = handleLHS(s.left)
     val rhs = handleDistribution(s.right)
     s.copy(left = lhs, right = rhs)
@@ -108,16 +108,14 @@ abstract class StanTransform(implicit ss: ScalaStan) {
 
   protected def handleDecl(d: StanInlineDeclaration): StanStatement = d
 
-  private def handleDistribution[T <: StanType](dist: StanDistribution[T]): StanDistribution[T] = {
+  private def handleDistribution[T <: StanType, R <: StanType](dist: StanDistribution[T, R]): StanDistribution[T, R] = {
     val newArgs = dist.args.map(a => handleExpression(a))
     dist match {
-      case c: StanContinuousDistribution[T, _]          => c.copy(args = newArgs)
-      case dc: StanDiscreteDistributionWithCdf[T, _]    => dc.copy(args = newArgs)
-      case dn: StanDiscreteDistributionWithoutCdf[T, _] => dn.copy(args = newArgs)
+      case c: StanContinuousDistribution[T, R]          => c.copy(args = newArgs)
+      case dc: StanDiscreteDistributionWithCdf[T, R]    => dc.copy(args = newArgs)
+      case dn: StanDiscreteDistributionWithoutCdf[T, R] => dn.copy(args = newArgs)
     }
   }
-
-  protected def handleModel(statement: StanStatement, state: STATE): StanStatement = dispatch(statement, state)
 
   protected def handleExpression[T <: StanType](expr: StanValue[T]): StanValue[T] = expr match {
     case call: StanCall[T] => handleCall(call)

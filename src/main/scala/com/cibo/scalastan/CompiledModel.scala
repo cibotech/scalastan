@@ -16,13 +16,14 @@ import com.cibo.scalastan.ast.StanDataDeclaration
 
 abstract class CompiledModel {
   private[scalastan] val ss: ScalaStan
+  private[scalastan] val model: ScalaStan#Model
   protected val dataMapping: Map[String, DataMapping[_]]
 
   protected def replaceMapping(newMapping: Map[String, DataMapping[_]]): CompiledModel
   protected def runChecked(chains: Int, seed: Int, cache: Boolean, method: RunMethod.Method): StanResults
 
   private[scalastan] final def emitData(writer: Writer): Unit = {
-    ss.dataValues.foreach { value =>
+    model.program.data.foreach { value =>
       val mapping = dataMapping.getOrElse(value.emit,
         throw new IllegalStateException(s"no data provided for ${value.emit}")
       )
@@ -82,7 +83,7 @@ abstract class CompiledModel {
     require(chains > 0, s"Must run at least one chain")
 
     // Make sure all the necessary data is provided.
-    ss.dataValues.filterNot(v => dataMapping.contains(v.emit)).foreach { v =>
+    model.program.data.filterNot(v => dataMapping.contains(v.emit)).foreach { v =>
       throw new IllegalStateException(s"data not supplied for ${v.name}")
     }
 
@@ -94,6 +95,7 @@ abstract class CompiledModel {
 protected case class CmdStanCompiledModel private[scalastan] (
   private[scalastan] val dir: File,
   private[scalastan] val ss: ScalaStan,
+  private[scalastan] val model: ScalaStan#Model,
   protected val dataMapping: Map[String, DataMapping[_]] = Map.empty
 ) extends CompiledModel {
   protected def replaceMapping(newMapping: Map[String, DataMapping[_]]): CmdStanCompiledModel =

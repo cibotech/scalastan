@@ -496,7 +496,8 @@ protected trait StanFunctions {
     StanCall(StanArray(m.returnType.rows, StanArray(m.returnType.cols, StanReal())), "to_array_2d", Seq(m))
   def to_array_1d[T <: StanCompoundType](
     v: StanValue[T]
-  ): StanValue[StanArray[T#ELEMENT_TYPE]] = StanCall(StanArray(StanUnknownDim(), v.returnType.element), "to_array_1d", Seq(v))
+  ): StanValue[StanArray[v.returnType.ELEMENT_TYPE]] =
+    StanCall[StanArray[v.returnType.ELEMENT_TYPE]](StanArray(StanUnknownDim(), v.returnType.element), "to_array_1d", Seq(v))
 
   // ODE Solvers (45).
   def integrate_ode_rk45[T <: StanScalarType](
@@ -507,8 +508,8 @@ protected trait StanFunctions {
     theta: StanValue[StanArray[StanReal]],
     xr: StanValue[StanArray[StanReal]],
     xi: StanValue[StanArray[StanInt]]
-  ): StanValue[StanArray[StanArray[StanReal]]] = {
-    ode.markUsed()
+  )(implicit code: CodeBuilder): StanValue[StanArray[StanArray[StanReal]]] = {
+    ode.export(code)
     StanCall(
       StanArray(initialState.returnType.dim, StanArray(times.returnType.dim, StanReal())),
       "integrate_ode_rk45",
@@ -526,8 +527,8 @@ protected trait StanFunctions {
     relTol: StanValue[RT],
     absTol: StanValue[AT],
     maxNumSteps: StanValue[StanInt]
-  ): StanValue[StanArray[StanArray[StanReal]]] = {
-    ode.markUsed()
+  )(implicit code: CodeBuilder): StanValue[StanArray[StanArray[StanReal]]] = {
+    ode.export(code)
     StanCall(
       StanArray(initialState.returnType.dim, StanArray(times.returnType.dim, StanReal())),
       "integrate_ode_rk45",
@@ -554,8 +555,8 @@ protected trait StanFunctions {
     theta: StanValue[StanArray[StanReal]],
     xr: StanValue[StanArray[StanReal]],
     xi: StanValue[StanArray[StanInt]]
-  ): StanValue[StanArray[StanArray[StanReal]]] = {
-    ode.markUsed()
+  )(implicit code: CodeBuilder): StanValue[StanArray[StanArray[StanReal]]] = {
+    ode.export(code)
     StanCall(
       StanArray(initialState.returnType.dim, StanArray(times.returnType.dim, StanReal())),
       "integrate_ode_bdf",
@@ -573,8 +574,8 @@ protected trait StanFunctions {
     relTol: StanValue[RT],
     absTol: StanValue[AT],
     maxNumSteps: StanValue[StanInt]
-  ): StanValue[StanArray[StanArray[StanReal]]] = {
-    ode.markUsed()
+  )(implicit code: CodeBuilder): StanValue[StanArray[StanArray[StanReal]]] = {
+    ode.export(code)
     StanCall(
       StanArray(initialState.returnType.dim, StanArray(times.returnType.dim, StanReal())),
       "integrate_ode_bdf",

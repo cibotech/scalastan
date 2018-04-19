@@ -8,11 +8,10 @@
  * or at https://opensource.org/licenses/BSD-3-Clause
  */
 
-package com.cibo.scalastan.analysis
+package com.cibo.scalastan.transform
 
 import com.cibo.scalastan.ScalaStan
 import com.cibo.scalastan.ast._
-import com.cibo.scalastan.transform.StanTransform
 
 // Make sure all "break" and "continue" statements are in loops.
 class LoopChecker(implicit val ss: ScalaStan) extends StanTransform {

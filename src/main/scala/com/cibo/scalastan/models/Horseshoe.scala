@@ -76,7 +76,7 @@ case class Horseshoe(
   }
 
   // Regression coefficients.
-  val beta: ParameterDeclaration[StanVector] = new TransformedParameter(vector(p)) {
+  val beta = new TransformedParameter(vector(p)) {
     result := z *:* lambdaTilde * tau
   }
 
@@ -107,7 +107,7 @@ case class Horseshoe(
     .withData(y, ys)
 
   def predict(data: Seq[Seq[Double]], results: StanResults): Seq[Double] = {
-    val bestBeta = results.best(beta)
+    val bestBeta = results.best(beta.result)
     val bestOffset = results.best(beta0)
     data.map { vs =>
       require(vs.length == bestBeta.length)

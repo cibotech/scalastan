@@ -7,6 +7,7 @@ trait ScalaStanBaseSpec extends FunSpec with Matchers {
 
   case class MockCompiledModel(
     private[scalastan] val ss: ScalaStan,
+    private[scalastan] val model: ScalaStan#Model,
     private[scalastan] val code: String,
     private[scalastan] val data: Vector[Map[String, String]] = Vector.empty,
     protected val dataMapping: Map[String, DataMapping[_]] = Map.empty
@@ -39,6 +40,7 @@ trait ScalaStanBaseSpec extends FunSpec with Matchers {
   implicit object MockRunner extends StanRunner[MockCompiledModel] {
     def compile(ss: ScalaStan, model: ScalaStan#Model): CompiledModel = MockCompiledModel(
       ss = ss,
+      model = model,
       code = model.getCode
     )
     def run(

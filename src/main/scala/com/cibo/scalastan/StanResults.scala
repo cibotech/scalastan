@@ -298,7 +298,11 @@ case class StanResults private (
     val fieldWidth = 8
 
     // Get a mapping from Stan name to ScalaStan name.
-    val parametersToShow = if (parameters.nonEmpty) parameters else model.ss.parameters
+    val parametersToShow = if (parameters.nonEmpty) {
+      parameters
+    } else {
+      model.model.program.parameters ++ model.model.program.transformedParameters.map(_.result)
+    }
     val mapping = parametersToShow.map(p => p.emit -> p.name).toMap
 
     // Build a mapping of name -> chain -> iteration -> value

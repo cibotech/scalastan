@@ -130,7 +130,7 @@ protected object StanRunner {
         runMake(dir)
       }
 
-      CmdStanCompiledModel(dir, ss)
+      CmdStanCompiledModel(dir, ss, model)
     }
 
     def run(

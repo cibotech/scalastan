@@ -4,9 +4,9 @@ class ScalaStanSpec extends ScalaStanBaseSpec {
   describe("data") {
     it("causes a data declaration to be generated") {
       new ScalaStan {
-        data(int())
-        val model = new Model {}
-        checkCode(model, "data { int v#; }")
+        val d = data(int())
+        val model = new Model { local(int()) := d }
+        checkCode(model, "data { int d; }")
       }
     }
   }
@@ -14,9 +14,9 @@ class ScalaStanSpec extends ScalaStanBaseSpec {
   describe("parameter") {
     it("causes a parameter declaration to be generated") {
       new ScalaStan {
-        parameter(real())
-        val model = new Model {}
-        checkCode(model, "parameters { real v#; }")
+        val p = parameter(real())
+        val model = new Model { local(real()) := p }
+        checkCode(model, "parameters { real p; }")
       }
     }
   }

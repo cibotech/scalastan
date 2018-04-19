@@ -31,7 +31,7 @@ case class SoftKMeans(
     result := -stan.log(k)
   }
 
-  val softZ: ParameterDeclaration[StanArray[StanArray[StanReal]]] = new TransformedParameter(real(upper = 0)(n, k)) {
+  val softZ = new TransformedParameter(real(upper = 0)(n, k)) {
     for (i <- range(1, n)) {
       for (j <- range(1, k)) {
         result(i, j) := negLogK - 0.5 * stan.dot_self(mu(j) - y(i))
@@ -56,6 +56,6 @@ case class SoftKMeans(
     .withData(y, observations)
 
   def clusterAssignments(results: StanResults): Seq[Int] = {
-    results.best(softZ).map(_.zipWithIndex.maxBy(_._1)._2)
+    results.best(softZ.result).map(_.zipWithIndex.maxBy(_._1)._2)
   }
 }

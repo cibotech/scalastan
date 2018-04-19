@@ -19,10 +19,16 @@ sealed abstract class StanDistribution[T <: StanType, R <: StanType] extends Sta
   protected val lowerOpt: Option[StanValue[_]]
   protected val upperOpt: Option[StanValue[_]]
 
-  private[scalastan] def inputs: Seq[StanDeclaration[_]] =
+  private[scalastan] def inputs: Seq[StanDeclaration[_ <: StanType]] =
     args.flatMap(_.inputs) ++ lowerOpt.toSeq.flatMap(_.inputs) ++ upperOpt.toSeq.flatMap(_.inputs)
-  private[scalastan] def outputs: Seq[StanDeclaration[_]] =
+  private[scalastan] def outputs: Seq[StanDeclaration[_ <: StanType]] =
     args.flatMap(_.outputs) ++ lowerOpt.toSeq.flatMap(_.outputs) ++ upperOpt.toSeq.flatMap(_.outputs)
+
+  private[scalastan] def export(builder: CodeBuilder): Unit = {
+    args.foreach(_.export(builder))
+    lowerOpt.foreach(_.export(builder))
+    upperOpt.foreach(_.export(builder))
+  }
 
   private[scalastan] def emit: String = {
     val argStr = args.map(_.emit).mkString(",")
@@ -42,7 +48,7 @@ case class StanContinuousDistribution[T <: StanType, R <: StanType] private[scal
   args: Seq[StanValue[_ <: StanType]],
   protected val lowerOpt: Option[StanValue[R]] = None,
   protected val upperOpt: Option[StanValue[R]] = None,
-  val id: Int = StanNode.getNextId
+  id: Int = StanNode.getNextId
 ) extends StanDistribution[T, R] {
   def lpdf(y: StanValue[T]): StanValue[StanReal] = StanDistributionNode(s"${name}_lpdf", y, "|", args)
   def cdf(y: StanValue[T]): StanValue[StanReal] = StanDistributionNode(s"${name}_cdf", y, ",", args)

@@ -39,8 +39,14 @@ case class StanDataDeclaration[T <: StanType] private[scalastan] (
     "data declaration bounds must be derived from other data declarations or constant")
   private[scalastan] type DECL_TYPE = StanDataDeclaration[T]
   private[scalastan] def isDerivedFromData: Boolean = true
-  private[scalastan] def inputs: Seq[StanDeclaration[_]] = Seq(this)
-  private[scalastan] def outputs: Seq[StanDeclaration[_]] = Seq.empty
+  private[scalastan] def export(builder: CodeBuilder): Unit = {
+    returnType.lower.foreach(_.export(builder))
+    returnType.upper.foreach(_.export(builder))
+    returnType.getIndices.foreach(_.export(builder))
+    builder.append(this)
+  }
+  private[scalastan] def inputs: Seq[StanDeclaration[_ <: StanType]] = Seq(this)
+  private[scalastan] def outputs: Seq[StanDeclaration[_ <: StanType]] = Seq.empty
 }
 
 case class StanParameterDeclaration[T <: StanType] private[scalastan] (
@@ -48,6 +54,7 @@ case class StanParameterDeclaration[T <: StanType] private[scalastan] (
   internalNameFunc: () => Option[String] = () => None,
   rootOpt: Option[StanParameterDeclaration[_ <: StanType]] = None,
   indices: Seq[Int] = Seq.empty,
+  transformed: Boolean = false,
   id: Int = StanNode.getNextId
 )(implicit ss: ScalaStan) extends StanDeclaration[T] with Updatable[T] {
   require(returnType.isDerivedFromData,
@@ -55,8 +62,15 @@ case class StanParameterDeclaration[T <: StanType] private[scalastan] (
   private[scalastan] val value: StanDeclaration[_ <: StanType] = this
   private[scalastan] type DECL_TYPE = StanParameterDeclaration[T]
   private[scalastan] def isDerivedFromData: Boolean = false
-  override private[scalastan] def inputs: Seq[StanDeclaration[_]] = Seq(this)
-  override private[scalastan] def outputs: Seq[StanDeclaration[_]] = Seq(this)
+  private[scalastan] def export(builder: CodeBuilder): Unit = {
+    indices.foreach(_.export(builder))
+    returnType.lower.foreach(_.export(builder))
+    returnType.upper.foreach(_.export(builder))
+    returnType.getIndices.foreach(_.export(builder))
+    if (!transformed) builder.append(this)
+  }
+  override private[scalastan] def inputs: Seq[StanDeclaration[_ <: StanType]] = Seq(this)
+  override private[scalastan] def outputs: Seq[StanDeclaration[_ <: StanType]] = Seq(this)
 
   private[scalastan] def root: StanParameterDeclaration[_ <: StanType] = rootOpt.getOrElse(this)
 
@@ -102,7 +116,12 @@ case class StanLocalDeclaration[T <: StanType] private[scalastan] (
   private[scalastan] val value: StanValue[_ <: StanType] = this
   private[scalastan] type DECL_TYPE = StanLocalDeclaration[T]
   private[scalastan] def isDerivedFromData: Boolean = derivedFromData
+  private[scalastan] def export(builder: CodeBuilder): Unit = {
+    returnType.lower.foreach(_.export(builder))
+    returnType.upper.foreach(_.export(builder))
+    returnType.getIndices.foreach(_.export(builder))
+  }
   override private[scalastan] def emitDeclaration: String = returnType.unconstrained.emitDeclaration(name)
-  override private[scalastan] def inputs: Seq[StanDeclaration[_]] = Seq(this)
-  override private[scalastan] def outputs: Seq[StanDeclaration[_]] = Seq(this)
+  override private[scalastan] def inputs: Seq[StanDeclaration[_ <: StanType]] = Seq(this)
+  override private[scalastan] def outputs: Seq[StanDeclaration[_ <: StanType]] = Seq(this)
 }

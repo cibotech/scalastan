@@ -73,9 +73,16 @@ object StanProgram {
       case block: StanBlock      => block.children.flatMap(child => getStatements(child))
       case loop: StanLoop        => getStatements(loop.body)
       case cond: StanIfStatement =>
-        cond.conds.flatMap(c => getStatements(c._2)) ++ cond.otherwise.map(getStatements).getOrElse(Seq.empty)
-      case _                     => Seq.empty
+        cond.conds.flatMap(c => getStatements(c._2)) ++ cond.otherwise.map(getStatements).getOrElse(Vector.empty)
+      case _                     => Vector.empty
     }
     code +: inner
+  }
+
+  def getStatements(program: StanProgram): Seq[StanStatement] = {
+    getStatements(program.model) ++
+      program.generatedQuantities.flatMap(q => getStatements(q.code)) ++
+      program.transformedData.flatMap(d => getStatements(d.code)) ++
+      program.transformedParameters.flatMap(p => getStatements(p.code))
   }
 }

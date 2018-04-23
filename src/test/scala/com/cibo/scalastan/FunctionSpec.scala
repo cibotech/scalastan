@@ -10,7 +10,7 @@ class FunctionSpec extends ScalaStanBaseSpec {
         val model = new Model {
           local(real()) := f()
         }
-        checkCode(model, "functions { real v#() { return 5.0; }")
+        checkCode(model, "functions { real f() { return 5.0; }")
       }
     }
 
@@ -23,7 +23,7 @@ class FunctionSpec extends ScalaStanBaseSpec {
         val model = new Model {
           f(5)
         }
-        checkCode(model, "functions { void v#(real i) { print(i); } } model { v#(5); }")
+        checkCode(model, "functions { void f(real i) { print(i); } } model { f(5); }")
       }
     }
   }

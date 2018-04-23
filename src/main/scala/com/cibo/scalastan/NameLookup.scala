@@ -23,16 +23,7 @@ protected trait NameLookup {
   private lazy val defaultName: String = s"v${_id}"
 
   // A user-facing name to use for this identifier.
-  lazy val name: String = {
-    val realName = _userName.getOrElse(defaultName)
-    val uniqueName = if (_ss.identifiers.contains(realName)) {
-      Stream.from(1).map(i => s"${realName}_$i").find(n => !_ss.identifiers.contains(n)).get
-    } else {
-      realName
-    }
-    _ss.identifiers += uniqueName
-    uniqueName
-  }
+  lazy val name: String = _userName.getOrElse(defaultName)
 }
 
 protected object NameLookup {

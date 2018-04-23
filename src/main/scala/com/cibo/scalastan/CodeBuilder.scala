@@ -84,33 +84,17 @@ protected class CodeBuilder {
     }
   }
 
-  def append(f: ScalaStan#Function[_]): Unit = {
-    if (!functions.exists(_.name == f.name)) {
-      append(f._code)
-      functions += f
+  private def append[T <: ScalaStan#TransformBase[_, _]](t: T, array: ArrayBuffer[T]): Unit = {
+    if (!array.exists(_.name == t.name)) {
+      array.prepend(t) // Prepend so dependencies get computed first (do this first to prevent infinite recursion).
+      append(t._code)  // Add dependencies.
     }
   }
 
-  def append(t: ScalaStan#TransformedData[_]): Unit = {
-    if (!transformedData.exists(_.name == t.name)) {
-      append(t._code)
-      transformedData += t
-    }
-  }
-
-  def append(t: ScalaStan#TransformedParameter[_]): Unit = {
-    if (!transformedParameters.exists(_.name == t.name)) {
-      append(t._code)
-      transformedParameters += t
-    }
-  }
-
-  def append(g: ScalaStan#GeneratedQuantity[_]): Unit = {
-    if (!generatedQuantities.exists(_.name == g.name)) {
-      append(g._code)
-      generatedQuantities += g
-    }
-  }
+  def append(f: ScalaStan#Function[_]): Unit = append(f, functions)
+  def append(t: ScalaStan#TransformedData[_]): Unit = append(t, transformedData)
+  def append(t: ScalaStan#TransformedParameter[_]): Unit = append(t, transformedParameters)
+  def append(g: ScalaStan#GeneratedQuantity[_]): Unit = append(g, generatedQuantities)
 
   def append(s: StanStatement): Unit = {
     require(stack.nonEmpty)

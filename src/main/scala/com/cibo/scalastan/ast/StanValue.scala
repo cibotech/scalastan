@@ -190,7 +190,7 @@ trait Updatable[T <: StanType] extends Incrementable[T] { self: StanValue[T] =>
 }
 
 trait StanFunction {
-  val name: String
+  def name: String
   private[scalastan] def export(builder: CodeBuilder): Unit
 }
 

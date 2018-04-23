@@ -16,7 +16,7 @@ sealed abstract class StanDeclaration[T <: StanType](implicit ss: ScalaStan) ext
   val returnType: T
   val internalNameFunc: Function0[Option[String]]
 
-  protected def _userName: Option[String] = internalNameFunc().orElse(NameLookup.lookupName(this))
+  protected lazy val _userName: Option[String] = internalNameFunc().orElse(NameLookup.lookupName(this))
   protected val _ss: ScalaStan = ss
 
   private[scalastan] def emit: String = name
@@ -54,7 +54,7 @@ case class StanParameterDeclaration[T <: StanType] private[scalastan] (
   internalNameFunc: () => Option[String] = () => None,
   rootOpt: Option[StanParameterDeclaration[_ <: StanType]] = None,
   indices: Seq[Int] = Seq.empty,
-  transformed: Boolean = false,
+  owner: Option[ScalaStan#TransformBase[_, _]] = None,
   id: Int = StanNode.getNextId
 )(implicit ss: ScalaStan) extends StanDeclaration[T] with Updatable[T] {
   require(returnType.isDerivedFromData,
@@ -67,7 +67,10 @@ case class StanParameterDeclaration[T <: StanType] private[scalastan] (
     returnType.lower.foreach(_.export(builder))
     returnType.upper.foreach(_.export(builder))
     returnType.getIndices.foreach(_.export(builder))
-    if (!transformed) builder.append(this)
+    owner match {
+      case Some(code) => code.export(builder)
+      case None       => builder.append(this)
+    }
   }
   override private[scalastan] def inputs: Seq[StanDeclaration[_ <: StanType]] = Seq(this)
   override private[scalastan] def outputs: Seq[StanDeclaration[_ <: StanType]] = Seq(this)
@@ -111,6 +114,7 @@ case class StanLocalDeclaration[T <: StanType] private[scalastan] (
   returnType: T,
   internalNameFunc: () => Option[String] = () => None,
   derivedFromData: Boolean = false,
+  owner: Option[ScalaStan#TransformBase[_, _]] = None,
   id: Int = StanNode.getNextId
 )(implicit ss: ScalaStan) extends StanDeclaration[T] with Updatable[T] {
   private[scalastan] val value: StanValue[_ <: StanType] = this

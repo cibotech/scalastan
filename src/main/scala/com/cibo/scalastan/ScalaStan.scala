@@ -34,8 +34,6 @@ trait ScalaStan extends Implicits { ss =>
 
   protected implicit val _scalaStan: ScalaStan = this
 
-  private[scalastan] var identifiers: Set[String] = Set.empty
-
   private var idCounter: Int = 0
 
   private[scalastan] def nextId: Int = {
@@ -197,10 +195,19 @@ trait ScalaStan extends Implicits { ss =>
     }
   }
 
-  abstract class Function[RETURN_TYPE <: StanType](returnType: RETURN_TYPE = StanVoid()) extends StanCode with StanFunction {
+  abstract class TransformBase[T <: StanType, D <: StanDeclaration[T]] extends StanCode with NameLookup {
+    private[scalastan] val result: D
+    protected val _ss: ScalaStan = ss
+    protected def _userName: Option[String] = NameLookup.lookupName(this)(ss)
+    private[scalastan] def export(builder: CodeBuilder): Unit
+  }
 
-    private[scalastan] val result = StanLocalDeclaration[RETURN_TYPE](returnType)
-    val name: String = result.emit
+  abstract class Function[RETURN_TYPE <: StanType](
+    returnType: RETURN_TYPE = StanVoid()
+  ) extends TransformBase[RETURN_TYPE, StanLocalDeclaration[RETURN_TYPE]] with StanFunction {
+
+    private[scalastan] lazy val result = StanLocalDeclaration[RETURN_TYPE](
+      returnType, () => _userName, owner = Some(this))
 
     private val inputs = new ArrayBuffer[StanLocalDeclaration[_ <: StanType]]()
 
@@ -231,16 +238,12 @@ trait ScalaStan extends Implicits { ss =>
     )
   }
 
-  abstract class TransformBase[T <: StanType, D <: StanDeclaration[T]] extends StanCode with NameLookup {
-    val result: D
-    protected def _userName: Option[String] = NameLookup.lookupName(this)(ss)
-    protected val _ss: ScalaStan = ss
-  }
-
   abstract class TransformedData[T <: StanType](typeConstructor: T) extends TransformBase[T, StanLocalDeclaration[T]] {
     lazy val result: StanLocalDeclaration[T] = StanLocalDeclaration[T](
       typeConstructor, () => _userName, derivedFromData = true
     )
+
+    private[scalastan] def export(builder: CodeBuilder): Unit = builder.append(this)
 
     private[scalastan] lazy val generate: StanTransformedData = StanTransformedData(result, _code.results)
   }
@@ -249,16 +252,20 @@ trait ScalaStan extends Implicits { ss =>
     typeConstructor: T
   ) extends TransformBase[T, StanParameterDeclaration[T]] {
     lazy val result: StanParameterDeclaration[T] =
-      StanParameterDeclaration[T](typeConstructor, () => _userName, transformed = true)
+      StanParameterDeclaration[T](typeConstructor, () => _userName, owner = Some(this))
     protected implicit val _parameterTransform: InParameterTransform = InParameterTransform
+
+    private[scalastan] def export(builder: CodeBuilder): Unit = builder.append(this)
 
     private[scalastan] lazy val generate: StanTransformedParameter = StanTransformedParameter(result, _code.results)
   }
 
   abstract class GeneratedQuantity[T <: StanType](typeConstructor: T) extends TransformBase[T, StanParameterDeclaration[T]] {
     lazy val result: StanParameterDeclaration[T] =
-      StanParameterDeclaration[T](typeConstructor, () => _userName, transformed = true)
+      StanParameterDeclaration[T](typeConstructor, () => _userName, owner = Some(this))
     protected implicit val _generatedQuantity: InGeneratedQuantityBlock = InGeneratedQuantityBlock
+
+    private[scalastan] def export(builder: CodeBuilder): Unit = builder.append(this)
 
     private[scalastan] lazy val generate: StanGeneratedQuantity = StanGeneratedQuantity(result, _code.results)
   }

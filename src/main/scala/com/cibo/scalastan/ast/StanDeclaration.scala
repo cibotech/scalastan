@@ -124,6 +124,10 @@ case class StanLocalDeclaration[T <: StanType] private[scalastan] (
     returnType.lower.foreach(_.export(builder))
     returnType.upper.foreach(_.export(builder))
     returnType.getIndices.foreach(_.export(builder))
+    owner match {
+      case Some(code) => code.export(builder)
+      case None       => ()
+    }
   }
   override private[scalastan] def emitDeclaration: String = returnType.unconstrained.emitDeclaration(name)
   override private[scalastan] def inputs: Seq[StanDeclaration[_ <: StanType]] = Seq(this)

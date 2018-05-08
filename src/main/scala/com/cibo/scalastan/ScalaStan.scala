@@ -112,24 +112,21 @@ trait ScalaStan extends Implicits { ss =>
 
   implicit def compile[M <: CompiledModel](model: Model)(implicit runner: StanRunner[M]): CompiledModel = model.compile
 
+  implicit def dataTransform2Value[T <: StanType](transform: TransformedData[T]): StanLocalDeclaration[T] = {
+    transform.result
+  }
+
+  implicit def paramTransform2Value[T <: StanType](transform: TransformedParameter[T]): ParameterDeclaration[T] = {
+    transform.result
+  }
+
+  implicit def generatedQuntity2Value[T <: StanType](quantity: GeneratedQuantity[T]): ParameterDeclaration[T] = {
+    quantity.result
+  }
+
   trait StanCode {
 
     implicit val _code: CodeBuilder = new CodeBuilder
-
-    implicit def dataTransform2Value[T <: StanType](transform: TransformedData[T]): StanLocalDeclaration[T] = {
-      _code.append(transform)
-      transform.result
-    }
-
-    implicit def paramTransform2Value[T <: StanType](transform: TransformedParameter[T]): ParameterDeclaration[T] = {
-      _code.append(transform)
-      transform.result
-    }
-
-    implicit def generatedQuntity2Value[T <: StanType](quantity: GeneratedQuantity[T]): ParameterDeclaration[T] = {
-      _code.append(quantity)
-      quantity.result
-    }
 
     def local[T <: StanType](typeConstructor: T): StanLocalDeclaration[T] = {
       if (typeConstructor.lower.isDefined || typeConstructor.upper.isDefined) {
@@ -240,7 +237,7 @@ trait ScalaStan extends Implicits { ss =>
 
   abstract class TransformedData[T <: StanType](typeConstructor: T) extends TransformBase[T, StanLocalDeclaration[T]] {
     lazy val result: StanLocalDeclaration[T] = StanLocalDeclaration[T](
-      typeConstructor, () => _userName, derivedFromData = true
+      typeConstructor, () => _userName, derivedFromData = true, owner = Some(this)
     )
 
     private[scalastan] def export(builder: CodeBuilder): Unit = builder.append(this)

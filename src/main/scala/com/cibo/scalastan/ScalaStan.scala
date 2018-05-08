@@ -34,6 +34,12 @@ trait ScalaStan extends Implicits { ss =>
 
   protected implicit val _scalaStan: ScalaStan = this
 
+  // Generated quantities aren't referenced from the model, so we need some way to cause them
+  // to be generated.  For now, we simply generate all generated quantities.
+  // In the future maybe generated quantity code should be moved inside the model so that we
+  // can associate it with the model more easily?
+  private val generatedQuantities: ArrayBuffer[GeneratedQuantity[_]] = new ArrayBuffer[GeneratedQuantity[_]]()
+
   private var idCounter: Int = 0
 
   private[scalastan] def nextId: Int = {
@@ -112,24 +118,21 @@ trait ScalaStan extends Implicits { ss =>
 
   implicit def compile[M <: CompiledModel](model: Model)(implicit runner: StanRunner[M]): CompiledModel = model.compile
 
+  implicit def dataTransform2Value[T <: StanType](transform: TransformedData[T]): StanLocalDeclaration[T] = {
+    transform.result
+  }
+
+  implicit def paramTransform2Value[T <: StanType](transform: TransformedParameter[T]): ParameterDeclaration[T] = {
+    transform.result
+  }
+
+  implicit def generatedQuntity2Value[T <: StanType](quantity: GeneratedQuantity[T]): ParameterDeclaration[T] = {
+    quantity.result
+  }
+
   trait StanCode {
 
-    private[scalastan] implicit val _code: CodeBuilder = new CodeBuilder
-
-    implicit def dataTransform2Value[T <: StanType](transform: TransformedData[T]): StanLocalDeclaration[T] = {
-      _code.append(transform)
-      transform.result
-    }
-
-    implicit def paramTransform2Value[T <: StanType](transform: TransformedParameter[T]): ParameterDeclaration[T] = {
-      _code.append(transform)
-      transform.result
-    }
-
-    implicit def generatedQuntity2Value[T <: StanType](quantity: GeneratedQuantity[T]): ParameterDeclaration[T] = {
-      _code.append(quantity)
-      quantity.result
-    }
+    implicit val _code: CodeBuilder = new CodeBuilder
 
     def local[T <: StanType](typeConstructor: T): StanLocalDeclaration[T] = {
       if (typeConstructor.lower.isDefined || typeConstructor.upper.isDefined) {
@@ -240,7 +243,7 @@ trait ScalaStan extends Implicits { ss =>
 
   abstract class TransformedData[T <: StanType](typeConstructor: T) extends TransformBase[T, StanLocalDeclaration[T]] {
     lazy val result: StanLocalDeclaration[T] = StanLocalDeclaration[T](
-      typeConstructor, () => _userName, derivedFromData = true
+      typeConstructor, () => _userName, derivedFromData = true, owner = Some(this)
     )
 
     private[scalastan] def export(builder: CodeBuilder): Unit = builder.append(this)
@@ -261,8 +264,12 @@ trait ScalaStan extends Implicits { ss =>
   }
 
   abstract class GeneratedQuantity[T <: StanType](typeConstructor: T) extends TransformBase[T, StanParameterDeclaration[T]] {
-    lazy val result: StanParameterDeclaration[T] =
+    lazy val result: StanParameterDeclaration[T] = {
+      if (!generatedQuantities.exists(_.name == name)) {
+        generatedQuantities += this
+      }
       StanParameterDeclaration[T](typeConstructor, () => _userName, owner = Some(this))
+    }
     protected implicit val _generatedQuantity: InGeneratedQuantityBlock = InGeneratedQuantityBlock
 
     private[scalastan] def export(builder: CodeBuilder): Unit = builder.append(this)
@@ -278,7 +285,10 @@ trait ScalaStan extends Implicits { ss =>
 
     def emit(writer: PrintWriter): Unit = TransformedModel(this).emit(writer)
 
-    private[scalastan] def program: StanProgram = _code.program
+    private[scalastan] def program: StanProgram = {
+      generatedQuantities.foreach(_code.append)
+      _code.program
+    }
 
     final def emit(ps: PrintStream): Unit = {
       val pw = new PrintWriter(ps)

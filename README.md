@@ -15,7 +15,7 @@ ScalaStan Dependency
 To use ScalaStan, add the following to your build:
 ```scala
 resolvers += Resolver.bintrayRepo("cibotech", "public")
-libraryDependences += "com.cibo" %% "scalastan" % "0.5.4"
+libraryDependences += "com.cibo" %% "scalastan" % "0.5.5"
 ```
 
 Project Structure

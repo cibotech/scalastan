@@ -34,6 +34,12 @@ trait ScalaStan extends Implicits { ss =>
 
   protected implicit val _scalaStan: ScalaStan = this
 
+  // Generated quantities aren't referenced from the model, so we need some way to cause them
+  // to be generated.  For now, we simply generate all generated quantities.
+  // In the future maybe generated quantity code should be moved inside the model so that we
+  // can associate it with the model more easily?
+  private val generatedQuantities: ArrayBuffer[GeneratedQuantity[_]] = new ArrayBuffer[GeneratedQuantity[_]]()
+
   private var idCounter: Int = 0
 
   private[scalastan] def nextId: Int = {
@@ -258,8 +264,12 @@ trait ScalaStan extends Implicits { ss =>
   }
 
   abstract class GeneratedQuantity[T <: StanType](typeConstructor: T) extends TransformBase[T, StanParameterDeclaration[T]] {
-    lazy val result: StanParameterDeclaration[T] =
+    lazy val result: StanParameterDeclaration[T] = {
+      if (!generatedQuantities.exists(_.name == name)) {
+        generatedQuantities += this
+      }
       StanParameterDeclaration[T](typeConstructor, () => _userName, owner = Some(this))
+    }
     protected implicit val _generatedQuantity: InGeneratedQuantityBlock = InGeneratedQuantityBlock
 
     private[scalastan] def export(builder: CodeBuilder): Unit = builder.append(this)
@@ -275,7 +285,10 @@ trait ScalaStan extends Implicits { ss =>
 
     def emit(writer: PrintWriter): Unit = TransformedModel(this).emit(writer)
 
-    private[scalastan] def program: StanProgram = _code.program
+    private[scalastan] def program: StanProgram = {
+      generatedQuantities.foreach(_code.append)
+      _code.program
+    }
 
     final def emit(ps: PrintStream): Unit = {
       val pw = new PrintWriter(ps)

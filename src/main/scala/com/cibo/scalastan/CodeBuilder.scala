@@ -86,8 +86,9 @@ protected class CodeBuilder {
 
   private def append[T <: ScalaStan#TransformBase[_, _]](t: T, array: ArrayBuffer[T]): Unit = {
     if (!array.exists(_.name == t.name)) {
-      array.prepend(t) // Prepend so dependencies get computed first (do this first to prevent infinite recursion).
-      append(t._code)  // Add dependencies.
+      array.prepend(t)                  // Prepend to the list (to avoid infinite recursion).
+      append(t._code)                   // Add dependencies.
+      array.append(array.remove(0))     // Move this value behind its dependencies.
     }
   }
 

@@ -58,7 +58,7 @@ case class StanResults private (
     val name = decl.root.emit + (if (decl.indices.nonEmpty) decl.indices.mkString(".", ".", "") else "")
     chains.map { chain =>
       chain.map { values =>
-        decl.typeConstructor.parse(name, values).asInstanceOf[R]
+        decl.returnType.parse(name, values).asInstanceOf[R]
       }
     }
   }
@@ -75,7 +75,7 @@ case class StanResults private (
   )(
     func: Seq[Seq[Double]] => Double
   )(implicit ev: R =:= T#SUMMARY_TYPE): R = {
-    val tc = decl.typeConstructor
+    val tc = decl.returnType
     tc.combine(samples(decl).asInstanceOf[Seq[Seq[tc.SCALA_TYPE]]])(func).asInstanceOf[R]
   }
 
@@ -298,7 +298,11 @@ case class StanResults private (
     val fieldWidth = 8
 
     // Get a mapping from Stan name to ScalaStan name.
-    val parametersToShow = if (parameters.nonEmpty) parameters else model.ss.parameters
+    val parametersToShow = if (parameters.nonEmpty) {
+      parameters
+    } else {
+      model.model.program.parameters ++ model.model.program.transformedParameters.map(_.result)
+    }
     val mapping = parametersToShow.map(p => p.emit -> p.name).toMap
 
     // Build a mapping of name -> chain -> iteration -> value

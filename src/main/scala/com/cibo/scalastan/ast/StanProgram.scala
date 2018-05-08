@@ -12,15 +12,20 @@ package com.cibo.scalastan.ast
 
 import java.io.PrintWriter
 
+import com.cibo.scalastan.transform.StanTransform
+
 case class StanProgram(
-  data: Seq[StanDataDeclaration[_]],
-  parameters: Seq[StanParameterDeclaration[_]],
-  functions: Seq[StanFunctionDeclaration],
-  transformedData: Seq[StanTransformedData],
-  transformedParameters: Seq[StanTransformedParameter],
-  generatedQuantities: Seq[StanGeneratedQuantity],
-  model: StanStatement
+  data: Seq[StanDataDeclaration[_]] = Seq.empty,
+  parameters: Seq[StanParameterDeclaration[_]] = Seq.empty,
+  functions: Seq[StanFunctionDeclaration] = Seq.empty,
+  transformedData: Seq[StanTransformedData] = Seq.empty,
+  transformedParameters: Seq[StanTransformedParameter] = Seq.empty,
+  generatedQuantities: Seq[StanGeneratedQuantity] = Seq.empty,
+  model: StanStatement = StanBlock(Seq.empty)
 ) {
+
+  private[scalastan] def transform(t: StanTransform): StanProgram = t.run(this)
+
   private[scalastan] def emit(writer: PrintWriter): Unit = {
     if (functions.nonEmpty) {
       writer.println("functions {")
@@ -50,6 +55,7 @@ case class StanProgram(
       writer.println("}")
     }
     writer.println("model {")
+    model.emitDeclarations(writer, 1)
     model.emit(writer, 1)
     writer.println("}")
     if (generatedQuantities.nonEmpty) {
@@ -58,5 +64,25 @@ case class StanProgram(
       generatedQuantities.foreach(_.emit(writer))
       writer.println("}")
     }
+  }
+}
+
+object StanProgram {
+  def getStatements(code: StanStatement): Seq[StanStatement] = {
+    val inner = code match {
+      case block: StanBlock      => block.children.flatMap(child => getStatements(child))
+      case loop: StanLoop        => getStatements(loop.body)
+      case cond: StanIfStatement =>
+        cond.conds.flatMap(c => getStatements(c._2)) ++ cond.otherwise.map(getStatements).getOrElse(Vector.empty)
+      case _                     => Vector.empty
+    }
+    code +: inner
+  }
+
+  def getStatements(program: StanProgram): Seq[StanStatement] = {
+    getStatements(program.model) ++
+      program.generatedQuantities.flatMap(q => getStatements(q.code)) ++
+      program.transformedData.flatMap(d => getStatements(d.code)) ++
+      program.transformedParameters.flatMap(p => getStatements(p.code))
   }
 }

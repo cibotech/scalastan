@@ -14,12 +14,15 @@ import com.cibo.scalastan.ast.{StanContinuousDistribution, StanDiscreteDistribut
 
 protected trait StanDistributions {
 
+  private def args(args: StanValue[_ <: StanType]*): Seq[StanValue[_ <: StanType]] = args
+
   def beta[A <: StanType: ContinuousType, B <: StanType: ContinuousType, R <: StanType](
     alpha: StanValue[A],
     beta: StanValue[B]
   )(
     implicit ev: Vectorized2[A, B]
-  ): StanContinuousDistribution[R, StanReal] = StanContinuousDistribution("beta", Seq(alpha, beta))
+  ): StanContinuousDistribution[R, StanReal] =
+    StanContinuousDistribution("beta", StanReal(), args(alpha, beta))
 
   def beta_binomial[
     N <: StanType: DiscreteType,
@@ -32,64 +35,74 @@ protected trait StanDistributions {
     beta: StanValue[B]
   )(
     implicit ev: Vectorized3[N, A, B]
-  ): StanDiscreteDistributionWithCdf[R, StanInt] = StanDiscreteDistributionWithCdf("beta_binomial", Seq(n, alpha, beta))
+  ): StanDiscreteDistributionWithCdf[R, StanInt] =
+    StanDiscreteDistributionWithCdf("beta_binomial", StanInt(), args(n, alpha, beta))
 
   def bernoulli[T <: StanType: ContinuousType, R <: StanType](
     theta: StanValue[T]
   )(
     implicit ev: Vectorized1[T]
-  ): StanDiscreteDistributionWithCdf[R, StanInt] = StanDiscreteDistributionWithCdf("bernoulli", Seq(theta))
+  ): StanDiscreteDistributionWithCdf[R, StanInt] =
+    StanDiscreteDistributionWithCdf("bernoulli", StanInt(), Seq(theta))
 
   def bernoulli_logit[T <: StanType: ContinuousType, R <: StanType](
     alpha: StanValue[T]
   )(
     implicit ev: Vectorized1[T]
-  ): StanDiscreteDistributionWithoutCdf[R, StanInt] = StanDiscreteDistributionWithoutCdf("bernoulli_logit", Seq(alpha))
+  ): StanDiscreteDistributionWithoutCdf[R, StanInt] =
+    StanDiscreteDistributionWithoutCdf("bernoulli_logit", StanInt(), Seq(alpha))
 
   def binomial[N <: StanType: DiscreteType, T <: StanType: ContinuousType, R <: StanType](
     n: StanValue[N],
     theta: StanValue[T]
   )(
     implicit ev: Vectorized2[N, T]
-  ): StanDiscreteDistributionWithCdf[R, StanInt] = StanDiscreteDistributionWithCdf("binomial", Seq(n, theta))
+  ): StanDiscreteDistributionWithCdf[R, StanInt] =
+    StanDiscreteDistributionWithCdf("binomial", StanInt(), args(n, theta))
 
   def binomial_logit[N <: StanType: DiscreteType, T <: StanType: ContinuousType, R <: StanType](
     n: StanValue[N],
     alpha: StanValue[T]
   )(
     implicit ev: Vectorized2[N, T]
-  ): StanDiscreteDistributionWithoutCdf[R, StanInt] = StanDiscreteDistributionWithoutCdf("binomial_logit", Seq(n, alpha))
+  ): StanDiscreteDistributionWithoutCdf[R, StanInt] =
+    StanDiscreteDistributionWithoutCdf("binomial_logit", StanInt(), args(n, alpha))
 
   def categorical[R <: StanType](
     theta: StanValue[StanVector]
-  ): StanDiscreteDistributionWithoutCdf[R, StanInt] = StanDiscreteDistributionWithoutCdf("categorical", Seq(theta))
+  ): StanDiscreteDistributionWithoutCdf[R, StanInt] =
+    StanDiscreteDistributionWithoutCdf("categorical", StanInt(), Seq(theta))
 
   def categorical_logit[R <: StanType](
     beta: StanValue[StanVector]
-  ): StanDiscreteDistributionWithoutCdf[R, StanInt] = StanDiscreteDistributionWithoutCdf("categorical_logit", Seq(beta))
+  ): StanDiscreteDistributionWithoutCdf[R, StanInt] =
+    StanDiscreteDistributionWithoutCdf("categorical_logit", StanInt(), Seq(beta))
 
   def cauchy[P <: StanType: ContinuousType, S <: StanType: ContinuousType, R <: StanType](
     position: StanValue[P],
     scale: StanValue[S]
   )(
     implicit ev: Vectorized2[P, S]
-  ): StanContinuousDistribution[R, StanReal] = StanContinuousDistribution("cauchy", Seq(position, scale))
+  ): StanContinuousDistribution[R, StanReal] =
+    StanContinuousDistribution("cauchy", StanReal(), args(position, scale))
 
   def chi_square[N <: StanType: ContinuousType, R <: StanType](
     nu: StanValue[N]
   )(
     implicit ev: Vectorized1[N]
-  ): StanContinuousDistribution[R, StanReal] = StanContinuousDistribution("chi_square", Seq(nu))
+  ): StanContinuousDistribution[R, StanReal] =
+    StanContinuousDistribution("chi_square", StanReal(), Seq(nu))
 
   def dirichlet(alpha: StanValue[StanVector]): StanContinuousDistribution[StanVector, StanVector] =
-    StanContinuousDistribution("dirichlet", Seq(alpha))
+    StanContinuousDistribution("dirichlet", StanVector(alpha.returnType.dim), Seq(alpha))
 
   def double_exponential[M <: StanType: ContinuousType, S <: StanType: ContinuousType, R <: StanType](
     mu: StanValue[M],
     sigma: StanValue[S]
   )(
     implicit ev: Vectorized2[M, S]
-  ): StanContinuousDistribution[R, StanReal] = StanContinuousDistribution("double_exponential", Seq(mu, sigma))
+  ): StanContinuousDistribution[R, StanReal] =
+    StanContinuousDistribution("double_exponential", StanReal(), args(mu, sigma))
 
   def exp_mod_normal[
     M <: StanType: ContinuousType,
@@ -102,26 +115,29 @@ protected trait StanDistributions {
     lambda: StanValue[L]
   )(
     implicit ev: Vectorized3[M, S, L]
-  ): StanContinuousDistribution[R, StanReal] = StanContinuousDistribution("exp_mod_normal", Seq(mu, sigma, lambda))
+  ): StanContinuousDistribution[R, StanReal] =
+    StanContinuousDistribution("exp_mod_normal", StanReal(), args(mu, sigma, lambda))
 
   def exponential[L <: StanType: ContinuousType, R <: StanType](
     lambda: StanValue[L]
   )(implicit ev: Vectorized1[L]): StanContinuousDistribution[R, StanReal] =
-    StanContinuousDistribution("exponential", Seq(lambda))
+    StanContinuousDistribution("exponential", StanReal(), Seq(lambda))
 
   def frechet[A <: StanType: ContinuousType, S <: StanType: ContinuousType, R <: StanType](
     alpha: StanValue[A],
     sigma: StanValue[S]
   )(
     implicit ev: Vectorized2[A, S]
-  ): StanContinuousDistribution[R, StanReal] = StanContinuousDistribution("frechet", Seq(alpha, sigma))
+  ): StanContinuousDistribution[R, StanReal] =
+    StanContinuousDistribution("frechet", StanReal(), args(alpha, sigma))
 
   def gamma[A <: StanType: ContinuousType, B <: StanType: ContinuousType, R <: StanType](
     alpha: StanValue[A],
     beta: StanValue[B]
   )(
     implicit ev: Vectorized2[A, B]
-  ): StanContinuousDistribution[R, StanReal] = StanContinuousDistribution("gamma", Seq(alpha, beta))
+  ): StanContinuousDistribution[R, StanReal] =
+    StanContinuousDistribution("gamma", StanReal(), args(alpha, beta))
 
   def gaussian_dlm_obs(
     f: StanValue[StanMatrix],
@@ -131,75 +147,95 @@ protected trait StanDistributions {
     m0: StanValue[StanVector],
     c0: StanValue[StanMatrix]
   ): StanContinuousDistribution[StanMatrix, StanVoid] =
-    StanContinuousDistribution("gaussian_dlm_obs", Seq(f, g, v, w, m0, c0))
+    StanContinuousDistribution("gaussian_dlm_obs", StanVoid(), Seq(f, g, v, w, m0, c0))
 
   def gumbel[M <: StanType: ContinuousType, B <: StanType: ContinuousType, R <: StanType](
     mu: StanValue[M],
     beta: StanValue[B]
   )(
     implicit ev: Vectorized2[M, B]
-  ): StanContinuousDistribution[R, StanReal] = StanContinuousDistribution("gumbel", Seq(mu, beta))
+  ): StanContinuousDistribution[R, StanReal] = StanContinuousDistribution("gumbel", StanReal(), args(mu, beta))
 
   def hypergeometric(
     n: StanValue[StanInt],
     a: StanValue[StanInt],
     b: StanValue[StanInt]
   ): StanDiscreteDistributionWithoutCdf[StanInt, StanInt] =
-    StanDiscreteDistributionWithoutCdf("hypergeometric", Seq(n, a, b))
+    StanDiscreteDistributionWithoutCdf("hypergeometric", StanInt(), Seq(n, a, b))
 
   def inv_chi_square[N <: StanType: ContinuousType, R <: StanType](
     nu: StanValue[N]
   )(
     implicit ev: Vectorized1[N]
-  ): StanContinuousDistribution[R, StanReal] = StanContinuousDistribution("inv_chi_square", Seq(nu))
+  ): StanContinuousDistribution[R, StanReal] =
+    StanContinuousDistribution("inv_chi_square", StanReal(), Seq(nu))
 
   def inv_gamma[A <: StanType: ContinuousType, B <: StanType: ContinuousType, R <: StanType](
     alpha: StanValue[A],
     beta: StanValue[B]
   )(
     implicit ev: Vectorized2[A, B]
-  ): StanContinuousDistribution[R, StanReal] = StanContinuousDistribution("inv_gamma", Seq(alpha, beta))
+  ): StanContinuousDistribution[R, StanReal] =
+    StanContinuousDistribution("inv_gamma", StanReal(), args(alpha, beta))
 
   def inv_wishart[N <: StanScalarType](
     nu: StanValue[N],
     sigma: StanValue[StanMatrix]
-  ): StanContinuousDistribution[StanMatrix, StanMatrix] = StanContinuousDistribution("inv_wishart", Seq(nu, sigma))
+  ): StanContinuousDistribution[StanMatrix, StanMatrix] =
+    StanContinuousDistribution("inv_wishart", StanMatrix(sigma.returnType.rows, sigma.returnType.cols), args(nu, sigma))
 
   def lkj_corr[E <: StanScalarType](
     eta: StanValue[E]
-  ): StanContinuousDistribution[StanMatrix, StanMatrix] = StanContinuousDistribution("lkj_corr", Seq(eta))
+  ): StanContinuousDistribution[StanMatrix, StanVoid] =
+    StanContinuousDistribution("lkj_corr", StanVoid(), Seq(eta))
+
+  def lkj_corr[E <: StanScalarType](
+    k: StanValue[StanInt],
+    eta: StanValue[E]
+  ): StanContinuousDistribution[StanMatrix, StanMatrix] =
+    StanContinuousDistribution("lkj_corr", StanMatrix(k, k), Seq(eta))
+
+  def lkj_cholesky[E <: StanScalarType](
+    eta: StanValue[E]
+  ): StanContinuousDistribution[StanMatrix, StanVoid] =
+    StanContinuousDistribution("lkj_cholesky", StanVoid(), Seq(eta))
 
   def lkj_corr_cholesky[E <: StanScalarType](
+    k: StanValue[StanInt],
     eta: StanValue[E]
-  ): StanContinuousDistribution[StanMatrix, StanMatrix] = StanContinuousDistribution("lkj_corr_cholesky", Seq(eta))
+  ): StanContinuousDistribution[StanMatrix, StanMatrix] =
+    StanContinuousDistribution("lkj_corr_cholesky", StanMatrix(k, k), Seq(eta))
 
   def logistic[M <: StanType: ContinuousType, S <: StanType: ContinuousType, R <: StanType](
     mu: StanValue[M],
     sigma: StanValue[S]
   )(
     implicit ev: Vectorized2[M, S]
-  ): StanContinuousDistribution[R, StanReal] = StanContinuousDistribution("logistic", Seq(mu, sigma))
+  ): StanContinuousDistribution[R, StanReal] =
+    StanContinuousDistribution("logistic", StanReal(), args(mu, sigma))
 
   def lognormal[M <: StanType: ContinuousType, S <: StanType: ContinuousType, R <: StanType](
     mu: StanValue[M],
     sigma: StanValue[S]
   )(
     implicit ev: Vectorized2[M, S]
-  ): StanContinuousDistribution[R, StanReal] = StanContinuousDistribution("lognormal", Seq(mu, sigma))
+  ): StanContinuousDistribution[R, StanReal] = StanContinuousDistribution("lognormal", StanReal(), args(mu, sigma))
 
   def multi_gp(sigma: StanValue[StanMatrix], w: StanValue[StanVector]): StanContinuousDistribution[StanReal, StanReal] =
-    StanContinuousDistribution("multi_gp", Seq(sigma, w))
+    StanContinuousDistribution("multi_gp", StanReal(), Seq(sigma, w))
 
   def multi_gp_cholesky(
     l: StanValue[StanMatrix],
     w: StanValue[StanVector]
-  ): StanContinuousDistribution[StanReal, StanReal] = StanContinuousDistribution("multi_gp_cholesky", Seq(l, w))
+  ): StanContinuousDistribution[StanReal, StanReal] =
+    StanContinuousDistribution("multi_gp_cholesky", StanReal(), Seq(l, w))
 
   def multinomial[T <: StanType: ContinuousType, R <: StanType](
     theta: StanValue[T]
   )(
     implicit ev: Vectorized1[T]
-  ): StanDiscreteDistributionWithoutCdf[R, StanInt] = StanDiscreteDistributionWithoutCdf("multinomial", Seq(theta))
+  ): StanDiscreteDistributionWithoutCdf[R, StanInt] =
+    StanDiscreteDistributionWithoutCdf("multinomial", StanInt(), Seq(theta))
 
   def multi_normal[
     M <: StanCompoundType: ContinuousType: IsVectorLikeOrArrayVectorLike,
@@ -209,21 +245,24 @@ protected trait StanDistributions {
     sigma: StanValue[StanMatrix]
   )(
     implicit ev1: IsVectorLikeOrArrayVectorLike[M]
-  ): StanContinuousDistribution[R, StanVector] = StanContinuousDistribution("multi_normal", Seq(mu, sigma))
+  ): StanContinuousDistribution[R, StanVector] =
+    StanContinuousDistribution("multi_normal", StanVector(sigma.returnType.cols), args(mu, sigma))
 
   def multi_normal_cholesky[M <: StanType: ContinuousType, R <: StanType](
     mu: StanValue[M],
     l: StanValue[StanMatrix]
   )(
     implicit ev1: IsVectorLikeOrArrayVectorLike[M]
-  ): StanContinuousDistribution[R, StanVector] = StanContinuousDistribution("multi_normal_cholesky", Seq(mu, l))
+  ): StanContinuousDistribution[R, StanVector] =
+    StanContinuousDistribution("multi_normal_cholesky", StanVector(l.returnType.rows), args(mu, l))
 
   def multi_normal_precision[M <: StanType: ContinuousType, R <: StanType](
     mu: StanValue[M],
     omega: StanValue[StanMatrix]
   )(
     implicit ev1: IsVectorLikeOrArrayVectorLike[M]
-  ): StanContinuousDistribution[R, StanVector] = StanContinuousDistribution("multi_normal_prec", Seq(mu, omega))
+  ): StanContinuousDistribution[R, StanVector] =
+    StanContinuousDistribution("multi_normal_prec", StanVector(omega.returnType.rows), args(mu, omega))
 
   def multi_student_t[N <: StanScalarType, M <: StanVectorLike: ContinuousType, R <: StanType](
     nu: StanValue[N],
@@ -231,21 +270,24 @@ protected trait StanDistributions {
     sigma: StanValue[StanMatrix]
   )(
     implicit ev1: IsVectorLikeOrArrayVectorLike[N]
-  ): StanContinuousDistribution[R, StanVector] = StanContinuousDistribution("multi_student_t", Seq(nu, mu, sigma))
+  ): StanContinuousDistribution[R, StanVector] =
+    StanContinuousDistribution("multi_student_t", StanVector(mu.returnType.dim), args(nu, mu, sigma))
 
   def neg_binomial[A <: StanType: ContinuousType, B <: StanType: ContinuousType, R <: StanType](
     alpha: StanValue[A],
     beta: StanValue[B]
   )(
     implicit ev: Vectorized2[A, B]
-  ): StanDiscreteDistributionWithCdf[R, StanInt] = StanDiscreteDistributionWithCdf("neg_binomial", Seq(alpha, beta))
+  ): StanDiscreteDistributionWithCdf[R, StanInt] =
+    StanDiscreteDistributionWithCdf("neg_binomial", StanInt(), args(alpha, beta))
 
   def neg_binomial_2[A <: StanType: ContinuousType, B <: StanType: ContinuousType, R <: StanType](
     mu: StanValue[A],
     phi: StanValue[B]
   )(
     implicit ev: Vectorized2[A, B]
-  ): StanDiscreteDistributionWithCdf[R, StanInt] = StanDiscreteDistributionWithCdf("neg_binomial_2", Seq(mu, phi))
+  ): StanDiscreteDistributionWithCdf[R, StanInt] =
+    StanDiscreteDistributionWithCdf("neg_binomial_2", StanInt(), args(mu, phi))
 
   def neg_binomial_2_log[A <: StanType: ContinuousType, B <: StanType: ContinuousType, R <: StanType](
     eta: StanValue[A],
@@ -253,27 +295,29 @@ protected trait StanDistributions {
   )(
     implicit ev: Vectorized2[A, B]
   ): StanDiscreteDistributionWithoutCdf[R, StanInt] =
-    StanDiscreteDistributionWithoutCdf("neg_binomial_2_log", Seq(eta, phi))
+    StanDiscreteDistributionWithoutCdf("neg_binomial_2_log", StanInt(), args(eta, phi))
 
   def normal[A <: StanType: ContinuousType, B <: StanType: ContinuousType, R <: StanType](
     mu: StanValue[A],
     sigma: StanValue[B]
   )(
     implicit ev: Vectorized2[A, B]
-  ): StanContinuousDistribution[R, StanReal] = StanContinuousDistribution("normal", Seq(mu, sigma))
+  ): StanContinuousDistribution[R, StanReal] =
+    StanContinuousDistribution("normal", StanReal(), args(mu, sigma))
 
   def ordered_logistic[E <: StanScalarType](
     eta: StanValue[E],
     c: StanValue[StanVector]
   ): StanDiscreteDistributionWithoutCdf[StanInt, StanInt] =
-    StanDiscreteDistributionWithoutCdf("ordered_logistic", Seq(eta, c))
+    StanDiscreteDistributionWithoutCdf("ordered_logistic", StanInt(), args(eta, c))
 
   def pareto[Y <: StanType: ContinuousType, A <: StanType: ContinuousType, R <: StanType](
     ymin: StanValue[Y],
     alpha: StanValue[A]
   )(
     implicit ev: Vectorized2[Y, A]
-  ): StanContinuousDistribution[R, StanReal] = StanContinuousDistribution("pareto", Seq(ymin, alpha))
+  ): StanContinuousDistribution[R, StanReal] =
+    StanContinuousDistribution("pareto", StanReal(), args(ymin, alpha))
 
   def pareto_type_2[M <: StanType: ContinuousType, L <: StanType: ContinuousType, A <: StanType: ContinuousType, R <: StanType](
     mu: StanValue[M],
@@ -281,32 +325,37 @@ protected trait StanDistributions {
     alpha: StanValue[A]
   )(
     implicit ev: Vectorized3[M, L, A]
-  ): StanContinuousDistribution[R, StanReal] = StanContinuousDistribution("pareto_type_2", Seq(mu, lambda, alpha))
+  ): StanContinuousDistribution[R, StanReal] =
+    StanContinuousDistribution("pareto_type_2", StanReal(), args(mu, lambda, alpha))
 
   def poisson[L <: StanType: ContinuousType, R <: StanType](
     lambda: StanValue[L]
   )(
     implicit ev: Vectorized1[L]
-  ): StanDiscreteDistributionWithCdf[R, StanInt] = StanDiscreteDistributionWithCdf("poisson", Seq(lambda))
+  ): StanDiscreteDistributionWithCdf[R, StanInt] =
+    StanDiscreteDistributionWithCdf("poisson", StanInt(), Seq(lambda))
 
   def poisson_log[A <: StanType: ContinuousType, R <: StanType](
     alpha: StanValue[A]
   )(
     implicit ev: Vectorized1[A]
-  ): StanDiscreteDistributionWithoutCdf[R, StanInt] = StanDiscreteDistributionWithoutCdf("poisson_log", Seq(alpha))
+  ): StanDiscreteDistributionWithoutCdf[R, StanInt] =
+    StanDiscreteDistributionWithoutCdf("poisson_log", StanInt(), Seq(alpha))
 
   def rayleigh[S <: StanType: ContinuousType, R <: StanType](
     sigma: StanValue[S]
   )(
     implicit ev: Vectorized1[S]
-  ): StanContinuousDistribution[R, StanReal] = StanContinuousDistribution("rayleigh", Seq(sigma))
+  ): StanContinuousDistribution[R, StanReal] =
+    StanContinuousDistribution("rayleigh", StanReal(), Seq(sigma))
 
   def scaled_inv_chi_square[N <: StanType: ContinuousType, S <: StanType: ContinuousType, R <: StanType](
     nu: StanValue[N],
     sigma: StanValue[S]
   )(
     implicit ev: Vectorized2[N, S]
-  ): StanContinuousDistribution[R, StanReal] = StanContinuousDistribution("scaled_inv_chi_suqare", Seq(nu, sigma))
+  ): StanContinuousDistribution[R, StanReal] =
+    StanContinuousDistribution("scaled_inv_chi_suqare", StanReal(), args(nu, sigma))
 
   def skew_normal[X <: StanType: ContinuousType, O <: StanType: ContinuousType, A <: StanType: ContinuousType, R <: StanType](
     xi: StanValue[X],
@@ -314,7 +363,8 @@ protected trait StanDistributions {
     alpha: StanValue[A]
   )(
     implicit ev: Vectorized3[X, O, A]
-  ): StanContinuousDistribution[R, StanReal] = StanContinuousDistribution("skew_normal", Seq(xi, omega, alpha))
+  ): StanContinuousDistribution[R, StanReal] =
+    StanContinuousDistribution("skew_normal", StanReal(), args(xi, omega, alpha))
 
   def student_t[
     N <: StanType: ContinuousType,
@@ -327,14 +377,16 @@ protected trait StanDistributions {
     sigma: StanValue[S]
   )(
     implicit ev: Vectorized3[N, M, S]
-  ): StanContinuousDistribution[R, StanReal] = StanContinuousDistribution("student_t", Seq(nu, mu, sigma))
+  ): StanContinuousDistribution[R, StanReal] =
+    StanContinuousDistribution("student_t", StanReal(), args(nu, mu, sigma))
 
   def uniform[A <: StanType: ContinuousType, B <: StanType: ContinuousType, R <: StanType](
     alpha: StanValue[A],
     beta: StanValue[B]
   )(
     implicit ev: Vectorized2[A, B]
-  ): StanContinuousDistribution[R, StanReal] = StanContinuousDistribution("uniform", Seq(alpha, beta))
+  ): StanContinuousDistribution[R, StanReal] =
+    StanContinuousDistribution("uniform", StanReal(), args(alpha, beta))
 
   // CDF functions not available
   def von_mises[M <: StanType: ContinuousType, K <: StanType: ContinuousType, R <: StanType](
@@ -342,14 +394,16 @@ protected trait StanDistributions {
     kappa: StanValue[K]
   )(
     implicit ev: Vectorized2[M, K]
-  ): StanContinuousDistribution[R, StanReal] = StanContinuousDistribution("von_mises", Seq(mu, kappa))
+  ): StanContinuousDistribution[R, StanReal] =
+    StanContinuousDistribution("von_mises", StanReal(), args(mu, kappa))
 
   def weibull[A <: StanType: ContinuousType, S <: StanType: ContinuousType, R <: StanType](
     alpha: StanValue[A],
     sigma: StanValue[S]
   )(
     implicit ev: Vectorized2[A, S]
-  ): StanContinuousDistribution[R, StanReal] = StanContinuousDistribution("weibull", Seq(alpha, sigma))
+  ): StanContinuousDistribution[R, StanReal] =
+    StanContinuousDistribution("weibull", StanReal(), args(alpha, sigma))
 
   def wiener[
     A <: StanType: ContinuousType,
@@ -364,10 +418,12 @@ protected trait StanDistributions {
     delta: StanValue[D]
   )(
     implicit ev: Vectorized4[A, T, B, D]
-  ): StanContinuousDistribution[R, StanReal] = StanContinuousDistribution("wiener", Seq(alpha, tau, beta, delta))
+  ): StanContinuousDistribution[R, StanReal] =
+    StanContinuousDistribution("wiener", StanReal(), args(alpha, tau, beta, delta))
 
   def wishart[N <: StanScalarType](
     nu: StanValue[N],
     sigma: StanValue[StanMatrix]
-  ): StanContinuousDistribution[StanMatrix, StanMatrix] = StanContinuousDistribution("wishart", Seq(nu, sigma))
+  ): StanContinuousDistribution[StanMatrix, StanMatrix] =
+    StanContinuousDistribution("wishart", StanMatrix(sigma.returnType.rows, sigma.returnType.cols), args(nu, sigma))
 }

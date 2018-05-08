@@ -61,6 +61,7 @@ object DogsExample extends App with ScalaStan {
 
   val rData = RDataSource.fromFile("dogs.R")
   val results = model
+    .transform(com.cibo.scalastan.transform.Optimize())
     .withData(rData(y, "y"))
     .run()
 

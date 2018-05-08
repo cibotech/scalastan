@@ -17,13 +17,13 @@ import com.cibo.scalastan._
 
 // StanNode is the base class for elements in the DSL (statements, values, distributions, etc).
 abstract class StanNode {
-  private[scalastan] lazy val id = StanNode.getNextId
+  val id: Int
 }
 
 object StanNode {
   private var nextId: Int = 0
 
-  private def getNextId: Int = {
+  private[scalastan] def getNextId: Int = {
     synchronized {
       val id = nextId
       nextId += 1
@@ -34,12 +34,18 @@ object StanNode {
 
 // A range (x:n in Stan), used with for loops.
 case class StanValueRange(
-  private[scalastan] val start: StanValue[StanInt],
-  private[scalastan] val end: StanValue[StanInt]
+  start: StanValue[StanInt],
+  end: StanValue[StanInt],
+  id: Int = StanNode.getNextId
 )(implicit ss: ScalaStan) extends StanNode {
 
-  private[scalastan] def inputs: Seq[StanDeclaration[_]] = start.inputs ++ end.inputs
-  private[scalastan] def outputs: Seq[StanDeclaration[_]] = start.outputs ++ end.outputs
+  private[scalastan] def inputs: Seq[StanDeclaration[_ <: StanType]] = start.inputs ++ end.inputs
+  private[scalastan] def outputs: Seq[StanDeclaration[_ <: StanType]] = Seq.empty
+
+  private[scalastan] def export(builder: CodeBuilder): Unit = {
+    start.export(builder)
+    end.export(builder)
+  }
 
   // This foreach will get called automatically when a for comprehension is used with ValueRange.
   def foreach(f: StanValue[StanInt] => Unit)(implicit ev: TemporaryValue[StanInt], builder: CodeBuilder): Unit = {
@@ -56,11 +62,13 @@ case class StanValueRange(
 case class StanFunctionDeclaration private[scalastan] (
   returnValue: StanLocalDeclaration[_ <: StanType],
   inputs: Seq[StanLocalDeclaration[_ <: StanType]],
-  code: StanStatement
+  code: StanStatement,
+  id: Int = StanNode.getNextId
 ) extends StanNode {
   private[scalastan] def emit(writer: PrintWriter): Unit = {
     val params = inputs.map(_.emitFunctionDeclaration).mkString(",")
-    writer.println(s"  ${returnValue.typeConstructor.emitFunctionDeclaration} ${returnValue.emit}($params) {")
+    writer.println(s"  ${returnValue.returnType.emitFunctionDeclaration} ${returnValue.emit}($params) {")
+    code.emitDeclarations(writer, 2)
     code.emit(writer, 2)
     writer.println("  }")
   }
@@ -68,21 +76,39 @@ case class StanFunctionDeclaration private[scalastan] (
 
 case class StanTransformedParameter private[scalastan] (
   result: StanParameterDeclaration[_ <: StanType],
-  code: StanStatement
+  code: StanStatement,
+  id: Int = StanNode.getNextId
 ) extends StanNode {
-  private[scalastan] def emit(writer: PrintWriter): Unit = code.emit(writer, 1)
+  private[scalastan] def emit(writer: PrintWriter): Unit = {
+    writer.println("  {")
+    code.emitDeclarations(writer, 2)
+    code.emit(writer, 2)
+    writer.println("  }")
+  }
 }
 
 case class StanTransformedData private[scalastan] (
   result: StanLocalDeclaration[_ <: StanType],
-  code: StanStatement
+  code: StanStatement,
+  id: Int = StanNode.getNextId
 ) extends StanNode {
-  private[scalastan] def emit(writer: PrintWriter): Unit = code.emit(writer, 1)
+  private[scalastan] def emit(writer: PrintWriter): Unit = {
+    writer.println("  {")
+    code.emitDeclarations(writer, 2)
+    code.emit(writer, 2)
+    writer.println("  }")
+  }
 }
 
 case class StanGeneratedQuantity private[scalastan] (
   result: StanParameterDeclaration[_ <: StanType],
-  code: StanStatement
+  code: StanStatement,
+  id: Int = StanNode.getNextId
 ) extends StanNode {
-  private[scalastan] def emit(writer: PrintWriter): Unit = code.emit(writer, 1)
+  private[scalastan] def emit(writer: PrintWriter): Unit = {
+    writer.println("  {")
+    code.emitDeclarations(writer, 2)
+    code.emit(writer, 2)
+    writer.println("  }")
+  }
 }

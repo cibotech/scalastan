@@ -14,6 +14,8 @@ import java.io._
 import java.nio.file.{Files, Paths}
 import java.util.regex.Pattern
 
+import com.cibo.scalastan.ast.StanProgram
+
 import scala.collection.JavaConverters._
 
 protected trait StanRunner[M <: CompiledModel] {
@@ -119,8 +121,6 @@ protected object StanRunner {
 
     def compile(ss: ScalaStan, model: ScalaStan#Model): CmdStanCompiledModel = {
       println(s"found stan in $stanHome")
-
-      // Generate the code.
       val dir = model.generate
 
       if (new File(s"${dir.getPath}/$modelExecutable").canExecute) {
@@ -130,7 +130,7 @@ protected object StanRunner {
         runMake(dir)
       }
 
-      CmdStanCompiledModel(dir, ss)
+      CmdStanCompiledModel(dir, ss, model)
     }
 
     def run(

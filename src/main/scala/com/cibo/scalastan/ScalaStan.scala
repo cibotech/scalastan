@@ -14,6 +14,7 @@ import java.io._
 import java.nio.file.{Files, Path, Paths}
 
 import com.cibo.scalastan.ast._
+import com.cibo.scalastan.transform.{LoopChecker, StanTransform}
 
 import scala.language.implicitConversions
 import scala.collection.mutable.ArrayBuffer
@@ -33,15 +34,7 @@ trait ScalaStan extends Implicits { ss =>
 
   protected implicit val _scalaStan: ScalaStan = this
 
-  private[scalastan] var identifiers: Set[String] = Set.empty
-
   private var idCounter: Int = 0
-  private[scalastan] val dataValues = ArrayBuffer[StanDataDeclaration[_]]()
-  private val parameterValues = ArrayBuffer[StanParameterDeclaration[_]]()
-  private val functions = ArrayBuffer[Function[_]]()
-  private val transformedData = ArrayBuffer[TransformedData[_]]()
-  private val transformedParameters = ArrayBuffer[TransformedParameter[_]]()
-  private val generatedQuantities = ArrayBuffer[GeneratedQuantity[_]]()
 
   private[scalastan] def nextId: Int = {
     synchronized {
@@ -50,21 +43,12 @@ trait ScalaStan extends Implicits { ss =>
     }
   }
 
-  private[scalastan] def parameters: Seq[StanParameterDeclaration[_]] =
-    parameterValues ++ transformedParameters.map(_.result) ++ generatedQuantities.map(_.result)
-
-  def data[T <: StanType](typeConstructor: T): DataDeclaration[T] = {
-    val v = StanDataDeclaration[T](typeConstructor)
-    dataValues += v
-    v
-  }
+  def data[T <: StanType](typeConstructor: T): DataDeclaration[T] = StanDataDeclaration[T](typeConstructor)
 
   def parameter[T <: StanType](
     typeConstructor: T
   )(implicit ev: T#ELEMENT_TYPE =:= StanReal): ParameterDeclaration[T] = {
-    val v = StanParameterDeclaration[T](typeConstructor)
-    parameterValues += v
-    v
+    StanParameterDeclaration[T](typeConstructor)
   }
 
   def int(
@@ -126,23 +110,26 @@ trait ScalaStan extends Implicits { ss =>
     dim: StanValue[StanInt]
   ): StanMatrix = StanMatrix(dim, dim, constraint = MatrixConstraint.CholeskyFactorCov)
 
-  implicit def dataTransform2Value[T <: StanType](transform: TransformedData[T]): StanLocalDeclaration[T] = {
-    transform.result
-  }
-
-  implicit def paramTransform2Value[T <: StanType](transform: TransformedParameter[T]): ParameterDeclaration[T] = {
-    transform.result
-  }
-
-  implicit def generatedQuntity2Value[T <: StanType](quantity: GeneratedQuantity[T]): ParameterDeclaration[T] = {
-    quantity.result
-  }
-
   implicit def compile[M <: CompiledModel](model: Model)(implicit runner: StanRunner[M]): CompiledModel = model.compile
 
   trait StanCode {
 
-    protected implicit val _code: CodeBuilder = new CodeBuilder
+    private[scalastan] implicit val _code: CodeBuilder = new CodeBuilder
+
+    implicit def dataTransform2Value[T <: StanType](transform: TransformedData[T]): StanLocalDeclaration[T] = {
+      _code.append(transform)
+      transform.result
+    }
+
+    implicit def paramTransform2Value[T <: StanType](transform: TransformedParameter[T]): ParameterDeclaration[T] = {
+      _code.append(transform)
+      transform.result
+    }
+
+    implicit def generatedQuntity2Value[T <: StanType](quantity: GeneratedQuantity[T]): ParameterDeclaration[T] = {
+      _code.append(quantity)
+      quantity.result
+    }
 
     def local[T <: StanType](typeConstructor: T): StanLocalDeclaration[T] = {
       if (typeConstructor.lower.isDefined || typeConstructor.upper.isDefined) {
@@ -208,9 +195,20 @@ trait ScalaStan extends Implicits { ss =>
     }
   }
 
-  abstract class Function[RETURN_TYPE <: StanType](returnType: RETURN_TYPE = StanVoid()) extends StanCode {
+  abstract class TransformBase[T <: StanType, D <: StanDeclaration[T]] extends StanCode with NameLookup {
+    private[scalastan] val result: D
+    protected val _ss: ScalaStan = ss
+    protected def _userName: Option[String] = NameLookup.lookupName(this)(ss)
+    private[scalastan] def export(builder: CodeBuilder): Unit
+  }
 
-    private[scalastan] val result = StanLocalDeclaration[RETURN_TYPE](returnType)
+  abstract class Function[RETURN_TYPE <: StanType](
+    returnType: RETURN_TYPE = StanVoid()
+  ) extends TransformBase[RETURN_TYPE, StanLocalDeclaration[RETURN_TYPE]] with StanFunction {
+
+    private[scalastan] lazy val result = StanLocalDeclaration[RETURN_TYPE](
+      returnType, () => _userName, owner = Some(this))
+
     private val inputs = new ArrayBuffer[StanLocalDeclaration[_ <: StanType]]()
 
     def input[T <: StanType](typeConstructor: T): StanLocalDeclaration[T] = {
@@ -223,33 +221,21 @@ trait ScalaStan extends Implicits { ss =>
       _code.append(StanReturnStatement(value))
     }
 
-    private[scalastan] def markUsed(): Unit = {
-      val name = result.emit
-      if (!functions.exists(_.result.emit == name)) {
-        functions += this
-      }
-    }
-
-    def apply(args: StanValue[_]*): StanCall[RETURN_TYPE] = {
-      markUsed()
-      val node = StanCall[RETURN_TYPE](result.emit, args: _*)
+    def apply(args: StanValue[_ <: StanType]*)(implicit code: CodeBuilder): StanCall[RETURN_TYPE] = {
+      val node = StanCall[RETURN_TYPE](returnType, this, args)
       if (returnType == StanVoid()) {
-        _code.append(StanValueStatement(node))
+        code.append(StanValueStatement(node))
       }
       node
     }
 
-    private[scalastan] def generate: StanFunctionDeclaration = StanFunctionDeclaration(
+    private[scalastan] def export(builder: CodeBuilder): Unit = builder.append(this)
+
+    private[scalastan] lazy val generate: StanFunctionDeclaration = StanFunctionDeclaration(
       result,
       inputs,
       _code.results
     )
-  }
-
-  abstract class TransformBase[T <: StanType, D <: StanDeclaration[T]] extends StanCode with NameLookup {
-    val result: D
-    protected def _userName: Option[String] = NameLookup.lookupName(this)(ss)
-    protected val _ss: ScalaStan = ss
   }
 
   abstract class TransformedData[T <: StanType](typeConstructor: T) extends TransformBase[T, StanLocalDeclaration[T]] {
@@ -257,67 +243,47 @@ trait ScalaStan extends Implicits { ss =>
       typeConstructor, () => _userName, derivedFromData = true
     )
 
-    if (!transformedData.exists(_._id == _id)) {
-      transformedData += this
-    }
+    private[scalastan] def export(builder: CodeBuilder): Unit = builder.append(this)
 
-    private[scalastan] def generate: StanTransformedData = StanTransformedData(result, _code.results)
+    private[scalastan] lazy val generate: StanTransformedData = StanTransformedData(result, _code.results)
   }
 
   abstract class TransformedParameter[T <: StanType](
     typeConstructor: T
   ) extends TransformBase[T, StanParameterDeclaration[T]] {
-    lazy val result: StanParameterDeclaration[T] = StanParameterDeclaration[T](typeConstructor, () => _userName)
+    lazy val result: StanParameterDeclaration[T] =
+      StanParameterDeclaration[T](typeConstructor, () => _userName, owner = Some(this))
     protected implicit val _parameterTransform: InParameterTransform = InParameterTransform
 
-    if (!transformedParameters.exists(_._id == _id)) {
-      transformedParameters += this
-    }
+    private[scalastan] def export(builder: CodeBuilder): Unit = builder.append(this)
 
-    private[scalastan] def generate: StanTransformedParameter = StanTransformedParameter(result, _code.results)
+    private[scalastan] lazy val generate: StanTransformedParameter = StanTransformedParameter(result, _code.results)
   }
 
   abstract class GeneratedQuantity[T <: StanType](typeConstructor: T) extends TransformBase[T, StanParameterDeclaration[T]] {
-    lazy val result: StanParameterDeclaration[T] = StanParameterDeclaration[T](typeConstructor, () => _userName)
+    lazy val result: StanParameterDeclaration[T] =
+      StanParameterDeclaration[T](typeConstructor, () => _userName, owner = Some(this))
     protected implicit val _generatedQuantity: InGeneratedQuantityBlock = InGeneratedQuantityBlock
 
-    if (!generatedQuantities.exists(_._id == _id)) {
-      generatedQuantities += this
-    }
+    private[scalastan] def export(builder: CodeBuilder): Unit = builder.append(this)
 
-    private[scalastan] def generate: StanGeneratedQuantity = StanGeneratedQuantity(result, _code.results)
+    private[scalastan] lazy val generate: StanGeneratedQuantity = StanGeneratedQuantity(result, _code.results)
   }
 
+  /** Trait providing the Stan Model DSL. */
   trait Model extends StanCode {
 
     // Log probability function.
-    final def target: StanTargetValue = StanTargetValue()
+    final protected def target: StanTargetValue = StanTargetValue()
 
-    private def program: StanProgram = StanProgram(
-      dataValues,
-      parameterValues,
-      functions.map(_.generate),
-      transformedData.map(_.generate),
-      transformedParameters.map(_.generate),
-      generatedQuantities.map(_.generate),
-      _code.results
-    )
+    def emit(writer: PrintWriter): Unit = TransformedModel(this).emit(writer)
+
+    private[scalastan] def program: StanProgram = _code.program
 
     final def emit(ps: PrintStream): Unit = {
       val pw = new PrintWriter(ps)
       emit(pw)
       pw.flush()
-    }
-
-    def emit(writer: PrintWriter): Unit = {
-      val transforms = Seq(
-        transform.LoopChecker,
-        transform.AstSimplifier
-
-      )
-      transforms.foldLeft(program) { case (old, transform) =>
-        transform.run(old)
-      }.emit(writer)
     }
 
     private[scalastan] def getCode: String = {
@@ -367,13 +333,31 @@ trait ScalaStan extends Implicits { ss =>
         Files.createDirectories(dir.toPath)
         val codeFile = new File(s"${dir.getPath}/$stanFileName")
         val codeWriter = new PrintWriter(codeFile)
-        emit(codeWriter)
+        codeWriter.print(str)
         codeWriter.close()
       }
       dir
     }
 
-    final def compile[M <: CompiledModel](implicit runner: StanRunner[M]): CompiledModel = runner.compile(ss, this)
+    def transform(t: StanTransform): Model = TransformedModel(this).transform(t)
+
+    def compile[M <: CompiledModel](implicit runner: StanRunner[M]): CompiledModel =
+      TransformedModel(this).compile(runner)
+  }
+
+  case class TransformedModel private (
+    model: Model,
+    transforms: Seq[StanTransform] = Seq(new LoopChecker)
+  ) extends Model {
+    override final def transform(t: StanTransform): TransformedModel = TransformedModel(model, transforms :+ t)
+
+    override private[scalastan] final def program: StanProgram =
+      transforms.foldLeft(model.program) { (prev, t) => t.run(prev) }
+
+    override final def emit(writer: PrintWriter): Unit = program.emit(writer)
+
+    override final def compile[M <: CompiledModel](implicit runner: StanRunner[M]): CompiledModel =
+      runner.compile(ss, model)
   }
 
   private case class BlackBoxModel private (

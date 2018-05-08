@@ -4,41 +4,41 @@ class TransformedParameterSpec extends ScalaStanBaseSpec {
   describe("ParameterTransform") {
     it("should allow assignment to the result") {
       new ScalaStan {
-        new TransformedParameter(real()) {
+        val t = new TransformedParameter(real()) {
           result := 1
         }
-        val model = new Model {}
-        checkCode(model, "transformed parameters { real v#; v# = 1; }")
+        val model = new Model { local(real()) := t; }
+        checkCode(model, "transformed parameters { real t; { t = 1; } }")
       }
     }
 
     it("should allow updating the result") {
       new ScalaStan {
-        new TransformedParameter(real()) {
+        val t = new TransformedParameter(real()) {
           result += 1
         }
-        val model = new Model {}
-        checkCode(model, "transformed parameters { real v#; v# += 1; }")
+        val model = new Model { local(real()) := t; }
+        checkCode(model, "transformed parameters { real t; { t += 1; } }")
       }
     }
 
     it("should allow updating the result by index") {
       new ScalaStan {
-        new TransformedParameter(vector(2)) {
+        val t = new TransformedParameter(vector(2)) {
           result(1) := 2.0
         }
-        val model = new Model {}
-        checkCode(model, "transformed parameters { vector[2] v#; v#[1] = 2.0; }")
+        val model = new Model { local(vector(2)) := t; }
+        checkCode(model, "transformed parameters { vector[2] t; { t[1] = 2.0; } }")
       }
     }
 
     it("should allow updating the result by slice") {
       new ScalaStan {
-        new TransformedParameter(vector(5)) {
+        val t = new TransformedParameter(vector(5)) {
           result(range(1, 2)) := result(range(3, 4))
         }
-        val model = new Model {}
-        checkCode(model, "transformed parameters { vector[5] v#; v#[1:2] = v#[3:4]; }")
+        val model = new Model { local(vector(5)) := t; }
+        checkCode(model, "transformed parameters { vector[5] t; { t[1:2] = t[3:4]; } }")
       }
     }
 

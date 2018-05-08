@@ -43,9 +43,9 @@ class StanDistributionsSpec extends ScalaStanBaseSpec {
       new ScalaStan {
         val y = data(matrix(5, 5))
         val model = new Model {
-          y ~ stan.lkj_corr_cholesky(5)
+          y ~ stan.lkj_corr_cholesky(5, 2)
         }
-        checkCode(model, "model { y ~ lkj_corr_cholesky(5); }")
+        checkCode(model, "model { y ~ lkj_corr_cholesky(2); }")
       }
     }
   }

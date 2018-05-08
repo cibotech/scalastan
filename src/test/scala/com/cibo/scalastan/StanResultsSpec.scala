@@ -9,9 +9,14 @@ class StanResultsSpec extends ScalaStanBaseSpec {
     val v1 = parameter(real())
     val v2 = parameter(vector(n))
     val v3 = parameter(vector(n)(n))
+    val model = new Model {
+      v1 ~ stan.normal(0, n)
+      v2 ~ stan.normal(0, 1)
+      v3(1) ~ stan.normal(0, 1)
+    }
   }
 
-  private val model = CmdStanCompiledModel(new File("."), TestScalaStan)
+  private val model = CmdStanCompiledModel(new File("."), TestScalaStan, TestScalaStan.model)
 
 
   private val testData1 = Map[String, Int](

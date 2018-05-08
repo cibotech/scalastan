@@ -38,16 +38,5 @@ class NameLookupSpec extends FunSpec with Matchers {
       }
       anon.Test.t.name shouldBe "t"
     }
-
-    it("creates unique names") {
-      object Test extends ScalaStan {
-        val t = parameter(real())
-        object Inner {
-          val t = parameter(real())
-        }
-      }
-      Test.t.name shouldBe "t"
-      Test.Inner.t.name shouldBe "t_1"
-    }
   }
 }

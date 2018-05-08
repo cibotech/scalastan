@@ -114,7 +114,7 @@ trait ScalaStan extends Implicits { ss =>
 
   trait StanCode {
 
-    private[scalastan] implicit val _code: CodeBuilder = new CodeBuilder
+    implicit val _code: CodeBuilder = new CodeBuilder
 
     implicit def dataTransform2Value[T <: StanType](transform: TransformedData[T]): StanLocalDeclaration[T] = {
       _code.append(transform)

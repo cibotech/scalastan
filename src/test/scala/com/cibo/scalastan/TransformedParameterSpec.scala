@@ -42,6 +42,19 @@ class TransformedParameterSpec extends ScalaStanBaseSpec {
       }
     }
 
+    it("should output dependencies in the right order") {
+      new ScalaStan {
+        val a = new TransformedParameter(real()) {
+          result := 5
+        }
+        val b = new TransformedParameter(real()) {
+          result := a
+        }
+        val model = new Model { local(real()) := a; local(real()) := b }
+        checkCode(model, "transformed parameters { real a; real b; { a = 5; } { b = a; } }")
+      }
+    }
+
     it("should not allow assignment to data") {
       """
       new ScalaStan {

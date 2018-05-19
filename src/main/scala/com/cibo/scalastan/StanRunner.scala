@@ -149,37 +149,64 @@ protected object StanRunner {
       val runHash = dataWriter.sha.update(method.toString).digest
 
       val baseSeed = if (seed < 0) (System.currentTimeMillis % Int.MaxValue).toInt else seed
-      val results = (0 until chains).par.flatMap { i =>
+      val chainResults = (0 until chains).par.map { i =>
         val chainSeed = baseSeed + i
         val name = s"$runHash-$seed-$i.csv"
         val fileName = s"${model.dir}/$name"
+
         val cachedResults = if (cache && new File(fileName).exists) {
           Some(readIterations(fileName))
         } else None
+
         cachedResults match {
           case Some(r) if r.nonEmpty =>
-            println(s"Found cached results: $name")
-            Some(r)
-          case _                     =>
-            val command = Vector(
-              s"./$modelExecutable",
-              "data", s"file=$dataFileName",
-              "output", s"file=$name",
-              "random", s"seed=$chainSeed"
-            ) ++ method.arguments
-            println("Running " + command.mkString(" "))
-            val pb = new ProcessBuilder(command: _*).directory(model.dir).inheritIO()
-            val rc = pb.start().waitFor()
-            if (rc != 0) {
-              println(s"ERROR: model returned $rc")
-              None
-            } else {
-              Some(readIterations(fileName))
-            }
+            println(s"Found cached chainResults: $name")
+            (Some(r), None)
+          case _ =>
+            val (optResult, output) = runChain(model, method, dataFileName, chainSeed, name, fileName)
+            (optResult, Some(output))
         }
       }.seq.toVector
 
-      StanResults(results, model)
+      StanResults(
+        chainResults.flatMap { case (result, _) => result },
+        model,
+        chainResults.flatMap { case (_, processOutput) => processOutput }
+      )
+    }
+
+    private def toString(inputStream: InputStream): String = {
+      import java.util.stream.Collectors
+      new BufferedReader(new InputStreamReader(inputStream)).lines.collect(Collectors.joining("\n"))
+    }
+
+    private def runChain(model: CmdStanCompiledModel,
+                         method: RunMethod.Method,
+                         dataFileName: String,
+                         chainSeed: Int,
+                         name: String,
+                         fileName: String): (Option[Vector[Map[String, String]]], ProcessResult) = {
+      val command = Vector(
+        s"./$modelExecutable",
+        "data", s"file=$dataFileName",
+        "output", s"file=$name",
+        "random", s"seed=$chainSeed"
+      ) ++ method.arguments
+      println("Running " + command.mkString(" "))
+      val pb = new ProcessBuilder(command: _*)
+        .directory(model.dir)
+
+      val process: Process = pb.start()
+      val rc = process.waitFor()
+      val processOutput = ProcessResult(rc, toString(process.getErrorStream), toString(process.getInputStream))
+      if (rc != 0) {
+        println(s"ERROR: model returned $rc")
+        (None, processOutput)
+      } else {
+        (Some(readIterations(fileName)), processOutput)
+      }
     }
   }
 }
+
+case class ProcessResult(returnCode: Int, error: String, output: String)

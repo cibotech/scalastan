@@ -100,6 +100,10 @@ class StanResultsSpec extends ScalaStanBaseSpec {
       results.mean(TestScalaStan.v2) shouldBe Vector(1.5, 2.5, 3.5)
     }
 
+    it("returns the mean array of vectors") {
+      results.mean(TestScalaStan.v3) shouldBe Vector(Vector(311.0, 312.0), Vector(321.0, 322.0), Vector(331.0, 332.0))
+    }
+
     it("returns the mean lp") {
       results.mean(results.logPosterior) shouldBe 1.5
     }

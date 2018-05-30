@@ -331,7 +331,7 @@ case class StanArray[CONTAINED <: StanType] private[scalastan] (
   )(
     func: Seq[Seq[Double]] => Double
   ): Seq[CONTAINED#SUMMARY_TYPE] = {
-    values.transpose.map { v =>
+    values.map(_.transpose).transpose.map { v =>
       inner.combine(v.asInstanceOf[Seq[Seq[inner.SCALA_TYPE]]])(func)
     }.toVector
   }

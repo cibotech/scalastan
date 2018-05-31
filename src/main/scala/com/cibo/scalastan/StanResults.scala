@@ -17,7 +17,8 @@ import com.cibo.scalastan.ast.{StanDataDeclaration, StanParameterDeclaration}
 import scala.util.Try
 
 case class StanResults private (
-  private val chains: Vector[Vector[Map[String, String]]],
+  private val paramsMap: Map[String, Int],
+  private val chains: Vector[Vector[Vector[String]]],
   private val model: CompiledModel
 ) {
 
@@ -30,10 +31,10 @@ case class StanResults private (
   private val acceptName = "accept_stat__"
   private val stepSizeName = "stepsize__"
 
-  lazy val bestChain: Int = chains.zipWithIndex.maxBy(_._1.map(_.apply(lpName).toDouble).max)._2
-  lazy val bestIndex: Int = chains(bestChain).zipWithIndex.maxBy(_._1.apply(lpName).toDouble)._2
+  lazy val bestChain: Int = chains.zipWithIndex.maxBy(_._1.map(_.apply(paramsMap(lpName)).toDouble).max)._2
+  lazy val bestIndex: Int = chains(bestChain).zipWithIndex.maxBy(_._1.apply(paramsMap(lpName)).toDouble)._2
 
-  private def extract(name: String): Seq[Seq[Double]] = chains.map(_.flatMap(_.get(name).map(_.toDouble)))
+  private def extract(name: String): Seq[Seq[Double]] = chains.map(_.map(_.apply(paramsMap(name)).toDouble))
 
   lazy val logPosterior: Seq[Seq[Double]] = extract(lpName)
   lazy val divergent: Seq[Seq[Double]] = extract(divergentName)
@@ -58,7 +59,8 @@ case class StanResults private (
     val name = decl.root.emit + (if (decl.indices.nonEmpty) decl.indices.mkString(".", ".", "") else "")
     chains.map { chain =>
       chain.map { values =>
-        decl.returnType.parse(name, values).asInstanceOf[R]
+        val mapped = paramsMap.map { case(key, index) => (key, values(index)) }
+        decl.returnType.parse(name, mapped).asInstanceOf[R]
       }
     }
   }
@@ -306,12 +308,12 @@ case class StanResults private (
     val mapping = parametersToShow.map(p => p.emit -> p.name).toMap
 
     // Build a mapping of name -> chain -> iteration -> value
-    val names = chains.head.headOption.map(_.keys).getOrElse(Seq.empty)
+    val names = paramsMap.keys
     val results: Seq[(String, Seq[Seq[Double]])] = names.par.flatMap { name =>
       cleanName(name, mapping).map { cleanedName =>
         cleanedName -> chains.map { chain =>
           chain.map { iteration =>
-            Try(iteration(name).toDouble).getOrElse(Double.NaN)
+            Try(iteration(paramsMap(name)).toDouble).getOrElse(Double.NaN)
           }
         }
       }

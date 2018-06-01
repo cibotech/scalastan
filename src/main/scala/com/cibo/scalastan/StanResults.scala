@@ -17,12 +17,11 @@ import com.cibo.scalastan.ast.{StanDataDeclaration, StanParameterDeclaration}
 import scala.util.Try
 
 case class StanResults private (
-  private val paramsMap: Map[String, Int],
-  private val chains: Vector[Vector[Vector[String]]],
+  private val parameterChains: Map[String, Vector[Vector[String]]],
   private val model: CompiledModel
 ) {
 
-  require(chains.nonEmpty, "No results")
+  require(parameterChains.nonEmpty, "No results")
 
   private val lpName = "lp__"
   private val divergentName = "divergent__"
@@ -31,10 +30,10 @@ case class StanResults private (
   private val acceptName = "accept_stat__"
   private val stepSizeName = "stepsize__"
 
-  lazy val bestChain: Int = chains.zipWithIndex.maxBy(_._1.map(_.apply(paramsMap(lpName)).toDouble).max)._2
-  lazy val bestIndex: Int = chains(bestChain).zipWithIndex.maxBy(_._1.apply(paramsMap(lpName)).toDouble)._2
+  lazy val bestChain: Int = parameterChains(lpName).zipWithIndex.maxBy(_._1.map(_.toDouble).max)._2
+  lazy val bestIndex: Int = parameterChains(lpName)(bestChain).zipWithIndex.maxBy(_._1.toDouble)._2
 
-  private def extract(name: String): Seq[Seq[Double]] = chains.map(_.map(_.apply(paramsMap(name)).toDouble))
+  private def extract(name: String): Seq[Seq[Double]] = parameterChains(name).map(_.map(_.toDouble))
 
   lazy val logPosterior: Seq[Seq[Double]] = extract(lpName)
   lazy val divergent: Seq[Seq[Double]] = extract(divergentName)
@@ -43,9 +42,9 @@ case class StanResults private (
   lazy val acceptStat: Seq[Seq[Double]] = extract(acceptName)
   lazy val stepSize: Seq[Seq[Double]] = extract(stepSizeName)
 
-  val chainCount: Int = chains.size
-  val iterationsPerChain: Int = chains.head.size
-  val iterationsTotal: Int = chains.map(_.size).sum
+  val chainCount: Int = parameterChains.head._2.size
+  val iterationsPerChain: Int = parameterChains.head._2.head.size
+  val iterationsTotal: Int = chainCount * iterationsPerChain
 
   /** Get the specified input data. */
   def get[T <: StanType, R](
@@ -57,12 +56,7 @@ case class StanResults private (
     decl: StanParameterDeclaration[T]
   )(implicit ev: R =:= T#SCALA_TYPE): Seq[Seq[R]] = {
     val name = decl.root.emit + (if (decl.indices.nonEmpty) decl.indices.mkString(".", ".", "") else "")
-    chains.map { chain =>
-      chain.map { values =>
-        val mapped = paramsMap.map { case(key, index) => (key, values(index)) }
-        decl.returnType.parse(name, mapped).asInstanceOf[R]
-      }
-    }
+    decl.returnType.parse(name, parameterChains).asInstanceOf[Seq[Seq[R]]]
   }
 
   /** Get the best scoring sample. */
@@ -308,14 +302,10 @@ case class StanResults private (
     val mapping = parametersToShow.map(p => p.emit -> p.name).toMap
 
     // Build a mapping of name -> chain -> iteration -> value
-    val names = paramsMap.keys
+    val names = parameterChains.keys
     val results: Seq[(String, Seq[Seq[Double]])] = names.par.flatMap { name =>
       cleanName(name, mapping).map { cleanedName =>
-        cleanedName -> chains.map { chain =>
-          chain.map { iteration =>
-            Try(iteration(paramsMap(name)).toDouble).getOrElse(Double.NaN)
-          }
-        }
+        cleanedName -> parameterChains(name).map(_.map(i => Try(i.toDouble).getOrElse(Double.NaN)))
       }
     }.toVector.sortBy(_._1)
 

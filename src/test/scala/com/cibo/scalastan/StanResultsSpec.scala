@@ -47,8 +47,10 @@ class StanResultsSpec extends ScalaStanBaseSpec {
     s"${TestScalaStan.v3.emit}.3.2" -> 332
   ).mapValues(_.toString)
 
-  val (header, values) = Seq(testData1, testData2).flatten.groupBy(_._1).mapValues(_.map{ case(k, v) => v }).unzip
-  val results = StanResults(header.zipWithIndex.toMap, Vector(values.toVector.transpose), model)
+  val mappedData: Map[String, Vector[Vector[String]]] = Seq(testData1, testData2).flatten.groupBy(_._1).mapValues(
+    grouped => Vector(grouped.map{ case(k, v) => v }.toVector)
+  )
+  val results = StanResults(mappedData, model)
 
   describe("samples") {
     it("returns all scalar samples") {

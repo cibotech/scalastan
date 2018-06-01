@@ -93,17 +93,16 @@ protected object StanRunner {
       }
     }
 
-    private def readIterations(fileName: String): (Map[String, Int], Vector[Vector[String]]) = {
+    private def readIterations(fileName: String): (Vector[String], Vector[Vector[String]]) = {
       val reader = new BufferedReader(new FileReader(fileName))
       try {
         val lines = reader.lines.iterator.asScala.filterNot(_.startsWith("#")).toVector
         if (lines.nonEmpty) {
-          (
-            lines.head.split(',').zipWithIndex.toMap,
-            lines.tail.map(_.split(',').toVector)
-          )
+          val header = lines.head.split(',').toVector
+          val columns = lines.tail.map(_.split(',').toVector).transpose
+          (header, columns)
         } else {
-          (Map.empty, Vector.empty)
+          (Vector.empty, Vector.empty)
         }
       } finally {
         reader.close()
@@ -179,7 +178,8 @@ protected object StanRunner {
         }
       }.seq.toVector
 
-      StanResults(results.map(_._1).head, results.map(_._2), model)
+      val parameterChains: Map[String, Vector[Vector[String]]] = results.head._1.zip(results.map(_._2).transpose).toMap
+      StanResults(parameterChains, model)
     }
   }
 }

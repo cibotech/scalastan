@@ -50,9 +50,11 @@ trait ScalaStanBaseSpec extends FunSpec with Matchers {
       cache: Boolean,
       method: RunMethod.Method
     ): StanResults = {
-      val grouped = model.data.flatten.groupBy(_._1)
-      val (header2, values2) = grouped.mapValues(_.map{ case(k, v) => v }).unzip
-      StanResults(header2.zipWithIndex.toMap, (0 until chains).map(_ => values2.toVector.transpose).toVector, model)
+      val mappedData: Map[String, Vector[Vector[String]]] = model.data.flatten.groupBy(_._1).mapValues { grouped =>
+        val iterations = grouped.map{ case(k, v) => v }
+        Vector.fill(chains)(iterations)
+      }
+      StanResults(mappedData, model)
     }
   }
 

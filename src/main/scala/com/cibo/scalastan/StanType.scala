@@ -85,7 +85,10 @@ sealed trait StanType {
   }
 
   // Parse data from the iterations CSV.
-  private[scalastan] def parse(name: String, values: Map[String, String]): SCALA_TYPE
+  private[scalastan] def parse(
+    name: String,
+    parameterChains: Map[String, Vector[Vector[String]]]
+  ): Vector[Vector[SCALA_TYPE]]
 
   // Parse data from a vector of dimensions and values.
   private[scalastan] def parse(dims: Seq[Int], values: Seq[String]): SCALA_TYPE
@@ -192,7 +195,10 @@ case class StanVoid private[scalastan] (
   private[scalastan] def typeName: String = "void"
   private[scalastan] def getData(data: Unit): Seq[String] = Seq.empty
   private[scalastan] def getDims(data: Unit): Seq[Int] = Seq.empty
-  private[scalastan] def parse(name: String, values: Map[String, String]): Unit = ()
+  private[scalastan] def parse(
+    name: String,
+    parameterChains: Map[String, Vector[Vector[String]]]
+  ): Vector[Vector[Unit]] = parameterChains(name).map(_.map( _ => () ))
   private[scalastan] def parse(dims: Seq[Int], values: Seq[String]): Unit = ()
   private[scalastan] def combine(values: Seq[Seq[SCALA_TYPE]])(func: Seq[Seq[Double]] => Double): Unit = ()
 }
@@ -213,7 +219,10 @@ case class StanString private[scalastan] () extends StanType {
   private[scalastan] def typeName: String = "string"
   private[scalastan] def getData(data: String): Seq[String] = Seq(s""""$data"""")
   private[scalastan] def getDims(data: String): Seq[Int] = Seq.empty
-  private[scalastan] def parse(name: String, values: Map[String, String]): String = values(name)
+  private[scalastan] def parse(
+    name: String,
+    parameterChains: Map[String, Vector[Vector[String]]]
+  ): Vector[Vector[String]] = parameterChains(name)
   private[scalastan] def parse(dims: Seq[Int], values: Seq[String]): String = ""
   private[scalastan] def combine(values: Seq[Seq[SCALA_TYPE]])(func: Seq[Seq[Double]] => Double): String = ""
 }
@@ -233,7 +242,10 @@ case class StanInt private[scalastan] (
   private[scalastan] def element: StanInt = this
   private[scalastan] def getDims(data: Int): Seq[Int] = Seq.empty
   private[scalastan] def getData(data: Int): Seq[String] = Seq(data.toString)
-  private[scalastan] def parse(name: String, values: Map[String, String]): Int = values(name).toInt
+  private[scalastan] def parse(
+    name: String,
+    parameterChains: Map[String, Vector[Vector[String]]]
+  ): Vector[Vector[Int]] = parameterChains(name).map(_.map(_.toInt))
   private[scalastan] def parse(dims: Seq[Int], values: Seq[String]): Int = {
     require(dims.isEmpty, s"int must have a dimensionality of 0, got ${dims.length}")
     values.head.toInt
@@ -259,7 +271,10 @@ case class StanCategorical private[scalastan] () extends StanDiscreteType {
 
   private[scalastan] def getDims(data: String): Seq[Int] = Seq.empty
   private[scalastan] def getData(data: String): Seq[String] = Seq(lookup(data).toString)
-  private[scalastan] def parse(name: String, values: Map[String, String]): String = values(name)
+  private[scalastan] def parse(
+    name: String,
+    parameterChains: Map[String, Vector[Vector[String]]]
+  ): Vector[Vector[String]] = parameterChains(name)
   private[scalastan] def parse(dims: Seq[Int], values: Seq[String]): String = {
     require(dims.isEmpty, s"categorical must have a dimensionality of 0, got ${dims.length}")
     values.head
@@ -302,18 +317,28 @@ case class StanArray[CONTAINED <: StanType] private[scalastan] (
       data.length +: inner.getDims(Seq.empty.asInstanceOf[inner.SCALA_TYPE])
     }
   }
-  private[scalastan] def parse(name: String, values: Map[String, String]): SCALA_TYPE = {
+  private[scalastan] def parse(
+    name: String,
+    parameterChains: Map[String, Vector[Vector[String]]]
+  ): Vector[Vector[SCALA_TYPE]] = {
     // The name will be the prefix up to the number we need to parse.
     val prefix = s"$name."
     val prefixLength = prefix.length
 
     // Get the size of this dimension (note that arrays in STAN are 1-based).
-    val size = values.keys.filter(_.startsWith(prefix)).map(_.drop(prefixLength).takeWhile(Character.isDigit).toInt).max
+    val size = parameterChains.keys.filter(_.startsWith(prefix)).map(
+      _.drop(prefixLength).takeWhile(Character.isDigit).toInt
+    ).max
 
     // Parse the next level for each element of this array.
-    Vector.tabulate[CONTAINED#SCALA_TYPE](size) { i =>
+    val allValues = Vector.tabulate[Vector[Vector[CONTAINED#SCALA_TYPE]]](size) { i =>
       val nextName = s"$prefix${i + 1}"
-      inner.parse(nextName, values)
+      inner.parse(nextName, parameterChains)
+    }
+    parameterChains.head._2.zipWithIndex.map { case (chain, chainIndex) =>
+      Vector.range(0, chain.size).map { case (iterationIndex) =>
+        allValues.map(_(chainIndex)(iterationIndex))
+      }
     }
   }
 
@@ -351,7 +376,10 @@ case class StanReal private[scalastan] (
   private[scalastan] def typeName: String = s"real$emitBounds"
   private[scalastan] def getData(data: Double): Seq[String] = Seq(data.toString)
   private[scalastan] def getDims(data: Double): Seq[Int] = Seq.empty
-  private[scalastan] def parse(name: String, values: Map[String, String]): Double = values(name).toDouble
+  private[scalastan] def parse(
+    name: String,
+    parameterChains: Map[String, Vector[Vector[String]]]
+  ): Vector[Vector[Double]] = parameterChains(name).map(_.map(_.toDouble))
   private[scalastan] def parse(dims: Seq[Int], values: Seq[String]): Double = {
     require(dims.isEmpty, s"real must have a dimensionality of 0, got ${dims.length}")
     values.head.toDouble
@@ -376,11 +404,17 @@ trait StanVectorLike extends StanVectorOrMatrix {
   private[scalastan] def getData(data: Seq[Double]): Seq[String] = data.map(_.toString)
   private[scalastan] def getDims(data: Seq[Double]): Seq[Int] = Seq(data.length)
 
-  private[scalastan] def parse(name: String, values: Map[String, String]): Seq[Double] = {
+  private[scalastan] def parse(
+    name: String,
+    parameterChains: Map[String, Vector[Vector[String]]]
+  ): Vector[Vector[Vector[Double]]] = {
     val prefix = s"$name."
-    values.filterKeys(_.startsWith(prefix)).toVector.map { case (key, value) =>
-      key.slice(prefix.length, key.length).toInt -> value
-    }.sortBy(_._1).map(_._2.toDouble)
+    val sorted = parameterChains.keys.filter(_.startsWith(prefix)).toVector.sortBy(_.drop(prefix.length).toInt)
+    parameterChains.head._2.zipWithIndex.map { case (chain, chainIndex) =>
+      Vector.range(0, chain.size).map { case (iterationIndex) =>
+        sorted.map(key => parameterChains(key)(chainIndex)(iterationIndex).toDouble)
+      }
+    }
   }
 
   private[scalastan] def parse(dims: Seq[Int], values: Seq[String]): Seq[Double] = {
@@ -475,20 +509,28 @@ case class StanMatrix private[scalastan] (
 
   override private[scalastan] def getIndices: Seq[StanValue[StanInt]] = Seq(rows, cols)
 
-  private[scalastan] def parse(name: String, values: Map[String, String]): Seq[Seq[Double]] ={
+  private[scalastan] def parse(
+    name: String,
+    parameterChains: Map[String, Vector[Vector[String]]]
+  ): Vector[Vector[Seq[Seq[Double]]]] = {
     // Determine the size of the matrix.
     val prefix1 = s"$name."
-    val dim1Keys = values.keys.filter(_.startsWith(prefix1))
+    val dim1Keys = parameterChains.keys.filter(_.startsWith(prefix1))
     if (dim1Keys.isEmpty) {
       Vector.empty // Empty matrix
     } else {
       val dim1 = dim1Keys.map(_.drop(prefix1.length).takeWhile(Character.isDigit).toInt).max
       val prefix2 = s"$name.1."
       val dim2 = dim1Keys.filter(_.startsWith(prefix2)).map(_.drop(prefix2.length).takeWhile(Character.isDigit).toInt).max
-      Vector.tabulate[Vector[Double]](dim1) { i =>
-        Vector.tabulate[Double](dim2) { j =>
-          val innerName = s"$name.${i + 1}.${j + 1}"
-          values(innerName).toDouble
+
+      parameterChains.head._2.zipWithIndex.map { case (chain, chainIndex) =>
+        (0 until chain.size).toVector.map { case (iterationIndex) =>
+          Vector.tabulate[Vector[Double]](dim1) { i =>
+            Vector.tabulate[Double](dim2) { j =>
+              val innerName = s"$name.${i + 1}.${j + 1}"
+              parameterChains(innerName)(chainIndex)(iterationIndex).toDouble
+            }
+          }
         }
       }
     }

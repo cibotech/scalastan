@@ -93,17 +93,17 @@ protected object StanRunner {
       }
     }
 
-    private def readIterations(fileName: String): Vector[Map[String, String]] = {
+    private def readIterations(fileName: String): (Map[String, Int], Vector[Vector[String]]) = {
       val reader = new BufferedReader(new FileReader(fileName))
       try {
         val lines = reader.lines.iterator.asScala.filterNot(_.startsWith("#")).toVector
         if (lines.nonEmpty) {
-          val header: Seq[String] = lines.head.split(',')
-          lines.tail.map { sample =>
-            header.zip(sample.split(',')).toMap
-          }
+          (
+            lines.head.split(',').zipWithIndex.toMap,
+            lines.tail.map(_.split(',').toVector)
+          )
         } else {
-          Vector.empty
+          (Map.empty, Vector.empty)
         }
       } finally {
         reader.close()
@@ -157,7 +157,7 @@ protected object StanRunner {
           Some(readIterations(fileName))
         } else None
         cachedResults match {
-          case Some(r) if r.nonEmpty =>
+          case Some(r) if r._2.nonEmpty =>
             println(s"Found cached results: $name")
             Some(r)
           case _                     =>
@@ -179,7 +179,7 @@ protected object StanRunner {
         }
       }.seq.toVector
 
-      StanResults(results, model)
+      StanResults(results.map(_._1).head, results.map(_._2), model)
     }
   }
 }

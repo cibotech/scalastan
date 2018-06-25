@@ -84,6 +84,17 @@ sealed trait StanType {
     }
   }
 
+  protected def mapResults(
+    parameterChains: Map[String, Vector[Vector[String]]],
+    f: (Int, Int) => SCALA_TYPE
+  ): Vector[Vector[SCALA_TYPE]] = {
+    parameterChains.head._2.zipWithIndex.map { case (chain, chainIndex) =>
+      Vector.range(0, chain.size).map { case (iterationIndex) =>
+        f(chainIndex, iterationIndex)
+      }
+    }
+  }
+
   // Parse data from the iterations CSV.
   private[scalastan] def parse(
     name: String,
@@ -335,11 +346,9 @@ case class StanArray[CONTAINED <: StanType] private[scalastan] (
       val nextName = s"$prefix${i + 1}"
       inner.parse(nextName, parameterChains)
     }
-    parameterChains.head._2.zipWithIndex.map { case (chain, chainIndex) =>
-      Vector.range(0, chain.size).map { case (iterationIndex) =>
-        allValues.map(_(chainIndex)(iterationIndex))
-      }
-    }
+    mapResults(parameterChains, (chainIndex: Int, iterationIndex: Int) => {
+      allValues.map(_(chainIndex)(iterationIndex))
+    })
   }
 
   private[scalastan] def parse(dims: Seq[Int], values: Seq[String]): SCALA_TYPE = {
@@ -407,14 +416,12 @@ trait StanVectorLike extends StanVectorOrMatrix {
   private[scalastan] def parse(
     name: String,
     parameterChains: Map[String, Vector[Vector[String]]]
-  ): Vector[Vector[Vector[Double]]] = {
+  ): Vector[Vector[Seq[Double]]] = {
     val prefix = s"$name."
     val sorted = parameterChains.keys.filter(_.startsWith(prefix)).toVector.sortBy(_.drop(prefix.length).toInt)
-    parameterChains.head._2.zipWithIndex.map { case (chain, chainIndex) =>
-      Vector.range(0, chain.size).map { case (iterationIndex) =>
-        sorted.map(key => parameterChains(key)(chainIndex)(iterationIndex).toDouble)
-      }
-    }
+    mapResults(parameterChains, (chainIndex: Int, iterationIndex: Int) => {
+      sorted.map(key => parameterChains(key)(chainIndex)(iterationIndex).toDouble)
+    })
   }
 
   private[scalastan] def parse(dims: Seq[Int], values: Seq[String]): Seq[Double] = {
@@ -523,16 +530,14 @@ case class StanMatrix private[scalastan] (
       val prefix2 = s"$name.1."
       val dim2 = dim1Keys.filter(_.startsWith(prefix2)).map(_.drop(prefix2.length).takeWhile(Character.isDigit).toInt).max
 
-      parameterChains.head._2.zipWithIndex.map { case (chain, chainIndex) =>
-        (0 until chain.size).toVector.map { case (iterationIndex) =>
-          Vector.tabulate[Vector[Double]](dim1) { i =>
-            Vector.tabulate[Double](dim2) { j =>
-              val innerName = s"$name.${i + 1}.${j + 1}"
-              parameterChains(innerName)(chainIndex)(iterationIndex).toDouble
-            }
+      mapResults(parameterChains, (chainIndex: Int, iterationIndex: Int) => {
+        Vector.tabulate[Vector[Double]](dim1) { i =>
+          Vector.tabulate[Double](dim2) { j =>
+            val innerName = s"$name.${i + 1}.${j + 1}"
+            parameterChains(innerName)(chainIndex)(iterationIndex).toDouble
           }
         }
-      }
+      })
     }
   }
 

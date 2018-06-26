@@ -28,6 +28,8 @@ object ImportedModelExample extends App with ScalaStan {
 
   val xs = Seq(1.0, 0.5, 1.5, 0.75)
   val results = model.withData(x, xs).withData(n, xs.length).run()
-  results.summary(System.out)
+  results.summary(System.out, mu, sigma)
 
 }
+
+class ImportedModelExampleSpec extends AppRunnerSpec(ImportedModelExample)

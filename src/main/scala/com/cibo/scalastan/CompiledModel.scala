@@ -23,11 +23,8 @@ abstract class CompiledModel {
   protected def runChecked(chains: Int, seed: Int, cache: Boolean, method: RunMethod.Method): StanResults
 
   private[scalastan] final def emitData(writer: Writer): Unit = {
-    model.program.data.foreach { value =>
-      val mapping = dataMapping.getOrElse(value.emit,
-        throw new IllegalStateException(s"no data provided for ${value.emit}")
-      )
-      writer.write(mapping.emit)
+    dataMapping.values.foreach { value =>
+      writer.write(value.emit)
       writer.write("\n")
     }
   }
@@ -45,7 +42,6 @@ abstract class CompiledModel {
     decl: StanDataDeclaration[T],
     data: V
   )(implicit ev: V <:< T#SCALA_TYPE): CompiledModel = {
-    model._code.append(decl)
     val conv = data.asInstanceOf[T#SCALA_TYPE]
 
     // Check if this parameter has already been assigned and throw an exception if the values are conflicting.

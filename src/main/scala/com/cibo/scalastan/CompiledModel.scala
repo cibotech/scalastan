@@ -45,6 +45,7 @@ abstract class CompiledModel {
     decl: StanDataDeclaration[T],
     data: V
   )(implicit ev: V <:< T#SCALA_TYPE): CompiledModel = {
+    model._code.append(decl)
     val conv = data.asInstanceOf[T#SCALA_TYPE]
 
     // Check if this parameter has already been assigned and throw an exception if the values are conflicting.

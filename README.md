@@ -1,5 +1,8 @@
 ScalaStan
 =========
+[![Build Status](https://travis-ci.org/cibotech/ScalaStan.svg?branch=master)](https://travis-ci.org/cibotech/ScalaStan)
+[ ![Download](https://api.bintray.com/packages/cibotech/public/scalastan/images/download.svg) ](https://bintray.com/cibotech/public/scalastan/_latestVersion)
+
 A Scala DSL for [Stan](http://mc-stan.org).
 
 Requirements
@@ -15,7 +18,7 @@ ScalaStan Dependency
 To use ScalaStan, add the following to your build:
 ```scala
 resolvers += Resolver.bintrayRepo("cibotech", "public")
-libraryDependencies += "com.cibo" %% "scalastan" % "0.5.10"
+libraryDependencies += "com.cibo" %% "scalastan" % "<version>"
 ```
 
 Project Structure

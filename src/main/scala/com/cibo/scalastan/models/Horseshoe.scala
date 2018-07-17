@@ -43,7 +43,7 @@ case class Horseshoe(
 
   val beta0: ParameterDeclaration[StanReal] = parameter(real())   // y-intercept
 
-  private val sigma = parameter(real(lower = 0))            // Noise standard deviation
+  val sigma = parameter(real(lower = 0))            // Noise standard deviation
   private val z = parameter(vector(p))
   private val aux1Global = parameter(real(lower = 0))
   private val aux2Global = parameter(real(lower = 0))

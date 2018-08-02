@@ -85,7 +85,7 @@ case class Horseshoe(
     result := beta0 + x * beta
   }
 
-  private val model = new Model {
+  val model = new Model {
     sigma ~ stan.cauchy(0, 1)
     z ~ stan.normal(0, 1)
     aux1Local ~ stan.normal(0, 1)

@@ -15,7 +15,6 @@ import java.io.{File, Writer}
 import com.cibo.scalastan.ast.StanDataDeclaration
 
 abstract class CompiledModel {
-  private[scalastan] val ss: ScalaStan
   private[scalastan] val model: ScalaStan#Model
   protected val dataMapping: Map[String, DataMapping[_]]
 
@@ -88,22 +87,3 @@ abstract class CompiledModel {
   }
 }
 
-/** A compiled model for CmdStan. */
-protected case class CmdStanCompiledModel private[scalastan] (
-  private[scalastan] val dir: File,
-  private[scalastan] val ss: ScalaStan,
-  private[scalastan] val model: ScalaStan#Model,
-  protected val dataMapping: Map[String, DataMapping[_]] = Map.empty
-) extends CompiledModel {
-  protected def replaceMapping(newMapping: Map[String, DataMapping[_]]): CmdStanCompiledModel =
-    copy(dataMapping = newMapping)
-  protected def runChecked(chains: Int, seed: Int, cache: Boolean, method: RunMethod.Method): StanResults = {
-    StanRunner.CmdStanRunner.run(
-      model = this,
-      chains = chains,
-      seed = seed,
-      cache = cache,
-      method = method
-    )
-  }
-}

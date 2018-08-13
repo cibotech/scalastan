@@ -1,7 +1,7 @@
 package com.cibo.scalastan
 
 import scala.collection.JavaConverters._
-import java.io.{BufferedReader, File, FileReader, PrintWriter}
+import java.io._
 import java.nio.file.{Files, Paths}
 import java.util.regex.Pattern
 
@@ -105,30 +105,24 @@ object CmdStanRunner extends StanRunner[CmdStanCompiledModel] {
     }
   }
 
-  private var dataFileIndex: Int = 0
-
-  private def getNextDataFileName: String = {
-    synchronized {
-      dataFileIndex += 1
-      s"data$dataFileIndex.R"
-    }
-  }
+  private val dataFileName: String = "input.R"
 
   def compile(ss: ScalaStan, model: ScalaStan#Model): CmdStanCompiledModel = {
     val stanPath = stanHome.getOrElse {
       throw new IllegalStateException("Could not locate Stan.")
     }
     println(s"found stan in $stanPath")
-    val dir = model.generate
 
-    if (new File(s"${dir.getPath}/$modelExecutable").canExecute) {
-      println("found existing executable")
-    } else {
-      runStanc(dir)
-      runMake(dir)
+    model.synchronized {
+      val dir = model.generate
+      if (new File(s"${dir.getPath}/$modelExecutable").canExecute) {
+        println("found existing executable")
+      } else {
+        runStanc(dir)
+        runMake(dir)
+      }
+      CmdStanCompiledModel(dir, model)
     }
-
-    CmdStanCompiledModel(dir, model)
   }
 
   def run(
@@ -138,46 +132,50 @@ object CmdStanRunner extends StanRunner[CmdStanCompiledModel] {
     cache: Boolean,
     method: RunMethod.Method
   ): StanResults = {
-    // Emit the data file.
-    val dataFileName = getNextDataFileName
-    println(s"writing data to $dataFileName")
-    val dataWriter = ShaWriter(new PrintWriter(new File(s"${model.dir}/$dataFileName")))
-    model.emitData(dataWriter)
-    dataWriter.close()
-    val runHash = dataWriter.sha.update(method.toString).digest
 
-    val baseSeed = if (seed < 0) (System.currentTimeMillis % Int.MaxValue).toInt else seed
-    val results = (0 until chains).par.flatMap { i =>
-      val chainSeed = baseSeed + i
-      val name = s"$runHash-$seed-$i.csv"
-      val fileName = s"${model.dir}/$name"
-      val cachedResults = if (cache && new File(fileName).exists) {
-        Some(readIterations(fileName))
-      } else None
-      cachedResults match {
-        case Some(r) if r.nonEmpty =>
-          println(s"Found cached results: $name")
-          Some(r)
-        case _                     =>
-          val command = Vector(
-            s"./$modelExecutable",
-            "data", s"file=$dataFileName",
-            "output", s"file=$name",
-            "random", s"seed=$chainSeed"
-          ) ++ method.arguments
-          println("Running " + command.mkString(" "))
-          val pb = new ProcessBuilder(command: _*).directory(model.dir).inheritIO()
-          val rc = pb.start().waitFor()
-          if (rc != 0) {
-            println(s"ERROR: model returned $rc")
-            None
-          } else {
-            Some(readIterations(fileName))
-          }
-      }
-    }.seq.toVector
+    // Only allow one instance of a model to run at a time.
+    model.model.synchronized {
 
-    val parameterChains: Map[String, Vector[Vector[String]]] = results.flatten.groupBy(_._1).mapValues(_.map(_._2))
-    StanResults(parameterChains, model)
+      // Emit the data file.
+      println(s"writing data to $dataFileName")
+      val dataWriter = ShaWriter(new PrintWriter(new File(s"${model.dir}/$dataFileName")))
+      model.emitData(dataWriter)
+      dataWriter.close()
+      val runHash = dataWriter.sha.update(method.toString).digest
+
+      val baseSeed = if (seed < 0) (System.currentTimeMillis % Int.MaxValue).toInt else seed
+      val results = (0 until chains).par.flatMap { i =>
+        val chainSeed = baseSeed + i
+        val name = s"$runHash-$seed-$i.csv"
+        val fileName = s"${model.dir}/$name"
+        val cachedResults = if (cache && new File(fileName).exists) {
+          Some(readIterations(fileName))
+        } else None
+        cachedResults match {
+          case Some(r) if r.nonEmpty =>
+            println(s"Found cached results: $name")
+            Some(r)
+          case _                     =>
+            val command = Vector(
+              s"./$modelExecutable",
+              "data", s"file=$dataFileName",
+              "output", s"file=$name",
+              "random", s"seed=$chainSeed"
+            ) ++ method.arguments
+            println("Running " + command.mkString(" "))
+            val pb = new ProcessBuilder(command: _*).directory(model.dir).inheritIO()
+            val rc = pb.start().waitFor()
+            if (rc != 0) {
+              println(s"ERROR: model returned $rc")
+              None
+            } else {
+              Some(readIterations(fileName))
+            }
+        }
+      }.seq.toVector
+
+      val parameterChains: Map[String, Vector[Vector[String]]] = results.flatten.groupBy(_._1).mapValues(_.map(_._2))
+      StanResults(parameterChains, model)
+    }
   }
 }

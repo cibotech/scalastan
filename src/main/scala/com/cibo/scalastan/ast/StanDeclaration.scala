@@ -16,8 +16,6 @@ sealed abstract class StanDeclaration[T <: StanType](implicit ss: ScalaStan) ext
   val returnType: T
   val name: String
 
-  protected val _ss: ScalaStan = ss
-
   private[scalastan] def emit: String = name
   private[scalastan] def emitDeclaration: String = returnType.emitDeclaration(name)
   private[scalastan] def emitFunctionDeclaration: String = returnType.emitFunctionDeclaration(name)

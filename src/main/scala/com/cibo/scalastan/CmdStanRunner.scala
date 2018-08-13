@@ -45,30 +45,29 @@ object CmdStanRunner extends StanRunner[CmdStanCompiledModel] {
   }
 
   // The Stan home directory.
-  private lazy val stanHome: String = {
+  lazy val stanHome: Option[String] = {
     // First check if CMDSTAN_HOME is set.
     // If CMDSTAN_HOME is not set, we attempt to infer it by looking up stanc.
     CMDSTAN_HOME.orElse {
       findStancInPath.map(p => new File(p).getParentFile.getParentFile.getAbsolutePath)
-    }.getOrElse {
-      throw new IllegalStateException("could not locate Stan")
     }
   }
 
   // Location of the "stanc" program.
-  private lazy val stanc: String = s"$stanHome/bin/stanc"
+  lazy val stanc: Option[String] = stanHome.map(h => s"$h/bin/stanc")
 
   // The make program to use.
-  private lazy val make: String = {
+  lazy val make: Option[String] = {
     Stream("gmake", "make", "gmake.exe", "make.exe").map(findInPath).collectFirst {
       case Some(p) => p
-    }.getOrElse {
-      throw new IllegalStateException("could not locate make")
     }
   }
 
   private def runStanc(dir: File): Unit = {
-    val pb = new ProcessBuilder(stanc, stanFileName).directory(dir).inheritIO()
+    val stancCommand = stanc.getOrElse {
+      throw new IllegalStateException(s"Could not locate stanc.")
+    }
+    val pb = new ProcessBuilder(stancCommand, stanFileName).directory(dir).inheritIO()
     val rc = pb.start().waitFor()
     if (rc != 0) {
       throw new IllegalStateException(s"$stanc returned $rc")
@@ -77,7 +76,13 @@ object CmdStanRunner extends StanRunner[CmdStanCompiledModel] {
 
   private def runMake(dir: File): Unit = {
     val target = s"$dir/$modelExecutable"
-    val pb = new ProcessBuilder(make, target).directory(new File(stanHome)).inheritIO()
+    val makeCommand = make.getOrElse {
+      throw new IllegalStateException("Could not locate make.")
+    }
+    val stanPath = stanHome.getOrElse {
+      throw new IllegalStateException("Could not locate Stan.")
+    }
+    val pb = new ProcessBuilder(makeCommand, target).directory(new File(stanPath)).inheritIO()
     val rc = pb.start().waitFor()
     if (rc != 0) {
       throw new IllegalStateException(s"$make returned $rc")
@@ -110,7 +115,10 @@ object CmdStanRunner extends StanRunner[CmdStanCompiledModel] {
   }
 
   def compile(ss: ScalaStan, model: ScalaStan#Model): CmdStanCompiledModel = {
-    println(s"found stan in $stanHome")
+    val stanPath = stanHome.getOrElse {
+      throw new IllegalStateException("Could not locate Stan.")
+    }
+    println(s"found stan in $stanPath")
     val dir = model.generate
 
     if (new File(s"${dir.getPath}/$modelExecutable").canExecute) {

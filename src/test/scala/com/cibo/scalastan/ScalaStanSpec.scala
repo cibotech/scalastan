@@ -30,7 +30,7 @@ class ScalaStanSpec extends ScalaStanBaseSpec {
             x += 1
           }
         }
-        checkCode(model, "model { int x; for(v# in 1:2) { x += 1; } }")
+        checkCode(model, "model { int x; for(ss_v# in 1:2) { x += 1; } }")
       }
     }
 
@@ -43,7 +43,7 @@ class ScalaStanSpec extends ScalaStanBaseSpec {
           val x = local(int())
           x += 1
         }
-        checkCode(model, "model { int x; for(v# in 1:2) { print(v#); } x += 1; }")
+        checkCode(model, "model { int x; for(ss_v# in 1:2) { print(ss_v#); } x += 1; }")
       }
     }
 
@@ -55,7 +55,7 @@ class ScalaStanSpec extends ScalaStanBaseSpec {
             x += 1
           }
         }
-        checkCode(model, "model { for(v# in 1:2) { int v#; v# += 1; } }")
+        checkCode(model, "model { for(ss_v# in 1:2) { int x; x += 1; } }")
       }
     }
   }
@@ -110,7 +110,7 @@ class ScalaStanSpec extends ScalaStanBaseSpec {
           val model = new Model {
             local(int()) := 1
           }
-          checkCode(model, "model { int v#; v# = 1; }")
+          checkCode(model, "model { int ss_v#; ss_v# = 1; }")
         }
       }
 
@@ -119,7 +119,7 @@ class ScalaStanSpec extends ScalaStanBaseSpec {
           val model = new Model {
             local(int()) += 1
           }
-          checkCode(model, "model { int v#; v# += 1; }")
+          checkCode(model, "model { int ss_v#; ss_v# += 1; }")
         }
       }
 
@@ -128,7 +128,7 @@ class ScalaStanSpec extends ScalaStanBaseSpec {
           val model = new Model {
             local(int()) -= 1
           }
-          checkCode(model, "model { int v#; v# -= 1; }")
+          checkCode(model, "model { int ss_v#; ss_v# -= 1; }")
         }
       }
 
@@ -137,7 +137,7 @@ class ScalaStanSpec extends ScalaStanBaseSpec {
           val model = new Model {
             local(int()) *= 1
           }
-          checkCode(model, "model { int v#; v# *= 1; }")
+          checkCode(model, "model { int ss_v#; ss_v# *= 1; }")
         }
       }
 
@@ -146,7 +146,7 @@ class ScalaStanSpec extends ScalaStanBaseSpec {
           val model = new Model {
             local(int()) /= 1
           }
-          checkCode(model, "model { int v#; v# /= 1; }")
+          checkCode(model, "model { int ss_v#; ss_v# /= 1; }")
         }
       }
     }
@@ -169,7 +169,7 @@ class ScalaStanSpec extends ScalaStanBaseSpec {
           val model = new Model {
             local(real()) := local(real()) + local(int())
           }
-          checkCode(model, "v# = (v#) + (v#);")
+          checkCode(model, "ss_v# = (ss_v#) + (ss_v#);")
         }
       }
 
@@ -178,7 +178,7 @@ class ScalaStanSpec extends ScalaStanBaseSpec {
           val model = new Model {
             local(real()) := local(real()) - local(int())
           }
-          checkCode(model, "v# = (v#) - (v#);")
+          checkCode(model, "ss_v# = (ss_v#) - (ss_v#);")
         }
       }
 
@@ -187,7 +187,7 @@ class ScalaStanSpec extends ScalaStanBaseSpec {
           val model = new Model {
             local(real()) := local(real()) * local(int())
           }
-          checkCode(model, "v# = (v#) * (v#);")
+          checkCode(model, "ss_v# = (ss_v#) * (ss_v#);")
         }
       }
 
@@ -196,7 +196,7 @@ class ScalaStanSpec extends ScalaStanBaseSpec {
           val model = new Model {
             local(real()) := local(real()) / local(int())
           }
-          checkCode(model, "v# = (v#) / (v#);")
+          checkCode(model, "ss_v# = (ss_v#) / (ss_v#);")
         }
       }
 
@@ -206,7 +206,7 @@ class ScalaStanSpec extends ScalaStanBaseSpec {
             val n = local(int())
             local(matrix(n, n)) := local(matrix(n, n)) \ local(matrix(n, n))
           }
-          checkCode(model, "v# = (v#) \\ (v#);")
+          checkCode(model, "ss_v# = (ss_v#) \\ (ss_v#);")
         }
       }
 
@@ -215,7 +215,7 @@ class ScalaStanSpec extends ScalaStanBaseSpec {
           val model = new Model {
             local(real()) := local(real()) ^ local(int())
           }
-          checkCode(model, "v# = (v#) ^ (v#);")
+          checkCode(model, "ss_v# = (ss_v#) ^ (ss_v#);")
         }
       }
 
@@ -224,7 +224,7 @@ class ScalaStanSpec extends ScalaStanBaseSpec {
           val model = new Model {
             local(int()) := local(int()) % local(int())
           }
-          checkCode(model, "v# = (v#) % (v#);")
+          checkCode(model, "ss_v# = (ss_v#) % (ss_v#);")
         }
       }
 
@@ -234,7 +234,7 @@ class ScalaStanSpec extends ScalaStanBaseSpec {
             val n = local(int())
             local(matrix(n, n)) := local(matrix(n, n)).t
           }
-          checkCode(model, "v# = (v#)';")
+          checkCode(model, "ss_v# = (ss_v#)';")
         }
       }
 
@@ -267,7 +267,7 @@ class ScalaStanSpec extends ScalaStanBaseSpec {
               break
             }
           }
-          checkCode(model, "model { for(v# in 1:2) { break; } }")
+          checkCode(model, "model { for(ss_v# in 1:2) { break; } }")
         }
       }
 

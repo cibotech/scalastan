@@ -61,33 +61,33 @@ class StanValueSpec extends ScalaStanBaseSpec {
 
     describe("vectors and ints") {
       it("can add vector + const_int") {
-        val r = StanLocalDeclaration[StanVector](StanVector(StanConstant[StanInt](StanInt(), 1))) + 1
-        check(r.emit, "(v#) + (1)")
+        val r = StanLocalDeclaration[StanVector](StanVector(StanConstant[StanInt](StanInt(), 1)), "x") + 1
+        check(r.emit, "(x) + (1)")
       }
     }
   }
 
   describe(":/") {
     it("can divide vectors") {
-      val n = StanLocalDeclaration(StanInt())
-      val r = StanLocalDeclaration(StanVector(n)) /:/ StanLocalDeclaration(StanVector(n))
-      check(r.emit, "(v#) ./ (v#)")
+      val n = StanLocalDeclaration(StanInt(), "n")
+      val r = StanLocalDeclaration(StanVector(n), "x") /:/ StanLocalDeclaration(StanVector(n), "y")
+      check(r.emit, "(x) ./ (y)")
     }
 
     it("can divide scalar by vector") {
-      val n = StanLocalDeclaration(StanInt())
-      val r = n /:/ StanLocalDeclaration(StanVector(n))
-      check(r.emit, "(v#) ./ (v#)")
+      val n = StanLocalDeclaration(StanInt(), "n")
+      val r = n /:/ StanLocalDeclaration(StanVector(n), "x")
+      check(r.emit, "(n) ./ (x)")
     }
 
     it("can divide matrix by scalar") {
-      val n = StanLocalDeclaration(StanInt())
-      val r = StanLocalDeclaration(StanMatrix(n, n)) /:/ n
-      check(r.emit, "(v#) ./ (v#)")
+      val n = StanLocalDeclaration(StanInt(), "n")
+      val r = StanLocalDeclaration(StanMatrix(n, n), "x") /:/ n
+      check(r.emit, "(x) ./ (n)")
     }
 
     it("can not divide scalar by scalar") {
-      val r = StanLocalDeclaration(StanReal())
+      val r = StanLocalDeclaration(StanReal(), "r")
       "r /:/ r" shouldNot compile
     }
   }
@@ -132,28 +132,28 @@ class StanValueSpec extends ScalaStanBaseSpec {
   describe("index (with assignment)") {
     it("can be read 1d") {
       val i = StanConstant[StanInt](StanInt(), 1)
-      val d = StanLocalDeclaration(StanReal()(i)).apply(i)
-      d.emit should fullyMatch regex "v[0-9]+\\[1\\]"
+      val d = StanLocalDeclaration(StanReal()(i), "d").apply(i)
+      d.emit shouldBe "d[1]"
     }
 
     it("can be read vector") {
       val i = StanConstant[StanInt](StanInt(), 1)
-      val d = StanLocalDeclaration(StanVector(i)).apply(i)
-      d.emit should fullyMatch regex "v[0-9]+\\[1\\]"
+      val d = StanLocalDeclaration(StanVector(i), "d").apply(i)
+      d.emit shouldBe "d[1]"
     }
 
     it("can be read 2d") {
       val i1 = StanConstant[StanInt](StanInt(), 1)
       val i2 = StanConstant[StanInt](StanInt(), 2)
-      val d = StanLocalDeclaration(StanReal()(i1, i2)).apply(i1, i2)
-      d.emit should fullyMatch regex "v[0-9]+\\[1,2\\]"
+      val d = StanLocalDeclaration(StanReal()(i1, i2), "d").apply(i1, i2)
+      d.emit shouldBe "d[1,2]"
     }
 
     it("can be read matrix") {
       val i1 = StanConstant[StanInt](StanInt(), 1)
       val i2 = StanConstant[StanInt](StanInt(), 2)
-      val d = StanLocalDeclaration(StanMatrix(i1, i2)).apply(i1, i2)
-      d.emit should fullyMatch regex "v[0-9]+\\[1,2\\]"
+      val d = StanLocalDeclaration(StanMatrix(i1, i2), "d").apply(i1, i2)
+      d.emit shouldBe "d[1,2]"
     }
 
     it("can set vector") {
@@ -180,8 +180,8 @@ class StanValueSpec extends ScalaStanBaseSpec {
   describe("index (read-only)") {
     it("can be read vector") {
       val i = StanConstant[StanInt](StanInt(), 1)
-      val d = StanParameterDeclaration(StanVector(i)).apply(i)
-      d.emit should fullyMatch regex "v[0-9]+\\[1\\]"
+      val d = StanParameterDeclaration(StanVector(i), "d").apply(i)
+      d.emit shouldBe "d[1]"
     }
 
     it("can not set vector") {
@@ -201,17 +201,17 @@ class StanValueSpec extends ScalaStanBaseSpec {
     it("can be read") {
       val i1 = StanConstant[StanInt](StanInt(), 1)
       val i2 = StanConstant[StanInt](StanInt(), 2)
-      val d = StanLocalDeclaration(StanVector(i1)).apply(StanValueRange(i1, i2))
-      d.emit should fullyMatch regex "v[0-9]+\\[1:2\\]"
+      val d = StanLocalDeclaration(StanVector(i1), "x").apply(StanValueRange(i1, i2))
+      d.emit shouldBe "x[1:2]"
     }
   }
 
   describe("multiple indexes") {
     it("can have multiple indexes") {
-      val n = StanDataDeclaration[StanInt](StanInt())
-      val i = StanDataDeclaration[StanArray[StanInt]](StanArray(n, StanInt()))
-      val vec = StanDataDeclaration[StanArray[StanReal]](StanArray(n, StanReal()))
-      vec(i).emit should fullyMatch regex "v[0-9]+\\[v[0-9]+\\]"
+      val n = StanDataDeclaration[StanInt](StanInt(), "n")
+      val i = StanDataDeclaration[StanArray[StanInt]](StanArray(n, StanInt()), "i")
+      val vec = StanDataDeclaration[StanArray[StanReal]](StanArray(n, StanReal()), "vec")
+      vec(i).emit shouldBe "vec[i]"
     }
   }
 }

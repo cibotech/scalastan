@@ -5,47 +5,53 @@ import com.cibo.scalastan.ast.StanDataDeclaration
 
 class CsvDataSourceSpec extends ScalaStanBaseSpec {
 
-  private implicit val ss = new ScalaStan {}
-
   describe("CsvDataSource") {
     it("parses simple CSV") {
-      val data = "one,two\n0.5,1.0\n1.5,2.5\n"
-      val src = CsvDataSource.fromString(data)
-      val n = StanDataDeclaration(StanInt())
-      val decl1 = StanDataDeclaration(StanVector(n))
-      val decl2 = StanDataDeclaration(StanReal()(n))
+      new ScalaStan {
+        val data = "one,two\n0.5,1.0\n1.5,2.5\n"
+        val src = CsvDataSource.fromString(data)
+        val n = data(int())
+        val decl1 = data(vector(n))
+        val decl2 = data(real()(n))
 
-      src.read(decl1, "one") shouldBe Seq(0.5, 1.5)
-      src.read(decl2, "two") shouldBe Seq(1.0, 2.5)
+        src.read(decl1, "one") shouldBe Seq(0.5, 1.5)
+        src.read(decl2, "two") shouldBe Seq(1.0, 2.5)
+      }
     }
 
     it("parses CSV with quoted headers") {
-      val data = "\"one\", \"two\"\n0.5,1.0\n1.5,2.5\n"
-      val src = CsvDataSource.fromString(data)
-      val n = StanDataDeclaration(StanInt())
-      val decl1 = StanDataDeclaration(StanVector(n))
-      val decl2 = StanDataDeclaration(StanReal()(n))
+      new ScalaStan {
+        val data = "\"one\", \"two\"\n0.5,1.0\n1.5,2.5\n"
+        val src = CsvDataSource.fromString(data)
+        val n = data(int())
+        val decl1 = data(vector(n))
+        val decl2 = data(real()(n))
 
-      src.read(decl1, "one") shouldBe Seq(0.5, 1.5)
-      src.read(decl2, "two") shouldBe Seq(1.0, 2.5)
+        src.read(decl1, "one") shouldBe Seq(0.5, 1.5)
+        src.read(decl2, "two") shouldBe Seq(1.0, 2.5)
+      }
     }
 
     it("parses int arrays") {
-      val data = "one\n1\n2\n"
-      val src = CsvDataSource.fromString(data)
-      val n = StanDataDeclaration(StanInt())
-      val decl = StanDataDeclaration(StanInt()(n))
+      new ScalaStan {
+        val data = "one\n1\n2\n"
+        val src = CsvDataSource.fromString(data)
+        val n = data(int())
+        val decl = data(int()(n))
 
-      src.read(decl, "one") shouldBe Seq(1, 2)
+        src.read(decl, "one") shouldBe Seq(1, 2)
+      }
     }
 
     it("parses real arrays") {
-      val data = "one\n1.5\n2.5\n"
-      val src = CsvDataSource.fromString(data)
-      val n = StanDataDeclaration(StanInt())
-      val decl = StanDataDeclaration(StanReal()(n))
+      new ScalaStan {
+        val data = "one\n1.5\n2.5\n"
+        val src = CsvDataSource.fromString(data)
+        val n = data(int())
+        val decl = data(real()(n))
 
-      src.read(decl, "one") shouldBe Seq(1.5, 2.5)
+        src.read(decl, "one") shouldBe Seq(1.5, 2.5)
+      }
     }
 
     it("returns column names") {

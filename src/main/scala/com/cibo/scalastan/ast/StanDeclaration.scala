@@ -12,11 +12,10 @@ package com.cibo.scalastan.ast
 
 import com.cibo.scalastan._
 
-sealed abstract class StanDeclaration[T <: StanType](implicit ss: ScalaStan) extends StanValue[T] with NameLookup {
+sealed abstract class StanDeclaration[T <: StanType](implicit ss: ScalaStan) extends StanValue[T] {
   val returnType: T
-  val internalNameFunc: Function0[Option[String]]
+  val name: String
 
-  protected lazy val _userName: Option[String] = internalNameFunc().orElse(NameLookup.lookupName(this))
   protected val _ss: ScalaStan = ss
 
   private[scalastan] def emit: String = name
@@ -32,7 +31,7 @@ sealed abstract class StanDeclaration[T <: StanType](implicit ss: ScalaStan) ext
 
 case class StanDataDeclaration[T <: StanType] private[scalastan] (
   returnType: T,
-  internalNameFunc: () => Option[String] = () => None,
+  name: String,
   id: Int = StanNode.getNextId
 )(implicit ss: ScalaStan) extends StanDeclaration[T] {
   require(returnType.isDerivedFromData,
@@ -51,7 +50,7 @@ case class StanDataDeclaration[T <: StanType] private[scalastan] (
 
 case class StanParameterDeclaration[T <: StanType] private[scalastan] (
   returnType: T,
-  internalNameFunc: () => Option[String] = () => None,
+  name: String,
   rootOpt: Option[StanParameterDeclaration[_ <: StanType]] = None,
   indices: Seq[Int] = Seq.empty,
   owner: Option[ScalaStan#TransformBase[_, _]] = None,
@@ -79,7 +78,7 @@ case class StanParameterDeclaration[T <: StanType] private[scalastan] (
 
   def get(index: Int)(implicit ev: IsCompoundType[T]): StanParameterDeclaration[T#NEXT_TYPE] = {
     val newName = s"$name[$index]"
-    StanParameterDeclaration(returnType.next, () => Some(newName), Some(root), indices :+ index)
+    StanParameterDeclaration(returnType.next, newName, Some(root), indices :+ index)
   }
 
   def get(
@@ -88,7 +87,7 @@ case class StanParameterDeclaration[T <: StanType] private[scalastan] (
   )(implicit ev: IsCompoundType[T#NEXT_TYPE]): StanParameterDeclaration[T#NEXT_TYPE#NEXT_TYPE] = {
     val args = Seq(index1, index2)
     val newName = args.mkString(s"$name[", ",", "]")
-    StanParameterDeclaration(returnType.next.next, () => Some(newName), Some(root), indices ++ args)
+    StanParameterDeclaration(returnType.next.next, newName, Some(root), indices ++ args)
   }
 
   def get(
@@ -96,7 +95,7 @@ case class StanParameterDeclaration[T <: StanType] private[scalastan] (
   )(implicit ev: IsCompoundType[T#NEXT_TYPE#NEXT_TYPE]): StanParameterDeclaration[T#NEXT_TYPE#NEXT_TYPE#NEXT_TYPE] = {
     val args = Seq(index1, index2, index3)
     val newName = args.mkString(s"$name[", ",", "]")
-    StanParameterDeclaration(returnType.next.next.next, () => Some(newName), Some(root), indices ++ args)
+    StanParameterDeclaration(returnType.next.next.next, newName, Some(root), indices ++ args)
   }
 
   def get(
@@ -106,13 +105,13 @@ case class StanParameterDeclaration[T <: StanType] private[scalastan] (
   ): StanParameterDeclaration[T#NEXT_TYPE#NEXT_TYPE#NEXT_TYPE#NEXT_TYPE] = {
     val args = Seq(index1, index2, index3, index4)
     val newName = args.mkString(s"$name[", ",", "]")
-    StanParameterDeclaration(returnType.next.next.next.next, () => Some(newName), Some(root), indices ++ args)
+    StanParameterDeclaration(returnType.next.next.next.next, newName, Some(root), indices ++ args)
   }
 }
 
 case class StanLocalDeclaration[T <: StanType] private[scalastan] (
   returnType: T,
-  internalNameFunc: () => Option[String] = () => None,
+  name: String,
   derivedFromData: Boolean = false,
   owner: Option[ScalaStan#TransformBase[_, _]] = None,
   id: Int = StanNode.getNextId

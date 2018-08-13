@@ -66,19 +66,19 @@ class StanTypeSpec extends ScalaStanBaseSpec {
 
   describe("vectors") {
     it("emits the right data") {
-      val n = StanParameterDeclaration(StanInt())
+      val n = StanParameterDeclaration(StanInt(), "x")
       val v = StanVector(n)
       v.emitData(Vector(1.0, 2.0, 3.0)) shouldBe "c(1.0,2.0,3.0)"
     }
 
     it("emits vectors with zero size") {
-      val n = StanParameterDeclaration(StanInt())
+      val n = StanParameterDeclaration(StanInt(), "x")
       val v = StanVector(n)
       v.emitData(Vector.empty) shouldBe "c()"
     }
 
     it("emits the right declaration") {
-      val n = StanParameterDeclaration(StanInt())
+      val n = StanParameterDeclaration(StanInt(), "x")
       val v = StanVector(n, lower = 1.5, upper = 2.5)
       v.emitDeclaration("vec") should fullyMatch regex "vector<lower=1.5,upper=2.5>\\[.+\\] vec"
     }
@@ -86,7 +86,7 @@ class StanTypeSpec extends ScalaStanBaseSpec {
 
   describe("simplexes") {
     it("emits the right declaration") {
-      val n = StanParameterDeclaration(StanInt())
+      val n = StanParameterDeclaration(StanInt(), "x")
       val v = StanVector(n, constraint = VectorConstraint.Simplex)
       v.emitDeclaration("vec") should fullyMatch regex "simplex\\[.+\\] vec"
     }
@@ -94,7 +94,7 @@ class StanTypeSpec extends ScalaStanBaseSpec {
 
   describe("unit_vectors") {
     it("emits the right declaration") {
-      val n = StanParameterDeclaration(StanInt())
+      val n = StanParameterDeclaration(StanInt(), "x")
       val v = StanVector(n, constraint = VectorConstraint.UnitVector)
       v.emitDeclaration("vec") should fullyMatch regex "unit_vector\\[.+\\] vec"
     }
@@ -102,7 +102,7 @@ class StanTypeSpec extends ScalaStanBaseSpec {
 
   describe("ordered vectors") {
     it("emits the right declaration") {
-      val n = StanParameterDeclaration(StanInt())
+      val n = StanParameterDeclaration(StanInt(), "x")
       val v = StanVector(n, constraint = VectorConstraint.Ordered)
       v.emitDeclaration("vec") should fullyMatch regex "ordered\\[.+\\] vec"
     }
@@ -110,7 +110,7 @@ class StanTypeSpec extends ScalaStanBaseSpec {
 
   describe("positive_ordered vectors") {
     it("emits the right declaration") {
-      val n = StanParameterDeclaration(StanInt())
+      val n = StanParameterDeclaration(StanInt(), "x")
       val v = StanVector(n, constraint = VectorConstraint.PositiveOrdered)
       v.emitDeclaration("vec") should fullyMatch regex "positive_ordered\\[.+\\] vec"
     }
@@ -118,19 +118,19 @@ class StanTypeSpec extends ScalaStanBaseSpec {
 
   describe("row vectors") {
     it("emits the right data") {
-      val n = StanParameterDeclaration(StanInt())
+      val n = StanParameterDeclaration(StanInt(), "x")
       val v = StanRowVector(n)
       v.emitData(Vector(1.0, 2.0, 3.0)) shouldBe "c(1.0,2.0,3.0)"
     }
 
     it("emits row vectors with zero size") {
-      val n = StanParameterDeclaration(StanInt())
+      val n = StanParameterDeclaration(StanInt(), "x")
       val v = StanRowVector(n)
       v.emitData(Vector.empty) shouldBe "c()"
     }
 
     it("emits the right declaration") {
-      val n = StanParameterDeclaration(StanInt())
+      val n = StanParameterDeclaration(StanInt(), "x")
       val v = StanRowVector(n)
       v.emitDeclaration("asdf") should fullyMatch regex "row_vector\\[.+\\] asdf"
     }
@@ -138,8 +138,8 @@ class StanTypeSpec extends ScalaStanBaseSpec {
 
   describe("matrices") {
     it("emits the right thing") {
-      val rows = StanParameterDeclaration(StanInt())
-      val cols = StanParameterDeclaration(StanInt())
+      val rows = StanParameterDeclaration(StanInt(), "x")
+      val cols = StanParameterDeclaration(StanInt(), "x")
       val m = StanMatrix(rows, cols)
       val data = Vector(
         Vector(1.0, 2.0, 3.0),
@@ -150,16 +150,16 @@ class StanTypeSpec extends ScalaStanBaseSpec {
     }
 
     it("emits matrices with zero size") {
-      val rows = StanParameterDeclaration(StanInt())
-      val cols = StanParameterDeclaration(StanInt())
+      val rows = StanParameterDeclaration(StanInt(), "x")
+      val cols = StanParameterDeclaration(StanInt(), "x")
       val m = StanMatrix(rows, cols)
 
       m.emitData(Vector.empty) shouldBe "structure(c(), .Dim = c(0,0))"
     }
 
     it("emits the right declaration") {
-      val rows = StanParameterDeclaration(StanInt())
-      val cols = StanParameterDeclaration(StanInt())
+      val rows = StanParameterDeclaration(StanInt(), "x")
+      val cols = StanParameterDeclaration(StanInt(), "x")
       val m = StanMatrix(rows, cols, lower = 1.5)
 
       m.emitDeclaration("m") should fullyMatch regex "matrix<lower=1.5>\\[.+,.+\\] m"
@@ -168,7 +168,7 @@ class StanTypeSpec extends ScalaStanBaseSpec {
 
   describe("correlation matrices") {
     it("emits the right declaration") {
-      val rows = StanParameterDeclaration(StanInt())
+      val rows = StanParameterDeclaration(StanInt(), "x")
       val m = StanMatrix(rows, rows, constraint = MatrixConstraint.CorrMatrix)
 
       m.emitDeclaration("m") should fullyMatch regex "corr_matrix\\[.+\\] m"
@@ -177,7 +177,7 @@ class StanTypeSpec extends ScalaStanBaseSpec {
 
   describe("cholesky_factor_corr matrices") {
     it("emits the right declaration") {
-      val rows = StanParameterDeclaration(StanInt())
+      val rows = StanParameterDeclaration(StanInt(), "x")
       val m = StanMatrix(rows, rows, constraint = MatrixConstraint.CholeskyFactorCorr)
 
       m.emitDeclaration("m") should fullyMatch regex "cholesky_factor_corr\\[.+\\] m"
@@ -186,7 +186,7 @@ class StanTypeSpec extends ScalaStanBaseSpec {
 
   describe("cov_matrices") {
     it("emits the right declaration") {
-      val rows = StanParameterDeclaration(StanInt())
+      val rows = StanParameterDeclaration(StanInt(), "x")
       val m = StanMatrix(rows, rows, constraint = MatrixConstraint.CovMatrix)
 
       m.emitDeclaration("m") should fullyMatch regex "cov_matrix\\[.+\\] m"
@@ -195,7 +195,7 @@ class StanTypeSpec extends ScalaStanBaseSpec {
 
   describe("cholesky_factor_cov matrices") {
     it("emits the right declaration") {
-      val rows = StanParameterDeclaration(StanInt())
+      val rows = StanParameterDeclaration(StanInt(), "x")
       val m = StanMatrix(rows, rows, constraint = MatrixConstraint.CholeskyFactorCov)
 
       m.emitDeclaration("m") should fullyMatch regex "cholesky_factor_cov\\[.+\\] m"
@@ -204,8 +204,8 @@ class StanTypeSpec extends ScalaStanBaseSpec {
 
   describe("arrays") {
     it("should emit the same thing as a matrix") {
-      val rows = StanParameterDeclaration(StanInt())
-      val cols = StanParameterDeclaration(StanInt())
+      val rows = StanParameterDeclaration(StanInt(), "x")
+      val cols = StanParameterDeclaration(StanInt(), "x")
       val a = StanArray(cols, StanArray(rows, StanReal()))
       val m = StanMatrix(rows, cols)
 
@@ -218,30 +218,30 @@ class StanTypeSpec extends ScalaStanBaseSpec {
     }
 
     it("emits arrays with zero size in 1 dimension") {
-      val cols = StanParameterDeclaration(StanInt())
+      val cols = StanParameterDeclaration(StanInt(), "x")
       val a = StanArray(cols, StanReal())
 
       a.emitData(Vector.empty) shouldBe "c()"
     }
 
     it("emits arrays with zero size in 2 dimensions") {
-      val rows = StanParameterDeclaration(StanInt())
-      val cols = StanParameterDeclaration(StanInt())
+      val rows = StanParameterDeclaration(StanInt(), "x")
+      val cols = StanParameterDeclaration(StanInt(), "x")
       val a = StanArray(cols, StanArray(rows, StanReal()))
 
       a.emitData(Vector.empty) shouldBe "structure(c(), .Dim = c(0,0))"
     }
 
     it("emits the right declaration for 1 dimension") {
-      val cols = StanParameterDeclaration(StanInt())
+      val cols = StanParameterDeclaration(StanInt(), "x")
       val a = StanArray(cols, StanReal())
 
       a.emitDeclaration("a") should fullyMatch regex "real a\\[.+\\]"
     }
 
     it("emits the right declaration for 2 dimensions") {
-      val rows = StanParameterDeclaration(StanInt())
-      val cols = StanParameterDeclaration(StanInt())
+      val rows = StanParameterDeclaration(StanInt(), "x")
+      val cols = StanParameterDeclaration(StanInt(), "x")
       val a = StanArray(cols, StanArray(rows, StanInt()))
 
       a.emitDeclaration("a") should fullyMatch regex "int a\\[.+,.+\\]"

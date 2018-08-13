@@ -4,10 +4,10 @@ import com.cibo.scalastan.{ScalaStan, ScalaStanBaseSpec, StanInt, StanReal}
 
 class StanNodeSpec extends ScalaStanBaseSpec with ScalaStan {
 
-  private val v1 = StanLocalDeclaration[StanReal](StanReal())
-  private val v2 = StanLocalDeclaration[StanReal](StanReal())
-  private val v3 = StanLocalDeclaration[StanInt](StanInt())
-  private val y = StanLocalDeclaration[StanReal](StanReal())
+  private val v1 = StanLocalDeclaration[StanReal](StanReal(), "v1")
+  private val v2 = StanLocalDeclaration[StanReal](StanReal(), "v2")
+  private val v3 = StanLocalDeclaration[StanInt](StanInt(), "v3")
+  private val y = StanLocalDeclaration[StanReal](StanReal(), "y")
 
   describe("StanContinuousDistribution") {
     it("generates sample syntax") {

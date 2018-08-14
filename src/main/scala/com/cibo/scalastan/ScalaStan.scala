@@ -267,6 +267,8 @@ trait ScalaStan extends Implicits { ss =>
 
     val name: String = fixEnclosingName(sourceName.value)
 
+    protected implicit val _rngAvailable: RngAvailable = RngAvailable
+
     lazy val result: StanLocalDeclaration[T] = StanLocalDeclaration[T](
       typeConstructor, name, derivedFromData = true, owner = Some(this)
     )
@@ -296,6 +298,7 @@ trait ScalaStan extends Implicits { ss =>
   abstract class GeneratedQuantity[T <: StanType](typeConstructor: T)(
     implicit sourceName: sourcecode.Enclosing
   ) extends TransformBase[T, StanParameterDeclaration[T]] {
+
     val name: String = fixEnclosingName(sourceName.value)
 
     lazy val result: StanParameterDeclaration[T] = {
@@ -304,7 +307,8 @@ trait ScalaStan extends Implicits { ss =>
       }
       StanParameterDeclaration[T](typeConstructor, name, owner = Some(this))
     }
-    protected implicit val _generatedQuantity: InGeneratedQuantityBlock = InGeneratedQuantityBlock
+
+    protected implicit val _rngAvailable: RngAvailable = RngAvailable
 
     private[scalastan] def export(builder: CodeBuilder): Unit = builder.append(this)
 

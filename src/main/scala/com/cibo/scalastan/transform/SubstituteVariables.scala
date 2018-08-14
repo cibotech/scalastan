@@ -17,17 +17,16 @@ case class SubstituteVariables(
   substitutions: Map[(Int, StanDeclaration[_]), StanDeclaration[_]]
 )(
   implicit ss: ScalaStan
-) extends StanTransform {
+) extends StanTransform[Int] {
 
-  private var currentStatement: Int = -1
+  override def initialState: Int = -1
 
-  override protected def dispatch(statement: StanStatement): StanStatement = {
-    currentStatement = statement.id
-    super.dispatch(statement)
-  }
+  override def dispatch(statement: StanStatement): State[StanStatement] = for {
+    _ <- State.put(statement.id)
+    newStatement <- super.dispatch(statement)
+  } yield newStatement
 
-  override protected def handleVariable[T <: StanType](decl: StanDeclaration[T]): StanValue[T] = {
-    substitutions.getOrElse((currentStatement, decl), decl).asInstanceOf[StanValue[T]]
-  }
-
+  override def handleVariable[T <: StanType](decl: StanDeclaration[T]): State[StanValue[T]] = for {
+    currentStatement <- State.get
+  } yield substitutions.getOrElse((currentStatement, decl), decl).asInstanceOf[StanValue[T]]
 }

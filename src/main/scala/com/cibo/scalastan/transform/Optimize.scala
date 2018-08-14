@@ -13,8 +13,10 @@ package com.cibo.scalastan.transform
 import com.cibo.scalastan.ScalaStan
 import com.cibo.scalastan.ast.StanProgram
 
-case class Optimize()(implicit val ss: ScalaStan) extends StanTransform {
-  private val steps: Seq[StanTransform] = Seq(
+case class Optimize()(implicit val ss: ScalaStan) extends StanTransform[Unit] {
+  def initialState: Unit = ()
+
+  private val steps: Seq[StanTransform[_]] = Seq(
     SplitExpressions(),
     CSE(),
     CopyPropagation()

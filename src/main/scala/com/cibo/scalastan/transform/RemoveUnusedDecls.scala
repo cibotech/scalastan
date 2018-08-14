@@ -14,18 +14,22 @@ import com.cibo.scalastan.ScalaStan
 import com.cibo.scalastan.ast.{StanBlock, StanInlineDeclaration, StanProgram, StanStatement}
 
 // Remove unused inline declarations.
-case class RemoveUnusedDecls()(implicit ss: ScalaStan) extends StanTransform {
+case class RemoveUnusedDecls()(implicit ss: ScalaStan) extends StanTransform[Set[Int]] {
 
-  private var usedDecls: Set[Int] = Set.empty
+  def initialState: Set[Int] = Set.empty
 
-  override protected def handleRoot(root: StanStatement): StanStatement = {
-    usedDecls = StanProgram.getStatements(root).flatMap { st =>
+  private def createState(root: StanStatement): Set[Int] = {
+    StanProgram.getStatements(root).flatMap { st =>
       st.inputs.map(_.id) ++ st.outputs.map(_.id)
     }.toSet
-    super.handleRoot(root)
   }
 
-  override protected def handleDecl(d: StanInlineDeclaration): StanStatement = {
-    if (usedDecls.contains(d.decl.id)) d else StanBlock()
-  }
+  override def handleRoot(root: StanStatement): State[StanStatement] = for {
+    _ <- State.put(createState(root))
+    newRoot <- super.handleRoot(root)
+  } yield newRoot
+
+  override def handleDecl(d: StanInlineDeclaration): State[StanStatement] = for {
+    usedDecls <- State.get
+  } yield if (usedDecls.contains(d.decl.id)) d else StanBlock()
 }

@@ -16,9 +16,9 @@ import com.cibo.scalastan.{ScalaStan, StanType}
 import com.cibo.scalastan.ast._
 
 // Break apart expressions into one operator per statement.
-case class SplitExpressions()(implicit val ss: ScalaStan) extends StanTransform {
+case class SplitExpressions()(implicit val ss: ScalaStan) extends StanTransform[Unit] {
 
-  private var decls: Seq[StanLocalDeclaration[_]] = Seq.empty
+  def initialState: Unit = ()
 
   override def run(program: StanProgram): StanProgram = {
     val updated = super.run(program)
@@ -40,68 +40,77 @@ case class SplitExpressions()(implicit val ss: ScalaStan) extends StanTransform 
     }
   }
 
-  override protected def handleAssignment(a: StanAssignment): StanStatement = {
+  override def handleAssignment(a: StanAssignment): State[StanStatement] = {
     val (lhsValue, lhsStatements) = handleLHS(a.lhs)
     val (rhsValue, rhsStatements) = splitExpression(a.rhs)
     (lhsValue, rhsValue) match {
       case (ld: StanDeclaration[_], _) =>
         val newStatement = StanAssignment(lhsValue, rhsValue, a.op)
-        StanBlock(lhsStatements ++ rhsStatements :+ newStatement)
+        State.pure(StanBlock(lhsStatements ++ rhsStatements :+ newStatement))
       case (_, st: StanDeclaration[_]) =>
         val newStatement = StanAssignment(lhsValue, rhsValue, a.op)
-        StanBlock(lhsStatements ++ rhsStatements :+ newStatement)
+        State.pure(StanBlock(lhsStatements ++ rhsStatements :+ newStatement))
       case _ =>
         val temp = StanLocalDeclaration(rhsValue.returnType, ss.newName, derivedFromData = rhsValue.isDerivedFromData)
         val decl = StanInlineDeclaration(temp)
         val load = StanAssignment(temp, rhsValue)
         val store = StanAssignment(lhsValue, temp)
-        StanBlock(lhsStatements ++ rhsStatements :+ decl :+ load :+ store)
+        State.pure(StanBlock(lhsStatements ++ rhsStatements :+ decl :+ load :+ store))
     }
   }
 
-  override protected def handleReturn(r: StanReturnStatement): StanStatement = {
+  override def handleReturn(r: StanReturnStatement): State[StanStatement] = {
     val (value, statements) = splitExpression(r.result)
-    StanBlock(statements :+ StanReturnStatement(value))
+    State.pure(StanBlock(statements :+ StanReturnStatement(value)))
   }
 
-  override protected def handleSample[T <: StanType, R <: StanType](s: StanSampleStatement[T, R]): StanStatement = {
+  override def handleSample[T <: StanType, R <: StanType](s: StanSampleStatement[T, R]): State[StanStatement] = {
     val (lhsValue, lhsStatements) = handleLHS(s.left)
     val (rhsValue, rhsStatements) = handleDistribution(s.right)
-    StanBlock(
-      lhsStatements ++ rhsStatements :+ StanSampleStatement(lhsValue, rhsValue)
-    )
+    State.pure {
+      StanBlock(
+        lhsStatements ++ rhsStatements :+ StanSampleStatement(lhsValue, rhsValue)
+      )
+    }
   }
 
-  override protected def handleIf(i: StanIfStatement): StanStatement = {
-    val newConds = i.conds.map { case (cond, statement) =>
+  override def handleIf(i: StanIfStatement): State[StanStatement] = for {
+    conds <- State.sequence(i.conds)(c => dispatch(c._2).map(x => c._1 -> x))
+    newOtherwise <- dispatchOption(i.otherwise)
+  } yield {
+    val newConds = conds.map { case (cond, statement) =>
       val (newCond, newStatements) = splitExpression(cond)
-      (newStatements, newCond -> dispatch(statement))
+      (newStatements, newCond -> statement)
     }
     val statements = newConds.flatMap(_._1)
     StanBlock(
       statements :+ i.copy(
         conds = newConds.map(_._2),
-        otherwise = i.otherwise.map(dispatch)
+        otherwise = newOtherwise
       )
     )
   }
 
-  override protected def handleFor(f: StanForLoop): StanStatement = {
+  override def handleFor(f: StanForLoop): State[StanStatement] = {
     val (start, startStatements) = splitExpression(f.range.start)
     val (end, endStatements) = splitExpression(f.range.end)
-    StanBlock(
-      startStatements ++ endStatements :+ f.copy(
-        range = f.range.copy(start = start, end = end),
-        body = dispatch(f.body)
+    dispatch(f.body).map { newBody =>
+      StanBlock(
+        startStatements ++ endStatements :+ f.copy(
+          range = f.range.copy(start = start, end = end),
+          body = newBody
+        )
       )
-    )
+    }
   }
 
-  override protected def handleWhile(w: StanWhileLoop): StanStatement = {
+  override def handleWhile(w: StanWhileLoop): State[StanStatement] = {
     val (cond, condStatements) = splitExpression(w.cond)
-    StanBlock(
-      condStatements :+ w.copy(cond = cond, body = dispatch(w.body))
-    )
+    dispatch(w.body).map { newBody =>
+      StanBlock(
+        condStatements :+ w.copy(cond = cond, body = newBody)
+      )
+    }
   }
 
   private def handleDistribution[T <: StanType, R <: StanType](
@@ -116,7 +125,7 @@ case class SplitExpressions()(implicit val ss: ScalaStan) extends StanTransform 
     (newDist, newArgs.flatMap(_._2))
   }
 
-  protected override def handleExpression[T <: StanType](expr: StanValue[T]): StanValue[T] = {
+  override def handleExpression[T <: StanType](expr: StanValue[T]): State[StanValue[T]] = {
     // If we get here, we missed the implementation of something.
     throw new NotImplementedError("handleExpression should not be called")
   }

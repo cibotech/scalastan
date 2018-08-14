@@ -387,7 +387,7 @@ trait ScalaStan extends Implicits { ss =>
       dir
     }
 
-    def transform(t: StanTransform): Model = TransformedModel(this).transform(t)
+    def transform(t: StanTransform[_]): Model = TransformedModel(this).transform(t)
 
     def compile[M <: CompiledModel](implicit runner: StanRunner[M]): CompiledModel =
       TransformedModel(this).compile(runner)
@@ -395,9 +395,9 @@ trait ScalaStan extends Implicits { ss =>
 
   case class TransformedModel private (
     model: Model,
-    transforms: Seq[StanTransform] = Seq(new LoopChecker)
+    transforms: Seq[StanTransform[_]] = Seq(new LoopChecker)
   ) extends Model {
-    override final def transform(t: StanTransform): TransformedModel = TransformedModel(model, transforms :+ t)
+    override final def transform(t: StanTransform[_]): TransformedModel = TransformedModel(model, transforms :+ t)
 
     override private[scalastan] final def program: StanProgram = {
       transforms.foldLeft(model.program) { (prev, t) => t.run(prev) }

@@ -10,42 +10,81 @@
 
 package com.cibo.scalastan.transform
 
-import com.cibo.scalastan.{ScalaStan, StanType}
+import com.cibo.scalastan.{ScalaStan, StanInt, StanType}
 import com.cibo.scalastan.ast._
 
-abstract class StanTransform(implicit ss: ScalaStan) {
+abstract class StanTransform[STATE](implicit ss: ScalaStan) {
 
-  def run(program: StanProgram): StanProgram = handleProgram(program)
+  case class State[+T](run: STATE => (T, STATE)) {
+    def flatMap[B](f: T => State[B]): State[B] = State { s =>
+      val (a, s2) = run(s)
+      f(a).run(s2)
+    }
 
-  protected def handleProgram(program: StanProgram): StanProgram = program.copy(
-    functions = program.functions.map(handleFunction),
-    transformedData = program.transformedData.map(handleTransformedData),
-    transformedParameters = program.transformedParameters.map(handleTransformedParameter),
-    generatedQuantities = program.generatedQuantities.map(handleGeneratedQuantity),
-    model = handleModel(program.model)
-  )
-
-  protected def handleFunction(function: StanFunctionDeclaration): StanFunctionDeclaration = {
-    function.copy(code = handleRoot(function.code))
+    def map[B](f: T => B): State[B] = State { s =>
+      val (a, s2) = run(s)
+      f(a) -> s2
+    }
   }
 
-  protected def handleTransformedData(transform: StanTransformedData): StanTransformedData = {
-    transform.copy(code = handleRoot(transform.code))
+  object State {
+    def pure[T](t: T): State[T] = State(s => (t, s))
+
+    def sequence[T](vs: Seq[T])(f: T => State[T]): State[Seq[T]] = State { state =>
+      vs.foldLeft(Vector.empty[T] -> state) { case ((lst, oldState), v) =>
+        val (nv, newState) = f(v).run(oldState)
+        (lst :+ nv) -> newState
+      }
+    }
+
+    def get: State[STATE] = State { s => (s, s) }
+
+    def put(v: STATE): State[STATE] = State { s => (v, v) }
+
+    def update(f: STATE => STATE): State[STATE] = State { s => (s, f(s)) }
   }
 
-  protected def handleTransformedParameter(
+  def initialState: STATE
+
+  def run(program: StanProgram): StanProgram = handleProgram(program).run(initialState)._1
+
+  def handleProgram(program: StanProgram): State[StanProgram] = {
+    for {
+      newFuncs <- State.sequence(program.functions)(handleFunction)
+      newTransData <- State.sequence(program.transformedData)(handleTransformedData)
+      newTransParams <- State.sequence(program.transformedParameters)(handleTransformedParameter)
+      newGenQuants <- State.sequence(program.generatedQuantities)(handleGeneratedQuantity)
+      newModel <- handleModel(program.model)
+    } yield program.copy(
+      functions = newFuncs,
+      transformedData = newTransData,
+      transformedParameters = newTransParams,
+      generatedQuantities = newGenQuants,
+      model = newModel
+    )
+  }
+
+  def handleFunction(function: StanFunctionDeclaration): State[StanFunctionDeclaration] = {
+    handleRoot(function.code).map(newCode => function.copy(code = newCode))
+  }
+
+  def handleTransformedData(transform: StanTransformedData): State[StanTransformedData] = {
+    handleRoot(transform.code).map(newCode => transform.copy(code = newCode))
+  }
+
+  def handleTransformedParameter(
     transform: StanTransformedParameter
-  ): StanTransformedParameter = transform.copy(code = handleRoot(transform.code))
+  ): State[StanTransformedParameter] = handleRoot(transform.code).map(newCode => transform.copy(code = newCode))
 
-  protected def handleGeneratedQuantity(g: StanGeneratedQuantity): StanGeneratedQuantity = {
-    g.copy(code = handleRoot(g.code))
+  def handleGeneratedQuantity(g: StanGeneratedQuantity): State[StanGeneratedQuantity] = {
+    handleRoot(g.code).map(newCode => g.copy(code = newCode))
   }
 
-  protected def handleModel(statement: StanStatement): StanStatement = handleRoot(statement)
+  def handleModel(statement: StanStatement): State[StanStatement] = handleRoot(statement)
 
-  protected def handleRoot(statement: StanStatement): StanStatement = dispatch(statement)
+  def handleRoot(statement: StanStatement): State[StanStatement] = dispatch(statement)
 
-  protected def dispatch(statement: StanStatement): StanStatement = statement match {
+  def dispatch(statement: StanStatement): State[StanStatement] = statement match {
     case t: StanBlock                 => handleBlock(t)
     case v: StanValueStatement        => handleValue(v)
     case a: StanAssignment            => handleAssignment(a)
@@ -59,65 +98,101 @@ abstract class StanTransform(implicit ss: ScalaStan) {
     case d: StanInlineDeclaration     => handleDecl(d)
   }
 
-  protected def handleRange(v: StanValueRange): StanValueRange =
-    v.copy(start = handleExpression(v.start), end = handleExpression(v.end))
-
-  // Process the LHS of an assignment or sample.
-  private def handleLHS[T <: StanType](v: StanValue[T]): StanValue[T] = v match {
-    case i: StanIndexOperator[_, T, _] =>
-      i.copy(
-        value = handleExpression(i.value),
-        indices = i.indices.map(x => handleExpression(x))
-      )
-    case s: StanSliceOperator[T, _]    =>
-      s.copy(value = handleExpression(s.value), slice = handleRange(s.slice))
-    case _                             => v
-  }
-
-  protected def handleBlock(b: StanBlock): StanStatement = b.copy(children = b.children.map(dispatch))
-
-  protected def handleValue(v: StanValueStatement): StanStatement = v
-
-  protected def handleAssignment(a: StanAssignment): StanStatement = a.copy(
-    lhs = handleExpression(a.lhs),
-    rhs = handleExpression(a.rhs)
-  )
-
-  protected def handleFor(f: StanForLoop): StanStatement =
-    f.copy(range = handleRange(f.range), body = dispatch(f.body))
-
-  protected def handleWhile(w: StanWhileLoop): StanStatement =
-    w.copy(cond = handleExpression(w.cond), body = dispatch(w.body))
-
-  protected def handleIf(i: StanIfStatement): StanStatement = i.copy(
-    conds = i.conds.map(cond => (cond._1, dispatch(cond._2))),
-    otherwise = i.otherwise.map(o => dispatch(o))
-  )
-
-  protected def handleBreak(b: StanBreakStatement): StanStatement = b
-
-  protected def handleContinue(c: StanContinueStatement): StanStatement = c
-
-  protected def handleSample[T <: StanType, R <: StanType](s: StanSampleStatement[T, R]): StanStatement = {
-    val lhs = handleLHS(s.left)
-    val rhs = handleDistribution(s.right)
-    s.copy(left = lhs, right = rhs)
-  }
-
-  protected def handleReturn(r: StanReturnStatement): StanStatement = r.copy(result = handleExpression(r.result))
-
-  protected def handleDecl(d: StanInlineDeclaration): StanStatement = d
-
-  private def handleDistribution[T <: StanType, R <: StanType](dist: StanDistribution[T, R]): StanDistribution[T, R] = {
-    val newArgs = dist.args.map(a => handleExpression(a))
-    dist match {
-      case c: StanContinuousDistribution[T, R]          => c.copy(args = newArgs)
-      case dc: StanDiscreteDistributionWithCdf[T, R]    => dc.copy(args = newArgs)
-      case dn: StanDiscreteDistributionWithoutCdf[T, R] => dn.copy(args = newArgs)
+  def dispatchOption(statementOpt: Option[StanStatement]): State[Option[StanStatement]] = {
+    statementOpt match {
+      case Some(statement) => dispatch(statement).map(x => Some(x))
+      case None            => State.pure(None)
     }
   }
 
-  protected def handleExpression[T <: StanType](expr: StanValue[T]): StanValue[T] = expr match {
+  def handleRange(v: StanValueRange): State[StanValueRange] = {
+    for {
+      newStart <- handleExpression(v.start)
+      newEnd <- handleExpression(v.end)
+    } yield v.copy(start = newStart, end = newEnd)
+  }
+
+  // Process the LHS of an assignment or sample.
+  private def handleLHS[T <: StanType](v: StanValue[T]): State[StanValue[T]] = v match {
+    case i: StanIndexOperator[_, T, _] =>
+      for {
+        newValue <- handleExpression(i.value)
+        newIndices <- State.sequence(i.indices)(handleExpression(_))
+      } yield i.copy(value = newValue, indices = newIndices)
+    case s: StanSliceOperator[T, _]    =>
+      for {
+        newValue <- handleExpression(s.value)
+        newSlice <- handleRange(s.slice)
+      } yield s.copy(value = newValue, slice = newSlice)
+    case _                             => State.pure(v)
+  }
+
+  def handleBlock(b: StanBlock): State[StanStatement] = {
+    State.sequence(b.children)(dispatch).map { newChildren =>
+      b.copy(children = newChildren)
+    }
+  }
+
+  def handleValue(v: StanValueStatement): State[StanStatement] = State.pure(v)
+
+  def handleAssignment(a: StanAssignment): State[StanStatement] = {
+    for {
+      newLhs <- handleExpression(a.lhs)
+      newRhs <- handleExpression(a.rhs)
+    } yield a.copy(lhs = newLhs, rhs = newRhs)
+  }
+
+  def handleFor(f: StanForLoop): State[StanStatement] = {
+    for {
+      newRange <- handleRange(f.range)
+      newBody <- dispatch(f.body)
+    } yield f.copy(range = newRange, body = newBody)
+  }
+
+  def handleWhile(w: StanWhileLoop): State[StanStatement] = {
+    for {
+      newCond <- handleExpression(w.cond)
+      newBody <- dispatch(w.body)
+    } yield w.copy(cond = newCond, body = newBody)
+  }
+
+  def handleIf(i: StanIfStatement): State[StanStatement] = {
+    for {
+      newConds <- State.sequence(i.conds)(c => dispatch(c._2).map(x => c._1 -> x))
+      newOtherwise <- dispatchOption(i.otherwise)
+    } yield i.copy(conds = newConds, otherwise = newOtherwise)
+  }
+
+  def handleBreak(b: StanBreakStatement): State[StanStatement] = State.pure(b)
+
+  def handleContinue(c: StanContinueStatement): State[StanStatement] = State.pure(c)
+
+  def handleSample[T <: StanType, R <: StanType](s: StanSampleStatement[T, R]): State[StanStatement] = {
+    for {
+      newLhs <- handleLHS(s.left)
+      newRhs <- handleDistribution(s.right)
+    } yield s.copy(left = newLhs, right = newRhs)
+  }
+
+  def handleReturn(r: StanReturnStatement): State[StanStatement] = {
+    handleExpression(r.result).map(newResult => r.copy(result = newResult))
+  }
+
+  def handleDecl(d: StanInlineDeclaration): State[StanStatement] = State.pure(d)
+
+  private def handleDistribution[T <: StanType, R <: StanType](
+    dist: StanDistribution[T, R]
+  ): State[StanDistribution[T, R]] = {
+    State.sequence(dist.args)(handleExpression(_)).map { newArgs =>
+      dist match {
+        case c: StanContinuousDistribution[T, R]          => c.copy(args = newArgs)
+        case dc: StanDiscreteDistributionWithCdf[T, R]    => dc.copy(args = newArgs)
+        case dn: StanDiscreteDistributionWithoutCdf[T, R] => dn.copy(args = newArgs)
+      }
+    }
+  }
+
+  def handleExpression[T <: StanType](expr: StanValue[T]): State[StanValue[T]] = expr match {
     case call: StanCall[T] => handleCall(call)
     case gt: StanGetTarget => handleGetTarget(gt)
     case tv: StanTargetValue => handleTargetValue(tv)
@@ -135,59 +210,73 @@ abstract class StanTransform(implicit ss: ScalaStan) {
     case ud: StanUnknownDim => handleUnknownDim(ud)
   }
 
-  protected def handleCall[T <: StanType](call: StanCall[T]): StanValue[T] = call.copy(
-    args = call.args.map(handleExpression(_))
-  )
-
-  protected def handleGetTarget[T <: StanType](gt: StanGetTarget): StanValue[T] = gt.asInstanceOf[StanValue[T]]
-
-  protected def handleTargetValue[T <: StanType](tv: StanTargetValue): StanValue[T] = tv.asInstanceOf[StanValue[T]]
-
-  protected def handleDistributionNode[T <: StanType](d: StanDistributionNode[_ <: StanType]): StanValue[T] = d.copy(
-    y = handleExpression(d.y),
-    args = d.args.map(handleExpression(_))
-  ).asInstanceOf[StanValue[T]]
-
-  protected def handleUnaryOperator[T <: StanType, R <: StanType](op: StanUnaryOperator[T, R]): StanValue[R] = {
-    op.copy(right = handleExpression(op.right))
+  def handleCall[T <: StanType](call: StanCall[T]): State[StanValue[T]] = {
+    State.sequence(call.args)(handleExpression(_)).map(newArgs => call.copy(args = newArgs))
   }
 
-  protected def handleBinaryOperator[T <: StanType, L <: StanType, R <: StanType](
+  def handleGetTarget[T <: StanType](gt: StanGetTarget): State[StanValue[T]] =
+    State.pure(gt.asInstanceOf[StanValue[T]])
+
+  def handleTargetValue[T <: StanType](tv: StanTargetValue): State[StanValue[T]] =
+    State.pure(tv.asInstanceOf[StanValue[T]])
+
+  def handleDistributionNode[T <: StanType](d: StanDistributionNode[_ <: StanType]): State[StanValue[T]] = {
+    for {
+      newY <- handleExpression(d.y)
+      newArgs <- State.sequence(d.args)(handleExpression(_))
+    } yield d.copy(y = newY, args = newArgs).asInstanceOf[StanValue[T]]
+  }
+
+  def handleUnaryOperator[T <: StanType, R <: StanType](op: StanUnaryOperator[T, R]): State[StanValue[R]] = {
+    handleExpression(op.right).map(newRight => op.copy(right = newRight))
+  }
+
+  def handleBinaryOperator[T <: StanType, L <: StanType, R <: StanType](
     op: StanBinaryOperator[T, L, R]
-  ): StanValue[T] = op.copy(
-    left = handleExpression(op.left),
-    right = handleExpression(op.right)
-  )
+  ): State[StanValue[T]] = {
+    for {
+      newLeft <- handleExpression(op.left)
+      newRight <- handleExpression(op.right)
+    } yield op.copy(left = newLeft, right = newRight)
+  }
 
-  protected def handleIndexOperator[T <: StanType, N <: StanType, D <: StanDeclaration[_]](
+  def handleIndexOperator[T <: StanType, N <: StanType, D <: StanDeclaration[_]](
     op: StanIndexOperator[T, N, D]
-  ): StanValue[N] = op.copy(
-    value = handleExpression(op.value),
-    indices = op.indices.map(handleExpression(_))
-  )
+  ): State[StanValue[N]] = {
+    for {
+      newValue <- handleExpression(op.value)
+      newIndices <- State.sequence(op.indices)(handleExpression(_))
+    } yield op.copy(value = newValue, indices = newIndices)
+  }
 
-  protected def handleSliceOperator[T <: StanType, D <: StanDeclaration[_]](
+  def handleSliceOperator[T <: StanType, D <: StanDeclaration[_]](
     op: StanSliceOperator[T, D]
-  ): StanValue[T] = op.copy(
-    value = handleExpression(op.value),
-    slice = handleRange(op.slice)
-  )
+  ): State[StanValue[T]] = {
+    for {
+      newValue <- handleExpression(op.value)
+      newSlice <- handleRange(op.slice)
+    } yield op.copy(value = newValue, slice = newSlice)
+  }
 
-  protected def handleTranspose[T <: StanType, R <: StanType](tr: StanTranspose[T, R]): StanValue[R] = tr.copy(
-    value = handleExpression(tr.value)
-  )
+  def handleTranspose[T <: StanType, R <: StanType](tr: StanTranspose[T, R]): State[StanValue[R]] = {
+    handleExpression(tr.value).map(newValue => tr.copy(value = newValue))
+  }
 
-  protected def handleConstant[T <: StanType](cn: StanConstant[T]): StanValue[T] = cn
+  def handleConstant[T <: StanType](cn: StanConstant[T]): State[StanValue[T]] = State.pure(cn)
 
-  protected def handleArray[R <: StanType, N <: StanType](ar: StanArrayLiteral[N, _]): StanValue[R] = ar.copy(
-    values = ar.values.map(handleExpression)
-  ).asInstanceOf[StanValue[R]]
+  def handleArray[R <: StanType, N <: StanType](ar: StanArrayLiteral[N, _]): State[StanValue[R]] = {
+    State.sequence(ar.values)(handleExpression).map { newValues =>
+      ar.copy(values = newValues).asInstanceOf[StanValue[R]]
+    }
+  }
 
-  protected def handleString[T <: StanType](st: StanStringLiteral): StanValue[T] = st.asInstanceOf[StanValue[T]]
+  def handleString[T <: StanType](st: StanStringLiteral): State[StanValue[T]] =
+    State.pure(st.asInstanceOf[StanValue[T]])
 
-  protected def handleLiteral[T <: StanType](l: StanLiteral): StanValue[T] = l.asInstanceOf[StanValue[T]]
+  def handleLiteral[T <: StanType](l: StanLiteral): State[StanValue[T]] = State.pure(l.asInstanceOf[StanValue[T]])
 
-  protected def handleUnknownDim[T <: StanType](ud: StanUnknownDim): StanValue[T] = ud.asInstanceOf[StanValue[T]]
+  def handleUnknownDim[T <: StanType](ud: StanUnknownDim): State[StanValue[T]] =
+    State.pure(ud.asInstanceOf[StanValue[T]])
 
-  protected def handleVariable[T <: StanType](decl: StanDeclaration[T]): StanValue[T] = decl
+  def handleVariable[T <: StanType](decl: StanDeclaration[T]): State[StanValue[T]] = State.pure(decl)
 }

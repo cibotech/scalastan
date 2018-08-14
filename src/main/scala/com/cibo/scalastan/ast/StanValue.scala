@@ -62,7 +62,8 @@ abstract class StanValue[T <: StanType] extends StanNode with Implicits {
     right: StanValue[B]
   )(
     implicit ev: AdditionAllowed[R, T, B]
-  ): StanValue[R] = StanBinaryOperator(StanBinaryOperator.Add, ev.newType(returnType, right.returnType), this, right)
+  ): StanValue[R] =
+    StanBinaryOperator(StanBinaryOperator.Add, ev.newType(returnType, right.returnType), this, right)
 
   def -[B <: StanType, R <: StanType](
     right: StanValue[B]

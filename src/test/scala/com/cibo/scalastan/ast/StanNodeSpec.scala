@@ -60,7 +60,10 @@ class StanNodeSpec extends ScalaStanBaseSpec with ScalaStan {
     }
 
     it("should allow rng in a generated quantity") {
-      val gen = new GeneratedQuantity(real()) { stan.normal(v1, v2).rng }
+      val model = new Model {}
+      val gen = new model.GeneratedQuantity(real()) {
+        stan.normal(v1, v2).rng
+      }
     }
 
     it("should not allow rng in a model") {
@@ -68,7 +71,10 @@ class StanNodeSpec extends ScalaStanBaseSpec with ScalaStan {
     }
 
     it("should allow rng with addition") {
-      val gen = new GeneratedQuantity(real()) { result := result + stan.normal(v1, v2).rng }
+      val model = new Model {}
+      val gen = new model.GeneratedQuantity(real()) {
+        result := result + stan.normal(v1, v2).rng
+      }
     }
   }
 }

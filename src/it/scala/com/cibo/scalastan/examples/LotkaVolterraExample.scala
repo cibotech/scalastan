@@ -57,15 +57,16 @@ object LotkaVolterraExample extends App with ScalaStan {
         y(i, k) ~ stan.lognormal(stan.log(z(i, k)), sigma)
       }
     }
+
   }
 
-  val y0_rep = new GeneratedQuantity(real()(2)) {
+  val y0_rep = new model.GeneratedQuantity(real()(2)) {
     for (k <- range(1, 2)) {
       result(k) := stan.lognormal(stan.log(z0(k)), sigma(k)).rng
     }
   }
 
-  val y_rep = new GeneratedQuantity(real()(N, 2)) {
+  val y_rep = new model.GeneratedQuantity(real()(N, 2)) {
     for (k <- range(1, 2)) {
       for (n <- range(1, N)) {
         result(n, k) := stan.lognormal(stan.log(z(n, k)), sigma(k)).rng

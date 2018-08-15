@@ -2,12 +2,22 @@ package com.cibo.scalastan
 
 class GeneratedQuantitySpec extends ScalaStanBaseSpec {
   describe("GeneratedQuantity") {
-    it("should allow assignment to the result") {
+    it("should allow assignment to the result (inside)") {
       new ScalaStan {
         val model = new Model {
           val t = new GeneratedQuantity(real()) {
             result := 5
           }
+        }
+        checkCode(model, "generated quantities { real t; { t = 5; } }")
+      }
+    }
+
+    it("should allow assignment to the result (outside)") {
+      new ScalaStan {
+        val model = new Model { }
+        val t = new model.GeneratedQuantity(real()) {
+          result := 5
         }
         checkCode(model, "generated quantities { real t; { t = 5; } }")
       }

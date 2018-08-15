@@ -27,7 +27,7 @@ class StanFunctionsSpec extends ScalaStanBaseSpec {
             val n = local(int())
             local(vector(n)) := stan.append_row(local(real()), local(vector(n)))
           }
-          checkCode(model, "v# = append_row(v#, v#);")
+          checkCode(model, "ss_v# = append_row(ss_v#, ss_v#);")
         }
       }
     }
@@ -39,7 +39,7 @@ class StanFunctionsSpec extends ScalaStanBaseSpec {
             val n = local(int())
             local(rowVector(n)) := stan.append_col(local(real()), local(rowVector(n)))
           }
-          checkCode(model, "v# = append_col(v#, v#);")
+          checkCode(model, "ss_v# = append_col(ss_v#, ss_v#);")
         }
       }
     }
@@ -50,7 +50,7 @@ class StanFunctionsSpec extends ScalaStanBaseSpec {
           val model = new Model {
             local(int()) := stan.min(local(int()), local(int()))
           }
-          checkCode(model, "v# = min(v#, v#);")
+          checkCode(model, "ss_v# = min(ss_v#, ss_v#);")
         }
       }
 
@@ -59,7 +59,7 @@ class StanFunctionsSpec extends ScalaStanBaseSpec {
           val model = new Model {
             local(real()) := stan.min(local(vector(local(int()))))
           }
-          checkCode(model, "v# = min(v#);")
+          checkCode(model, "ss_v# = min(ss_v#);")
         }
       }
     }
@@ -70,7 +70,7 @@ class StanFunctionsSpec extends ScalaStanBaseSpec {
           val model = new Model {
             local(int()) := stan.abs(local(int()))
           }
-          checkCode(model, "v# = abs(v#);")
+          checkCode(model, "ss_v# = abs(ss_v#);")
         }
       }
     }
@@ -81,7 +81,7 @@ class StanFunctionsSpec extends ScalaStanBaseSpec {
           val model = new Model {
             local(real()) := stan.pow(local(int()), local(int()))
           }
-          checkCode(model, "v# = pow(v#,v#);")
+          checkCode(model, "ss_v# = pow(ss_v#,ss_v#);")
         }
       }
 
@@ -90,7 +90,7 @@ class StanFunctionsSpec extends ScalaStanBaseSpec {
           val model = new Model {
             local(real()) := stan.pow(local(real()), local(real()))
           }
-          checkCode(model, "v# = pow(v#,v#);")
+          checkCode(model, "ss_v# = pow(ss_v#,ss_v#);")
         }
       }
     }
@@ -107,7 +107,7 @@ class StanFunctionsSpec extends ScalaStanBaseSpec {
           val n = local(int())
           local(real()) := stan.distance(local(vector(n)), local(vector(n)))
         }
-        checkCode(model, "v# = distance(v#,v#);")
+        checkCode(model, "ss_v# = distance(ss_v#,ss_v#);")
       }
     }
 
@@ -117,7 +117,7 @@ class StanFunctionsSpec extends ScalaStanBaseSpec {
           val n = local(int())
           local(real()) := stan.distance(local(vector(n)), local(rowVector(n)))
         }
-        checkCode(model, "v# = distance(v#,v#);")
+        checkCode(model, "ss_v# = distance(ss_v#,ss_v#);")
       }
     }
 
@@ -127,7 +127,7 @@ class StanFunctionsSpec extends ScalaStanBaseSpec {
           val n = local(int())
           local(real()) := stan.distance(local(rowVector(n)), local(vector(n)))
         }
-        checkCode(model, "v# = distance(v#,v#);")
+        checkCode(model, "ss_v# = distance(ss_v#,ss_v#);")
       }
     }
   }

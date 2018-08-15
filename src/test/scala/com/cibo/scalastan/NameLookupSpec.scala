@@ -38,5 +38,16 @@ class NameLookupSpec extends FunSpec with Matchers {
       }
       anon.Test.t.name shouldBe "t"
     }
+
+    it("finds names in functions") {
+      new ScalaStan {
+        def func(): Unit = {
+          val a = parameter(real())
+          a.name shouldBe "a"
+        }
+
+        func()
+      }
+    }
   }
 }

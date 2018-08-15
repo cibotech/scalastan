@@ -50,7 +50,7 @@ case class StanValueRange(
   // This foreach will get called automatically when a for comprehension is used with ValueRange.
   def foreach(f: StanValue[StanInt] => Unit)(implicit ev: TemporaryValue[StanInt], builder: CodeBuilder): Unit = {
     val temp = ev.create()
-    val decl = StanLocalDeclaration[StanInt](temp)
+    val decl = StanLocalDeclaration[StanInt](temp, ss.newName)
     builder.enter()
     f(decl)
     builder.leave(children => StanForLoop(decl, this, StanBlock(children)))

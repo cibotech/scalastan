@@ -15,14 +15,15 @@ import com.cibo.scalastan._
 // A distribution (Normal, etc.)
 sealed abstract class StanDistribution[T <: StanType, R <: StanType] extends StanNode {
   protected val name: String
-  private[scalastan] val args: Seq[StanValue[_ <: StanType]]
-  protected val lowerOpt: Option[StanValue[_]]
-  protected val upperOpt: Option[StanValue[_]]
+  val args: Seq[StanValue[_ <: StanType]]
+  protected val lowerOpt: Option[StanValue[_ <: StanType]]
+  protected val upperOpt: Option[StanValue[_ <: StanType]]
 
-  private[scalastan] def inputs: Seq[StanDeclaration[_ <: StanType]] =
+  def inputs: Seq[StanDeclaration[_ <: StanType]] =
     args.flatMap(_.inputs) ++ lowerOpt.toSeq.flatMap(_.inputs) ++ upperOpt.toSeq.flatMap(_.inputs)
-  private[scalastan] def outputs: Seq[StanDeclaration[_ <: StanType]] =
+  def outputs: Seq[StanDeclaration[_ <: StanType]] =
     args.flatMap(_.outputs) ++ lowerOpt.toSeq.flatMap(_.outputs) ++ upperOpt.toSeq.flatMap(_.outputs)
+  def values: Seq[StanValue[_ <: StanType]] = args ++ lowerOpt.toSeq ++ upperOpt.toSeq
 
   private[scalastan] def export(builder: CodeBuilder): Unit = {
     args.foreach(_.export(builder))

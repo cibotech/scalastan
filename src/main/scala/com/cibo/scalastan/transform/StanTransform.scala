@@ -279,4 +279,17 @@ abstract class StanTransform[STATE](implicit ss: ScalaStan) {
     State.pure(ud.asInstanceOf[StanValue[T]])
 
   def handleVariable[T <: StanType](decl: StanDeclaration[T]): State[StanValue[T]] = State.pure(decl)
+
+  def allInputs(statement: StanStatement): Seq[StanDeclaration[_]] = {
+    statement.inputs ++ statement.children.flatMap(allInputs)
+  }
+
+  def allOutputs(statement: StanStatement): Seq[StanDeclaration[_]] = {
+    statement.outputs ++ statement.children.flatMap(allOutputs)
+  }
+
+  def allValues(statement: StanStatement): Seq[StanValue[_ <: StanType]] = {
+    def helper(v: StanValue[_ <: StanType]): Seq[StanValue[_ <: StanType]] = v +: v.children.flatMap(helper)
+    statement.values.flatMap(helper) ++ statement.children.flatMap(allValues)
+  }
 }

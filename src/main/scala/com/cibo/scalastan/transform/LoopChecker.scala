@@ -18,8 +18,8 @@ class LoopChecker(implicit val ss: ScalaStan) extends StanTransform[Int] {
 
   def initialState: Int = 0
 
-  def increment: State[Int] = State { s => (s, s + 1) }
-  def decrement: State[Int] = State { s => (s, s - 1) }
+  def increment: State[Unit] = State.modify(_ + 1)
+  def decrement: State[Unit] = State.modify(_ - 1)
 
   override def handleWhile(w: StanWhileLoop): State[StanStatement] = for {
     _ <- increment

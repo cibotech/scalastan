@@ -23,11 +23,11 @@ case class AstSimplifier()(implicit val ss: ScalaStan) extends StanTransform[Uni
   }
 
   override def handleBlock(b: StanBlock): State[StanStatement] = for {
-    newChildren <- State.sequence(b.children)(dispatch)
+    newChildren <- State.traverse(b.children)(dispatch)
   } yield if (newChildren.size == 1) newChildren.head else StanBlock(newChildren)
 
   override def handleIf(i: StanIfStatement): State[StanStatement] = for {
-    conds <- State.sequence(i.conds)(c => dispatch(c._2).map(x => c._1 -> x))
+    conds <- State.traverse(i.conds)(c => dispatch(c._2).map(x => c._1 -> x))
     newConds = conds.filterNot(s => isEmpty(s._2))
     otherwise <- dispatchOption(i.otherwise)
     newOtherwise = otherwise.flatMap(o => if (isEmpty(o)) None else Some(o))

@@ -32,7 +32,7 @@ case class CopyPropagation()(implicit val ss: ScalaStan) extends StanTransform[C
   }
 
   override def handleRoot(r: StanStatement): State[StanStatement] = for {
-    _ <- State.update(_.copy(root = Some(r)))
+    _ <- State.modify(_.copy(root = Some(r)))
     newRoot <- dispatch(r)
   } yield newRoot
 
@@ -41,12 +41,12 @@ case class CopyPropagation()(implicit val ss: ScalaStan) extends StanTransform[C
     uses: Seq[StanStatement],
     lhs: StanDeclaration[_ <: StanType],
     rhs: StanDeclaration[_ <: StanType]
-  ): State[CopyPropagationState] = {
+  ): State[Unit] = {
     if (shouldUpdate) {
       val newMappings = uses.map { use => (use.id, lhs) -> rhs }
-      State.update(s => s.copy(substitutions = s.substitutions ++ newMappings))
+      State.modify(s => s.copy(substitutions = s.substitutions ++ newMappings))
     } else {
-      State.get
+      State.pure(())
     }
   }
 

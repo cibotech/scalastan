@@ -61,9 +61,9 @@ case class CSE()(implicit val ss: ScalaStan) extends StanTransform[CSEState] {
   }
 
   override def handleRoot(statement: StanStatement): State[StanStatement] = for {
-    _ <- State.update(_.copy(root = Some(statement)))
-    _ <- State.update(_.copy(mapping = StanProgram.getStatements(statement).map(s => s.id -> s).toMap))
-    _ <- State.update(_.copy(eliminated = Set.empty))
+    _ <- State.modify(_.copy(root = Some(statement)))
+    _ <- State.modify(_.copy(mapping = StanProgram.getStatements(statement).map(s => s.id -> s).toMap))
+    _ <- State.modify(_.copy(eliminated = Set.empty))
     newRoot <- dispatch(statement)
   } yield newRoot
 
@@ -71,7 +71,7 @@ case class CSE()(implicit val ss: ScalaStan) extends StanTransform[CSEState] {
     otherOpt match {
       case Some(oa) =>
         for {
-          _ <- State.update(old => old.copy(eliminated = old.eliminated + a.id))
+          _ <- State.modify(old => old.copy(eliminated = old.eliminated + a.id))
         } yield StanAssignment(a.lhs, oa.lhs, a.op)
       case None => State.pure(a)
     }

@@ -10,7 +10,7 @@
 
 package com.cibo.scalastan.transform
 
-import com.cibo.scalastan.{ScalaStan, StanInt, StanType}
+import com.cibo.scalastan.{ScalaStan, StanType}
 import com.cibo.scalastan.ast._
 
 abstract class StanTransform[STATE](implicit ss: ScalaStan) {
@@ -30,7 +30,7 @@ abstract class StanTransform[STATE](implicit ss: ScalaStan) {
   object State {
     def pure[T](t: T): State[T] = State(s => (t, s))
 
-    def sequence[T](vs: Seq[T])(f: T => State[T]): State[Seq[T]] = State { state =>
+    def traverse[T](vs: Seq[T])(f: T => State[T]): State[Seq[T]] = State { state =>
       vs.foldLeft(Vector.empty[T] -> state) { case ((lst, oldState), v) =>
         val (nv, newState) = f(v).run(oldState)
         (lst :+ nv) -> newState
@@ -39,9 +39,9 @@ abstract class StanTransform[STATE](implicit ss: ScalaStan) {
 
     def get: State[STATE] = State { s => (s, s) }
 
-    def put(v: STATE): State[STATE] = State { s => (v, v) }
+    def put(v: STATE): State[Unit] = State { s => ((), v) }
 
-    def update(f: STATE => STATE): State[STATE] = State { s => (s, f(s)) }
+    def modify(f: STATE => STATE): State[Unit] = State { s => ((), f(s)) }
   }
 
   def initialState: STATE
@@ -50,10 +50,10 @@ abstract class StanTransform[STATE](implicit ss: ScalaStan) {
 
   def handleProgram(program: StanProgram): State[StanProgram] = {
     for {
-      newFuncs <- State.sequence(program.functions)(handleFunction)
-      newTransData <- State.sequence(program.transformedData)(handleTransformedData)
-      newTransParams <- State.sequence(program.transformedParameters)(handleTransformedParameter)
-      newGenQuants <- State.sequence(program.generatedQuantities)(handleGeneratedQuantity)
+      newFuncs <- State.traverse(program.functions)(handleFunction)
+      newTransData <- State.traverse(program.transformedData)(handleTransformedData)
+      newTransParams <- State.traverse(program.transformedParameters)(handleTransformedParameter)
+      newGenQuants <- State.traverse(program.generatedQuantities)(handleGeneratedQuantity)
       newModel <- handleModel(program.model)
     } yield program.copy(
       functions = newFuncs,
@@ -117,7 +117,7 @@ abstract class StanTransform[STATE](implicit ss: ScalaStan) {
     case i: StanIndexOperator[_, T, _] =>
       for {
         newValue <- handleExpression(i.value)
-        newIndices <- State.sequence(i.indices)(handleExpression(_))
+        newIndices <- State.traverse(i.indices)(handleExpression(_))
       } yield i.copy(value = newValue, indices = newIndices)
     case s: StanSliceOperator[T, _]    =>
       for {
@@ -128,7 +128,7 @@ abstract class StanTransform[STATE](implicit ss: ScalaStan) {
   }
 
   def handleBlock(b: StanBlock): State[StanStatement] = {
-    State.sequence(b.children)(dispatch).map { newChildren =>
+    State.traverse(b.children)(dispatch).map { newChildren =>
       b.copy(children = newChildren)
     }
   }
@@ -158,7 +158,7 @@ abstract class StanTransform[STATE](implicit ss: ScalaStan) {
 
   def handleIf(i: StanIfStatement): State[StanStatement] = {
     for {
-      newConds <- State.sequence(i.conds)(c => dispatch(c._2).map(x => c._1 -> x))
+      newConds <- State.traverse(i.conds)(c => dispatch(c._2).map(x => c._1 -> x))
       newOtherwise <- dispatchOption(i.otherwise)
     } yield i.copy(conds = newConds, otherwise = newOtherwise)
   }
@@ -183,7 +183,7 @@ abstract class StanTransform[STATE](implicit ss: ScalaStan) {
   private def handleDistribution[T <: StanType, R <: StanType](
     dist: StanDistribution[T, R]
   ): State[StanDistribution[T, R]] = {
-    State.sequence(dist.args)(handleExpression(_)).map { newArgs =>
+    State.traverse(dist.args)(handleExpression(_)).map { newArgs =>
       dist match {
         case c: StanContinuousDistribution[T, R]          => c.copy(args = newArgs)
         case dc: StanDiscreteDistributionWithCdf[T, R]    => dc.copy(args = newArgs)
@@ -211,7 +211,7 @@ abstract class StanTransform[STATE](implicit ss: ScalaStan) {
   }
 
   def handleCall[T <: StanType](call: StanCall[T]): State[StanValue[T]] = {
-    State.sequence(call.args)(handleExpression(_)).map(newArgs => call.copy(args = newArgs))
+    State.traverse(call.args)(handleExpression(_)).map(newArgs => call.copy(args = newArgs))
   }
 
   def handleGetTarget[T <: StanType](gt: StanGetTarget): State[StanValue[T]] =
@@ -223,7 +223,7 @@ abstract class StanTransform[STATE](implicit ss: ScalaStan) {
   def handleDistributionNode[T <: StanType](d: StanDistributionNode[_ <: StanType]): State[StanValue[T]] = {
     for {
       newY <- handleExpression(d.y)
-      newArgs <- State.sequence(d.args)(handleExpression(_))
+      newArgs <- State.traverse(d.args)(handleExpression(_))
     } yield d.copy(y = newY, args = newArgs).asInstanceOf[StanValue[T]]
   }
 
@@ -245,7 +245,7 @@ abstract class StanTransform[STATE](implicit ss: ScalaStan) {
   ): State[StanValue[N]] = {
     for {
       newValue <- handleExpression(op.value)
-      newIndices <- State.sequence(op.indices)(handleExpression(_))
+      newIndices <- State.traverse(op.indices)(handleExpression(_))
     } yield op.copy(value = newValue, indices = newIndices)
   }
 
@@ -265,7 +265,7 @@ abstract class StanTransform[STATE](implicit ss: ScalaStan) {
   def handleConstant[T <: StanType](cn: StanConstant[T]): State[StanValue[T]] = State.pure(cn)
 
   def handleArray[R <: StanType, N <: StanType](ar: StanArrayLiteral[N, _]): State[StanValue[R]] = {
-    State.sequence(ar.values)(handleExpression).map { newValues =>
+    State.traverse(ar.values)(handleExpression).map { newValues =>
       ar.copy(values = newValues).asInstanceOf[StanValue[R]]
     }
   }

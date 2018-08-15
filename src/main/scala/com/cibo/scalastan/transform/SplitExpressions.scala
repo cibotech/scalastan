@@ -75,7 +75,7 @@ case class SplitExpressions()(implicit val ss: ScalaStan) extends StanTransform[
   }
 
   override def handleIf(i: StanIfStatement): State[StanStatement] = for {
-    conds <- State.sequence(i.conds)(c => dispatch(c._2).map(x => c._1 -> x))
+    conds <- State.traverse(i.conds)(c => dispatch(c._2).map(x => c._1 -> x))
     newOtherwise <- dispatchOption(i.otherwise)
   } yield {
     val newConds = conds.map { case (cond, statement) =>

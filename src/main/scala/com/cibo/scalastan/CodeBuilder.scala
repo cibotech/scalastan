@@ -26,7 +26,7 @@ protected class CodeBuilder {
   private val functions = ArrayBuffer[ScalaStan#Function[_]]()
   private val transformedData = ArrayBuffer[ScalaStan#TransformedData[_]]()
   private val transformedParameters = ArrayBuffer[ScalaStan#TransformedParameter[_]]()
-  private val generatedQuantities = ArrayBuffer[ScalaStan#GeneratedQuantity[_]]()
+  private val generatedQuantities = ArrayBuffer[ScalaStan#Model#GeneratedQuantity[_]]()
 
   // Create the top-level scope.
   stack += ArrayBuffer()
@@ -95,7 +95,7 @@ protected class CodeBuilder {
   def append(f: ScalaStan#Function[_]): Unit = append(f, functions)
   def append(t: ScalaStan#TransformedData[_]): Unit = append(t, transformedData)
   def append(t: ScalaStan#TransformedParameter[_]): Unit = append(t, transformedParameters)
-  def append(g: ScalaStan#GeneratedQuantity[_]): Unit = append(g, generatedQuantities)
+  def append(g: ScalaStan#Model#GeneratedQuantity[_]): Unit = append(g, generatedQuantities)
 
   def append(s: StanStatement): Unit = {
     require(stack.nonEmpty)

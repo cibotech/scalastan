@@ -247,13 +247,17 @@ val myFunc = new Function(vector(n)) {
 Generated Quantities
 --------------------
 Generated quantities provide a means of deriving quantities from parameters, data, and random number generation.
-In ScalaStan, such quantities are created by extending the `GeneratedQuantity` class. This class works like
-the data and parameter transform blocks.  In addition to parameters and data, a generated quantity can use
-random numbers drawn from a distribution.
+In ScalaStan, such quantities are created by extending the `GeneratedQuantity` class for a model. This class
+works like the data and parameter transform blocks, but is contained in the model.  In addition to parameters and
+data, a generated quantity can use random numbers drawn from a distribution.
 
 Here is an example to draw a random number:
 ```scala
-val rand = new GeneratedQuantity(real()) {
+val myModel = new Model {
+  // ...
+}
+
+val rand = new myModel.GeneratedQuantity(real()) {
   result := stan.normal(0.0, 1.0).rng
 }
 ```

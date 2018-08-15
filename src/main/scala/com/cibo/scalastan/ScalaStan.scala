@@ -53,7 +53,18 @@ trait ScalaStan extends Implicits { ss =>
     }
   }
 
-  private def fixEnclosingName(name: String): String = fixName(name.split(' ').head.split('#').last.split('.').last)
+  private def fixEnclosingName(name: String): String = {
+    // These names have the form of:
+    //    "com.cibo.scalastan.GeneratedQuantitySpec#$anon#model $anon#t $anon" or
+    //    "com.cibo.scalastan.GeneratedQuantitySpec#$anon#t $anon"
+    // where "t" is the name of interest.
+    val parts = name.split(' ')
+    if (parts.length > 1) {
+      fixName(parts.dropRight(1).last.split('#').last.split('.').last)
+    } else {
+      newName
+    }
+  }
 
   def data[T <: StanType](typeConstructor: T)(implicit name: sourcecode.Name): DataDeclaration[T] = {
     StanDataDeclaration[T](typeConstructor, fixName(name.value))

@@ -361,22 +361,21 @@ trait ScalaStan extends Implicits { ss =>
   ) extends Model {
     override final def transform(t: StanTransform): TransformedModel = TransformedModel(model, transforms :+ t)
 
-    override private[scalastan] final def program: StanProgram =
+    override private[scalastan] final def program: StanProgram = {
       transforms.foldLeft(model.program) { (prev, t) => t.run(prev) }
+    }
 
     override final def emit(writer: PrintWriter): Unit = program.emit(writer)
 
     override final def compile[M <: CompiledModel](implicit runner: StanRunner[M]): CompiledModel =
-      runner.compile(ss, model)
+      runner.compile(ss, this)
   }
 
   private case class BlackBoxModel private (
     private val model: String
   ) extends Model {
 
-    override def emit(pw: PrintWriter): Unit = {
-      pw.write(model)
-    }
+    override def emit(pw: PrintWriter): Unit = pw.write(model)
 
     override private[scalastan] def generate: File = {
       val hash = SHA.hash(model)
@@ -394,6 +393,9 @@ trait ScalaStan extends Implicits { ss =>
       }
       dir
     }
+
+    override final def compile[M <: CompiledModel](implicit runner: StanRunner[M]): CompiledModel =
+      runner.compile(ss, this)
   }
 
   object Model {

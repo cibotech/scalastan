@@ -34,12 +34,6 @@ trait ScalaStan extends Implicits { ss =>
 
   protected implicit val _scalaStan: ScalaStan = this
 
-  // Generated quantities aren't referenced from the model, so we need some way to cause them
-  // to be generated.  For now, we simply generate all generated quantities.
-  // In the future maybe generated quantity code should be moved inside the model so that we
-  // can associate it with the model more easily?
-  private val generatedQuantities: ArrayBuffer[GeneratedQuantity[_]] = new ArrayBuffer[GeneratedQuantity[_]]()
-
   private var idCounter: Int = 0
 
   private def nextId: Int = {
@@ -132,20 +126,6 @@ trait ScalaStan extends Implicits { ss =>
   def choleskyFactorCov(
     dim: StanValue[StanInt]
   ): StanMatrix = StanMatrix(dim, dim, constraint = MatrixConstraint.CholeskyFactorCov)
-
-  implicit def compile[M <: CompiledModel](model: Model)(implicit runner: StanRunner[M]): CompiledModel = model.compile
-
-  implicit def dataTransform2Value[T <: StanType](transform: TransformedData[T]): StanLocalDeclaration[T] = {
-    transform.result
-  }
-
-  implicit def paramTransform2Value[T <: StanType](transform: TransformedParameter[T]): ParameterDeclaration[T] = {
-    transform.result
-  }
-
-  implicit def generatedQuntity2Value[T <: StanType](quantity: GeneratedQuantity[T]): ParameterDeclaration[T] = {
-    quantity.result
-  }
 
   trait StanCode {
 
@@ -293,26 +273,33 @@ trait ScalaStan extends Implicits { ss =>
     private[scalastan] lazy val generate: StanTransformedParameter = StanTransformedParameter(result, _code.results)
   }
 
-  abstract class GeneratedQuantity[T <: StanType](typeConstructor: T)(
-    implicit sourceName: sourcecode.Enclosing
-  ) extends TransformBase[T, StanParameterDeclaration[T]] {
-    val name: String = fixEnclosingName(sourceName.value)
-
-    lazy val result: StanParameterDeclaration[T] = {
-      if (!generatedQuantities.exists(_.name == name)) {
-        generatedQuantities += this
-      }
-      StanParameterDeclaration[T](typeConstructor, name, owner = Some(this))
-    }
-    protected implicit val _generatedQuantity: InGeneratedQuantityBlock = InGeneratedQuantityBlock
-
-    private[scalastan] def export(builder: CodeBuilder): Unit = builder.append(this)
-
-    private[scalastan] lazy val generate: StanGeneratedQuantity = StanGeneratedQuantity(result, _code.results)
-  }
-
   /** Trait providing the Stan Model DSL. */
   trait Model extends StanCode {
+
+    // Generated quantities aren't referenced from the model, so we need some way to cause them
+    // to be generated.  To deal with this, generated quantities are created inside the model
+    // so that we can track them and generate them when the model is generated.
+    private val generatedQuantities: ArrayBuffer[GeneratedQuantity[_]] = new ArrayBuffer[GeneratedQuantity[_]]()
+
+    abstract class GeneratedQuantity[T <: StanType](
+      typeConstructor: T
+    )(
+      implicit sourceName: sourcecode.Enclosing
+    ) extends TransformBase[T, StanParameterDeclaration[T]] {
+      val name: String = fixEnclosingName(sourceName.value)
+
+      lazy val result: StanParameterDeclaration[T] = {
+        if (!generatedQuantities.exists(_.name == name)) {
+          generatedQuantities += this
+        }
+        StanParameterDeclaration[T](typeConstructor, name, owner = Some(this))
+      }
+      protected implicit val _generatedQuantity: InGeneratedQuantityBlock = InGeneratedQuantityBlock
+
+      private[scalastan] def export(builder: CodeBuilder): Unit = builder.append(this)
+
+      private[scalastan] lazy val generate: StanGeneratedQuantity = StanGeneratedQuantity(result, _code.results)
+    }
 
     // Log probability function.
     final protected def target: StanTargetValue = StanTargetValue()
@@ -387,6 +374,20 @@ trait ScalaStan extends Implicits { ss =>
 
     def compile[M <: CompiledModel](implicit runner: StanRunner[M]): CompiledModel =
       TransformedModel(this).compile(runner)
+  }
+
+  implicit def compile[M <: CompiledModel](model: Model)(implicit runner: StanRunner[M]): CompiledModel = model.compile
+
+  implicit def dataTransform2Value[T <: StanType](transform: TransformedData[T]): StanLocalDeclaration[T] = {
+    transform.result
+  }
+
+  implicit def paramTransform2Value[T <: StanType](transform: TransformedParameter[T]): ParameterDeclaration[T] = {
+    transform.result
+  }
+
+  implicit def generatedQuantity2Value[T <: StanType](quantity: Model#GeneratedQuantity[T]): ParameterDeclaration[T] = {
+    quantity.result
   }
 
   case class TransformedModel private (

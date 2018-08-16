@@ -130,7 +130,7 @@ case class SplitExpressions()(implicit val ss: ScalaStan) extends StanTransform[
     throw new NotImplementedError("handleExpression should not be called")
   }
 
-  private def splitExpression[T <: StanType](expr: StanValue[T]): (StanValue[T], Seq[StanStatement]) = expr match {
+  def splitExpression[T <: StanType](expr: StanValue[T]): (StanValue[T], Seq[StanStatement]) = expr match {
     case i: StanIndexOperator[_, T, _] =>
       val temp = StanLocalDeclaration(i.returnType, ss.newName, derivedFromData = i.isDerivedFromData)
       val decl = StanInlineDeclaration(temp)

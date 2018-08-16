@@ -12,21 +12,18 @@ package com.cibo.scalastan.analysis
 
 import com.cibo.scalastan.ast._
 
-case class AnalysisResult[T](mapping: Map[Int, Set[T]]) {
-  def lookup(node: StanNode): Set[T] = mapping(node.id)
+case class AnalysisResult[T](mapping: Map[Int, T]) {
+  def lookup(node: StanNode): T = mapping(node.id)
 }
 
 abstract class StanAnalysis[T](root: StanStatement) {
 
   // True if this if the analysis should go forward, false for backward.
-  protected val forward: Boolean
+  val forward: Boolean
 
-  protected def init(node: StanStatement): Set[T]
-  protected def gen(node: StanStatement, in: Set[T]): Set[T]
-  protected def kill(node: StanStatement, in: Set[T]): Set[T]
-  protected def meet(a: Set[T], b: Set[T]): Set[T]
-
-  private def transfer(node: StanStatement, in: Set[T]): Set[T] = (in -- kill(node, in)) ++ gen(node, in)
+  def init(node: StanStatement): T
+  def meet(a: T, b: T): T
+  def transfer(node: StanStatement, in: T): T
 
   private def addLink(src: StanStatement, dest: StanStatement, links: Map[Int, Set[Int]]): Map[Int, Set[Int]] = {
     links.updated(src.id, links.getOrElse(src.id, Set.empty) + dest.id)
@@ -125,9 +122,9 @@ abstract class StanAnalysis[T](root: StanStatement) {
     val inputs: Map[Int, Set[Int]] = if (forward) inLinks else outLinks     // Inputs to a statement.
     val outputs: Map[Int, Set[Int]] = if (forward) outLinks else inLinks    // Outputs of a statement.
 
-    var before = Map[Int, Set[T]]()   // State before the statement
-    var after = Map[Int, Set[T]]()    // State after the statement
-    var todo = Set[Int]()             // Work list.
+    var before = Map[Int, T]()   // State before the statement
+    var after = Map[Int, T]()    // State after the statement
+    var todo = Set[Int]()        // Work list.
 
     statementMap.values.foreach { statement =>
       before += (statement.id -> init(statement))

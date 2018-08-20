@@ -15,11 +15,12 @@ import java.nio.file.{Files, Path, Paths}
 
 import com.cibo.scalastan.ast._
 import com.cibo.scalastan.transform.{LoopChecker, StanTransform}
+import com.typesafe.scalalogging.LazyLogging
 
 import scala.language.implicitConversions
 import scala.collection.mutable.ArrayBuffer
 
-trait ScalaStan extends Implicits { ss =>
+trait ScalaStan extends Implicits with LazyLogging { ss =>
 
   type ParameterDeclaration[T <: StanType] = StanParameterDeclaration[T]
   type DataDeclaration[T <: StanType] = StanDataDeclaration[T]
@@ -258,6 +259,8 @@ trait ScalaStan extends Implicits { ss =>
 
     val name: String = fixEnclosingName(sourceName.value)
 
+    protected implicit val _rngAvailable: RngAvailable = RngAvailable
+
     lazy val result: StanLocalDeclaration[T] = StanLocalDeclaration[T](
       typeConstructor, name, derivedFromData = true, owner = Some(this)
     )
@@ -305,7 +308,9 @@ trait ScalaStan extends Implicits { ss =>
         }
         StanParameterDeclaration[T](typeConstructor, name, owner = Some(this))
       }
-      protected implicit val _generatedQuantity: InGeneratedQuantityBlock = InGeneratedQuantityBlock
+      StanParameterDeclaration[T](typeConstructor, name, owner = Some(this))
+
+      protected implicit val _rngAvailable: RngAvailable = RngAvailable
 
       private[scalastan] def export(builder: CodeBuilder): Unit = builder.append(this)
 
@@ -348,13 +353,13 @@ trait ScalaStan extends Implicits { ss =>
           f.isDirectory && f.getName != hash
         }.sortBy(_.lastModified).dropRight(maxCacheSize - 1)
         dirs.foreach { dir =>
-          println(s"removing old cache directory ${dir.getAbsolutePath}")
+          logger.info(s"removing old cache directory ${dir.getAbsolutePath}")
           try {
             dir.listFiles.foreach(_.delete())
             dir.delete()
           } catch {
             case ex: Exception =>
-              println(s"unable to remove cache directory: $ex")
+              logger.warn("unable to remove cache directory", ex)
           }
         }
       }
@@ -362,26 +367,27 @@ trait ScalaStan extends Implicits { ss =>
 
     private[scalastan] def generate: File = {
       val str = getCode
-      println("code:")
-      println(str)
+      logger.info(s"code:\n$str")
 
       val hash = SHA.hash(str)
       val base = getBasePath
       cleanOldModels(base, hash)
       val dir = base.resolve(hash).toFile
-      println(s"writing code to $dir")
 
       if (!dir.exists || !dir.listFiles().exists(f => f.getName == stanFileName && f.canExecute)) {
+        logger.info(s"writing code to $dir/$stanFileName")
         Files.createDirectories(dir.toPath)
         val codeFile = new File(s"${dir.getPath}/$stanFileName")
         val codeWriter = new PrintWriter(codeFile)
         codeWriter.print(str)
         codeWriter.close()
+      } else {
+        logger.info(s"writing code to $dir/$stanFileName")
       }
       dir
     }
 
-    def transform(t: StanTransform): Model = TransformedModel(this).transform(t)
+    def transform(t: StanTransform[_]): Model = TransformedModel(this).transform(t)
 
     def compile[M <: CompiledModel](implicit runner: StanRunner[M]): CompiledModel =
       TransformedModel(this).compile(runner)
@@ -403,9 +409,9 @@ trait ScalaStan extends Implicits { ss =>
 
   case class TransformedModel private (
     model: Model,
-    transforms: Seq[StanTransform] = Seq(new LoopChecker)
+    transforms: Seq[StanTransform[_]] = Seq(new LoopChecker)
   ) extends Model {
-    override final def transform(t: StanTransform): TransformedModel = TransformedModel(model, transforms :+ t)
+    override final def transform(t: StanTransform[_]): TransformedModel = TransformedModel(model, transforms :+ t)
 
     override private[scalastan] final def program: StanProgram = {
       transforms.foldLeft(model.program) { (prev, t) => t.run(prev) }
@@ -422,23 +428,6 @@ trait ScalaStan extends Implicits { ss =>
   ) extends Model {
 
     override def emit(pw: PrintWriter): Unit = pw.write(model)
-
-    override private[scalastan] def generate: File = {
-      val hash = SHA.hash(model)
-      val base = getBasePath
-      cleanOldModels(base, hash)
-      val dir = base.resolve(hash).toFile
-      println(s"writing code to $dir")
-
-      if (!dir.exists || !dir.listFiles().exists(f => f.getName == stanFileName && f.canExecute)) {
-        Files.createDirectories(dir.toPath)
-        val codeFile = new File(s"${dir.getPath}/$stanFileName")
-        val codeWriter = new PrintWriter(codeFile)
-        codeWriter.write(model)
-        codeWriter.close()
-      }
-      dir
-    }
 
     override final def compile[M <: CompiledModel](implicit runner: StanRunner[M]): CompiledModel =
       runner.compile(ss, this)

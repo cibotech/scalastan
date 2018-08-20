@@ -17,12 +17,13 @@ import com.cibo.scalastan.{CodeBuilder, StanInt, StanType}
 
 // A statement in a Stan program.
 sealed abstract class StanStatement extends StanNode {
-  private[scalastan] def inputs: Seq[StanDeclaration[_ <: StanType]]
-  private[scalastan] def outputs: Seq[StanDeclaration[_ <: StanType]]
-  private[scalastan] def children: Seq[StanStatement]
-  private[scalastan] def export(builder: CodeBuilder): Unit
-  private[scalastan] def emitDeclarations(pw: PrintWriter, indent: Int): Unit
-  private[scalastan] def emit(pw: PrintWriter, indent: Int): Unit
+  def inputs: Seq[StanDeclaration[_ <: StanType]]
+  def outputs: Seq[StanDeclaration[_ <: StanType]]
+  def values: Seq[StanValue[_ <: StanType]]
+  def children: Seq[StanStatement]
+  def export(builder: CodeBuilder): Unit
+  def emitDeclarations(pw: PrintWriter, indent: Int): Unit
+  def emit(pw: PrintWriter, indent: Int): Unit
   protected final def indented(indent: Int, str: String): String = "  " * indent + str
   protected final def write(pw: PrintWriter, indent: Int, line: String): Unit = {
     pw.println(indented(indent, line))
@@ -34,13 +35,14 @@ case class StanBlock private[scalastan] (
   children: Seq[StanStatement] = Seq.empty,
   id: Int = StanNode.getNextId
 ) extends StanStatement {
-  private[scalastan] def inputs: Seq[StanDeclaration[_ <: StanType]] = Seq.empty
-  private[scalastan] def outputs: Seq[StanDeclaration[_ <: StanType]] = Seq.empty
-  private[scalastan] def emitDeclarations(pw: PrintWriter, indent: Int): Unit = {
+  def inputs: Seq[StanDeclaration[_ <: StanType]] = Seq.empty
+  def outputs: Seq[StanDeclaration[_ <: StanType]] = Seq.empty
+  def values: Seq[StanValue[_ <: StanType]] = Seq.empty
+  def emitDeclarations(pw: PrintWriter, indent: Int): Unit = {
     children.foreach(_.emitDeclarations(pw, indent))
   }
-  private[scalastan] def export(builder: CodeBuilder): Unit = children.foreach(_.export(builder))
-  private[scalastan] def emit(pw: PrintWriter, indent: Int): Unit = {
+  def export(builder: CodeBuilder): Unit = children.foreach(_.export(builder))
+  def emit(pw: PrintWriter, indent: Int): Unit = {
     children.foreach(_.emit(pw, indent))
   }
 }
@@ -50,12 +52,13 @@ case class StanValueStatement(
   expr: StanValue[_ <: StanType],
   id: Int = StanNode.getNextId
 ) extends StanStatement {
-  private[scalastan] def inputs: Seq[StanDeclaration[_ <: StanType]] = expr.inputs
-  private[scalastan] def outputs: Seq[StanDeclaration[_ <: StanType]] = Seq.empty
-  private[scalastan] def children: Seq[StanStatement] = Seq.empty
-  private[scalastan] def export(builder: CodeBuilder): Unit = expr.export(builder)
-  private[scalastan] def emitDeclarations(pw: PrintWriter, indent: Int): Unit = ()
-  private[scalastan] def emit(pw: PrintWriter, indent: Int): Unit = {
+  def inputs: Seq[StanDeclaration[_ <: StanType]] = expr.inputs
+  def outputs: Seq[StanDeclaration[_ <: StanType]] = Seq.empty
+  def values: Seq[StanValue[_ <: StanType]] = Seq(expr)
+  def children: Seq[StanStatement] = Seq.empty
+  def export(builder: CodeBuilder): Unit = expr.export(builder)
+  def emitDeclarations(pw: PrintWriter, indent: Int): Unit = ()
+  def emit(pw: PrintWriter, indent: Int): Unit = {
     write(pw, indent, s"${expr.emit};")
   }
 }
@@ -84,15 +87,16 @@ case class StanAssignment private[scalastan] (
     }
   }
 
-  private[scalastan] def inputs: Seq[StanDeclaration[_ <: StanType]] = assignedInputs(lhs) ++ rhs.inputs
-  private[scalastan] def outputs: Seq[StanDeclaration[_ <: StanType]] = assignedValue(lhs).toSeq
-  private[scalastan] def children: Seq[StanStatement] = Seq.empty
-  private[scalastan] def export(builder: CodeBuilder): Unit = {
+  def inputs: Seq[StanDeclaration[_ <: StanType]] = assignedInputs(lhs) ++ rhs.inputs
+  def outputs: Seq[StanDeclaration[_ <: StanType]] = assignedValue(lhs).toSeq
+  def values: Seq[StanValue[_ <: StanType]] = Seq(lhs, rhs)
+  def children: Seq[StanStatement] = Seq.empty
+  def export(builder: CodeBuilder): Unit = {
     lhs.export(builder)
     rhs.export(builder)
   }
-  private[scalastan] def emitDeclarations(pw: PrintWriter, indent: Int): Unit = ()
-  private[scalastan] def emit(pw: PrintWriter, indent: Int): Unit = {
+  def emitDeclarations(pw: PrintWriter, indent: Int): Unit = ()
+  def emit(pw: PrintWriter, indent: Int): Unit = {
     write(pw, indent, s"${lhs.emit} ${op.name} ${rhs.emit};")
   }
 }
@@ -111,22 +115,23 @@ sealed abstract class StanLoop extends StanStatement {
 }
 
 // "for" loop
-case class StanForLoop private[scalastan] (
+case class StanForLoop(
   decl: StanLocalDeclaration[StanInt],
   range: StanValueRange,
   body: StanStatement,
   id: Int = StanNode.getNextId
 ) extends StanLoop {
-  private[scalastan] def inputs: Seq[StanDeclaration[_ <: StanType]] = range.inputs
-  private[scalastan] def outputs: Seq[StanDeclaration[_ <: StanType]] = Seq(decl)
-  private[scalastan] def children: Seq[StanStatement] = Seq(body)
-  private[scalastan] def export(builder: CodeBuilder): Unit = {
+  def inputs: Seq[StanDeclaration[_ <: StanType]] = range.inputs
+  def outputs: Seq[StanDeclaration[_ <: StanType]] = Seq(decl)
+  def values: Seq[StanValue[_ <: StanType]] = Seq(range.start, range.end)
+  def children: Seq[StanStatement] = Seq(body)
+  def export(builder: CodeBuilder): Unit = {
     decl.export(builder)
     range.export(builder)
     body.export(builder)
   }
-  private[scalastan] def emitDeclarations(pw: PrintWriter, indent: Int): Unit = ()
-  private[scalastan] def emit(pw: PrintWriter, indent: Int): Unit = {
+  def emitDeclarations(pw: PrintWriter, indent: Int): Unit = ()
+  def emit(pw: PrintWriter, indent: Int): Unit = {
     write(pw, indent, s"for(${decl.emit} in ${range.emit}) {")
     body.emitDeclarations(pw, indent + 1)
     body.emit(pw, indent + 1)
@@ -135,20 +140,21 @@ case class StanForLoop private[scalastan] (
 }
 
 // "while" loop
-case class StanWhileLoop private[scalastan] (
+case class StanWhileLoop(
   cond: StanValue[StanInt],
   body: StanStatement,
   id: Int = StanNode.getNextId
 ) extends StanLoop {
-  private[scalastan] def inputs: Seq[StanDeclaration[_ <: StanType]] = cond.inputs
-  private[scalastan] def outputs: Seq[StanDeclaration[_ <: StanType]] = Seq.empty
-  private[scalastan] def children: Seq[StanStatement] = Seq(body)
-  private[scalastan] def export(builder: CodeBuilder): Unit = {
+  def inputs: Seq[StanDeclaration[_ <: StanType]] = cond.inputs
+  def outputs: Seq[StanDeclaration[_ <: StanType]] = Seq.empty
+  def values: Seq[StanValue[_ <: StanType]] = Seq(cond)
+  def children: Seq[StanStatement] = Seq(body)
+  def export(builder: CodeBuilder): Unit = {
     cond.export(builder)
     body.export(builder)
   }
-  private[scalastan] def emitDeclarations(pw: PrintWriter, indent: Int): Unit = ()
-  private[scalastan] def emit(pw: PrintWriter, indent: Int): Unit = {
+  def emitDeclarations(pw: PrintWriter, indent: Int): Unit = ()
+  def emit(pw: PrintWriter, indent: Int): Unit = {
     write(pw, indent, s"while(${cond.emit}) {")
     body.emitDeclarations(pw, indent + 1)
     body.emit(pw, indent + 1)
@@ -157,24 +163,25 @@ case class StanWhileLoop private[scalastan] (
 }
 
 // "if" (or "when") statement
-case class StanIfStatement private[scalastan] (
+case class StanIfStatement(
   conds: Seq[(StanValue[StanInt], StanStatement)],
   otherwise: Option[StanStatement],
   id: Int = StanNode.getNextId
 ) extends StanStatement {
   require(conds.nonEmpty)
-  private[scalastan] def inputs: Seq[StanDeclaration[_ <: StanType]] = conds.flatMap(_._1.inputs)
-  private[scalastan] def outputs: Seq[StanDeclaration[_ <: StanType]] = Seq.empty
-  private[scalastan] def children: Seq[StanStatement] = conds.map(_._2) ++ otherwise.toSeq
-  private[scalastan] def export(builder: CodeBuilder): Unit = {
+  def inputs: Seq[StanDeclaration[_ <: StanType]] = conds.flatMap(_._1.inputs)
+  def outputs: Seq[StanDeclaration[_ <: StanType]] = Seq.empty
+  def values: Seq[StanValue[_ <: StanType]] = conds.map(_._1)
+  def children: Seq[StanStatement] = conds.map(_._2) ++ otherwise.toSeq
+  def export(builder: CodeBuilder): Unit = {
     conds.foreach { case (v, s) =>
       v.export(builder)
       s.export(builder)
     }
     otherwise.foreach(_.export(builder))
   }
-  private[scalastan] def emitDeclarations(pw: PrintWriter, indent: Int): Unit = ()
-  private[scalastan] def emit(pw: PrintWriter, indent: Int): Unit = {
+  def emitDeclarations(pw: PrintWriter, indent: Int): Unit = ()
+  def emit(pw: PrintWriter, indent: Int): Unit = {
     write(pw, indent, s"if(${conds.head._1.emit}) {")
     conds.head._2.emitDeclarations(pw, indent + 1)
     conds.head._2.emit(pw, indent + 1)
@@ -193,27 +200,29 @@ case class StanIfStatement private[scalastan] (
 }
 
 // "break" statement
-case class StanBreakStatement private[scalastan] (
+case class StanBreakStatement(
   id: Int = StanNode.getNextId
 ) extends StanStatement {
-  private[scalastan] def inputs: Seq[StanDeclaration[_ <: StanType]] = Seq.empty
-  private[scalastan] def outputs: Seq[StanDeclaration[_ <: StanType]] = Seq.empty
-  private[scalastan] def children: Seq[StanStatement] = Seq.empty
-  private[scalastan] def export(builder: CodeBuilder): Unit = ()
-  private[scalastan] def emitDeclarations(pw: PrintWriter, indent: Int): Unit = ()
-  private[scalastan] def emit(pw: PrintWriter, indent: Int): Unit = write(pw, indent, "break;")
+  def inputs: Seq[StanDeclaration[_ <: StanType]] = Seq.empty
+  def outputs: Seq[StanDeclaration[_ <: StanType]] = Seq.empty
+  def values: Seq[StanValue[_ <: StanType]] = Seq.empty
+  def children: Seq[StanStatement] = Seq.empty
+  def export(builder: CodeBuilder): Unit = ()
+  def emitDeclarations(pw: PrintWriter, indent: Int): Unit = ()
+  def emit(pw: PrintWriter, indent: Int): Unit = write(pw, indent, "break;")
 }
 
 // "continue" statement
 case class StanContinueStatement private[scalastan] (
   id: Int = StanNode.getNextId
 ) extends StanStatement {
-  private[scalastan] def inputs: Seq[StanDeclaration[_ <: StanType]] = Seq.empty
-  private[scalastan] def outputs: Seq[StanDeclaration[_ <: StanType]] = Seq.empty
-  private[scalastan] def children: Seq[StanStatement] = Seq.empty
-  private[scalastan] def export(builder: CodeBuilder): Unit = ()
-  private[scalastan] def emitDeclarations(pw: PrintWriter, indent: Int): Unit = ()
-  private[scalastan] def emit(pw: PrintWriter, indent: Int): Unit = write(pw, indent, "continue;")
+  def inputs: Seq[StanDeclaration[_ <: StanType]] = Seq.empty
+  def outputs: Seq[StanDeclaration[_ <: StanType]] = Seq.empty
+  def values: Seq[StanValue[_ <: StanType]] = Seq.empty
+  def children: Seq[StanStatement] = Seq.empty
+  def export(builder: CodeBuilder): Unit = ()
+  def emitDeclarations(pw: PrintWriter, indent: Int): Unit = ()
+  def emit(pw: PrintWriter, indent: Int): Unit = write(pw, indent, "continue;")
 }
 
 // Sample from a distribution: "var ~ dist()"
@@ -222,15 +231,16 @@ case class StanSampleStatement[T <: StanType, R <: StanType] private[scalastan] 
   right: StanDistribution[T, R],
   id: Int = StanNode.getNextId
 ) extends StanStatement {
-  private[scalastan] def inputs: Seq[StanDeclaration[_ <: StanType]] = left.inputs ++ right.inputs
-  private[scalastan] def outputs: Seq[StanDeclaration[_ <: StanType]] = Seq.empty
-  private[scalastan] def children: Seq[StanStatement] = Seq.empty
-  private[scalastan] def export(builder: CodeBuilder): Unit = {
+  def inputs: Seq[StanDeclaration[_ <: StanType]] = left.inputs ++ right.inputs
+  def outputs: Seq[StanDeclaration[_ <: StanType]] = Seq.empty
+  def values: Seq[StanValue[_ <: StanType]] = left +: right.values
+  def children: Seq[StanStatement] = Seq.empty
+  def export(builder: CodeBuilder): Unit = {
     right.export(builder)
     left.export(builder)
   }
-  private[scalastan] def emitDeclarations(pw: PrintWriter, indent: Int): Unit = ()
-  private[scalastan] def emit(pw: PrintWriter, indent: Int): Unit = write(pw, indent, s"${left.emit} ~ ${right.emit};")
+  def emitDeclarations(pw: PrintWriter, indent: Int): Unit = ()
+  def emit(pw: PrintWriter, indent: Int): Unit = write(pw, indent, s"${left.emit} ~ ${right.emit};")
 }
 
 // A return (or output) statement.
@@ -238,12 +248,13 @@ case class StanReturnStatement private[scalastan] (
   result: StanValue[_ <: StanType],
   id: Int = StanNode.getNextId
 ) extends StanStatement {
-  private[scalastan] def inputs: Seq[StanDeclaration[_ <: StanType]] = result.inputs
-  private[scalastan] def outputs: Seq[StanDeclaration[_ <: StanType]] = Seq.empty
-  private[scalastan] def children: Seq[StanStatement] = Seq.empty
-  private[scalastan] def export(builder: CodeBuilder): Unit = result.export(builder)
-  private[scalastan] def emitDeclarations(pw: PrintWriter, indent: Int): Unit = ()
-  private[scalastan] def emit(pw: PrintWriter, indent: Int): Unit = write(pw, indent, s"return ${result.emit};")
+  def inputs: Seq[StanDeclaration[_ <: StanType]] = result.inputs
+  def outputs: Seq[StanDeclaration[_ <: StanType]] = Seq.empty
+  def children: Seq[StanStatement] = Seq.empty
+  def values: Seq[StanValue[_ <: StanType]] = Seq(result)
+  def export(builder: CodeBuilder): Unit = result.export(builder)
+  def emitDeclarations(pw: PrintWriter, indent: Int): Unit = ()
+  def emit(pw: PrintWriter, indent: Int): Unit = write(pw, indent, s"return ${result.emit};")
 }
 
 // Local variable declaration.
@@ -251,13 +262,14 @@ case class StanInlineDeclaration private[scalastan] (
   decl: StanLocalDeclaration[_ <: StanType],
   id: Int = StanNode.getNextId
 ) extends StanStatement {
-  private[scalastan] def inputs: Seq[StanDeclaration[_ <: StanType]] = Seq.empty
-  private[scalastan] def outputs: Seq[StanDeclaration[_ <: StanType]] = Seq.empty
-  private[scalastan] def children: Seq[StanStatement] = Seq.empty
-  private[scalastan] def export(builder: CodeBuilder): Unit = decl.export(builder)
-  private[scalastan] def emitDeclarations(pw: PrintWriter, indent: Int): Unit = {
+  def inputs: Seq[StanDeclaration[_ <: StanType]] = Seq.empty
+  def outputs: Seq[StanDeclaration[_ <: StanType]] = Seq.empty
+  def values: Seq[StanValue[_ <: StanType]] = Seq.empty
+  def children: Seq[StanStatement] = Seq.empty
+  def export(builder: CodeBuilder): Unit = decl.export(builder)
+  def emitDeclarations(pw: PrintWriter, indent: Int): Unit = {
     write(pw, indent, s"${decl.emitDeclaration};")
   }
-  private[scalastan] def emit(pw: PrintWriter, indent: Int): Unit = ()
-  private[scalastan] def isDerivedFromData: Boolean = false
+  def emit(pw: PrintWriter, indent: Int): Unit = ()
+  def isDerivedFromData: Boolean = false
 }

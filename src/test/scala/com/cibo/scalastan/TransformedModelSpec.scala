@@ -10,8 +10,9 @@ class TransformedModelSpec extends FunSpec with Matchers with ScalaStanBaseSpec 
       new ScalaStan {
 
         // Simple transform to clear out the model.
-        object TestTransform extends StanTransform() {
-          override def handleModel(statement: StanStatement): StanStatement = StanBlock()
+        object TestTransform extends StanTransform[Unit]() {
+          def initialState: Unit = ()
+          override def handleModel(statement: StanStatement): State[StanStatement] = State.pure(StanBlock())
         }
 
         val x = parameter(real())

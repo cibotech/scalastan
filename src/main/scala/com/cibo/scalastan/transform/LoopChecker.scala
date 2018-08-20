@@ -14,35 +14,34 @@ import com.cibo.scalastan.ScalaStan
 import com.cibo.scalastan.ast._
 
 // Make sure all "break" and "continue" statements are in loops.
-class LoopChecker(implicit val ss: ScalaStan) extends StanTransform {
+class LoopChecker(implicit val ss: ScalaStan) extends StanTransform[Int] {
 
-  private var state = 0
+  def initialState: Int = 0
 
-  override protected def handleWhile(w: StanWhileLoop): StanStatement = {
-    state += 1
-    val newWhile = super.handleWhile(w)
-    state -= 1
-    newWhile
-  }
+  def increment: State[Unit] = State.modify(_ + 1)
+  def decrement: State[Unit] = State.modify(_ - 1)
 
-  override protected def handleFor(f: StanForLoop): StanStatement = {
-    state += 1
-    val newFor = super.handleFor(f)
-    state -= 1
-    newFor
-  }
+  override def handleWhile(w: StanWhileLoop): State[StanStatement] = for {
+    _ <- increment
+    newWhile <- super.handleWhile(w)
+    _ <- decrement
+  } yield newWhile
 
-  override protected def handleBreak(b: StanBreakStatement): StanStatement = {
-    if (state == 0) {
-      throw new IllegalStateException("'break' statement must be in a loop")
-    }
-    super.handleBreak(b)
-  }
+  override def handleFor(f: StanForLoop): State[StanStatement] = for {
+    _ <- increment
+    newFor <- super.handleFor(f)
+    _ <- decrement
+  } yield newFor
 
-  override protected def handleContinue(c: StanContinueStatement): StanStatement = {
-    if (state == 0) {
-      throw new IllegalStateException("'continue' statement must be in a loop")
-    }
-    super.handleContinue(c)
-  }
+  override def handleBreak(b: StanBreakStatement): State[StanStatement] = for {
+    current <- State.get
+    _ = if (current == 0) throw new IllegalStateException("'break' statement must be in a loop")
+    newBreak <- super.handleBreak(b)
+  } yield newBreak
+
+  override def handleContinue(c: StanContinueStatement): State[StanStatement] = for {
+    current <- State.get
+    _ = if (current == 0) throw new IllegalStateException("'continue' statement must be in a loop")
+    newContinue <- super.handleContinue(c)
+  } yield newContinue
 }

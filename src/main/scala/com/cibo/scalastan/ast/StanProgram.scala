@@ -24,7 +24,7 @@ case class StanProgram(
   model: StanStatement = StanBlock(Seq.empty)
 ) {
 
-  private[scalastan] def transform(t: StanTransform): StanProgram = t.run(this)
+  private[scalastan] def transform(t: StanTransform[_]): StanProgram = t.run(this)
 
   private[scalastan] def emit(writer: PrintWriter): Unit = {
     if (functions.nonEmpty) {

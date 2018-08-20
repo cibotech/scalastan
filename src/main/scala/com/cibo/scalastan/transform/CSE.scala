@@ -14,12 +14,16 @@ import com.cibo.scalastan.analysis.AvailableExpressions
 import com.cibo.scalastan.{ScalaStan, StanType}
 import com.cibo.scalastan.ast._
 
-// Common subexpression elimination.
-case class CSE()(implicit val ss: ScalaStan) extends StanTransform {
+case class CSEState(
+  root: Option[StanStatement] = None,
+  mapping: Map[Int, StanStatement] = Map.empty,
+  eliminated: Set[Int] = Set.empty
+)
 
-  private var root: Option[StanStatement] = None
-  private var mapping: Map[Int, StanStatement] = Map.empty
-  private var eliminated: Set[Int] = Set.empty
+// Common subexpression elimination.
+case class CSE()(implicit val ss: ScalaStan) extends StanTransform[CSEState] {
+
+  def initialState: CSEState = CSEState()
 
   private def commutative(op: StanBinaryOperator.Operator): Boolean = op match {
     case StanBinaryOperator.NotEqualTo => true
@@ -56,24 +60,28 @@ case class CSE()(implicit val ss: ScalaStan) extends StanTransform {
     case _ => false
   }
 
-  override protected def handleRoot(statement: StanStatement): StanStatement = {
-    root = Some(statement)
-    mapping = StanProgram.getStatements(statement).map(s => s.id -> s).toMap
-    eliminated = Set.empty
-    dispatch(statement)
-  }
+  override def handleRoot(statement: StanStatement): State[StanStatement] = for {
+    _ <- State.modify(_.copy(root = Some(statement)))
+    _ <- State.modify(_.copy(mapping = StanProgram.getStatements(statement).map(s => s.id -> s).toMap))
+    _ <- State.modify(_.copy(eliminated = Set.empty))
+    newRoot <- dispatch(statement)
+  } yield newRoot
 
-  override protected def handleAssignment(a: StanAssignment): StanStatement = {
-    val ae: Set[Int] = AvailableExpressions(root.get).solve.lookup(a) -- eliminated
-    ae.map(mapping.apply).find(s => sameAssignment(a, s)) match {
-      case Some(other) =>
-        // An equivalent available expression was found, use its value instead of our RHS.
-        val oa = other.asInstanceOf[StanAssignment]
-        eliminated += a.id
-        StanAssignment(a.lhs, oa.lhs, a.op)
-      case None =>
-        // No equivalent available assignment found.
-        a
+  private def updateAssignment(a: StanAssignment, otherOpt: Option[StanAssignment]): State[StanAssignment] = {
+    otherOpt match {
+      case Some(oa) =>
+        for {
+          _ <- State.modify(old => old.copy(eliminated = old.eliminated + a.id))
+        } yield StanAssignment(a.lhs, oa.lhs, a.op)
+      case None => State.pure(a)
     }
   }
+
+  override def handleAssignment(a: StanAssignment): State[StanStatement] = for {
+    state <- State.get
+    ae = AvailableExpressions(state.root.get).solve.lookup(a) -- state.eliminated
+    mapping = state.mapping
+    otherOpt = ae.map(mapping.apply).find(s => sameAssignment(a, s)).map(_.asInstanceOf[StanAssignment])
+    newAssignment <- updateAssignment(a, otherOpt)
+  } yield newAssignment
 }

@@ -194,10 +194,9 @@ protected object TransposeAllowed {
   }
 }
 
-@implicitNotFound("only allowed in a GeneratedQuantity")
-protected sealed trait InGeneratedQuantityBlock extends TypeCheck
-
-protected object InGeneratedQuantityBlock extends InGeneratedQuantityBlock
+@implicitNotFound("rng only allowed in GeneratedQuantity or TransformedData")
+sealed trait RngAvailable extends TypeCheck
+object RngAvailable extends RngAvailable
 
 @implicitNotFound("only allowed in a ParameterTransform")
 protected sealed trait InParameterTransform extends TypeCheck
@@ -216,7 +215,7 @@ protected object AssignmentAllowed {
     new AssignmentAllowed[StanLocalDeclaration[T]]
 
   implicit def generatedQuantityAssignment[T <: StanType](
-    implicit ev: InGeneratedQuantityBlock
+    implicit ev: RngAvailable
   ): AssignmentAllowed[StanParameterDeclaration[T]] = new AssignmentAllowed[StanParameterDeclaration[T]]
 }
 

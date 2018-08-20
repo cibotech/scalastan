@@ -15,14 +15,15 @@ import com.cibo.scalastan._
 // A distribution (Normal, etc.)
 sealed abstract class StanDistribution[T <: StanType, R <: StanType] extends StanNode {
   protected val name: String
-  private[scalastan] val args: Seq[StanValue[_ <: StanType]]
-  protected val lowerOpt: Option[StanValue[_]]
-  protected val upperOpt: Option[StanValue[_]]
+  val args: Seq[StanValue[_ <: StanType]]
+  protected val lowerOpt: Option[StanValue[_ <: StanType]]
+  protected val upperOpt: Option[StanValue[_ <: StanType]]
 
-  private[scalastan] def inputs: Seq[StanDeclaration[_ <: StanType]] =
+  def inputs: Seq[StanDeclaration[_ <: StanType]] =
     args.flatMap(_.inputs) ++ lowerOpt.toSeq.flatMap(_.inputs) ++ upperOpt.toSeq.flatMap(_.inputs)
-  private[scalastan] def outputs: Seq[StanDeclaration[_ <: StanType]] =
+  def outputs: Seq[StanDeclaration[_ <: StanType]] =
     args.flatMap(_.outputs) ++ lowerOpt.toSeq.flatMap(_.outputs) ++ upperOpt.toSeq.flatMap(_.outputs)
+  def values: Seq[StanValue[_ <: StanType]] = args ++ lowerOpt.toSeq ++ upperOpt.toSeq
 
   private[scalastan] def export(builder: CodeBuilder): Unit = {
     args.foreach(_.export(builder))
@@ -42,12 +43,12 @@ sealed abstract class StanDistribution[T <: StanType, R <: StanType] extends Sta
   }
 }
 
-case class StanContinuousDistribution[T <: StanType, R <: StanType] private[scalastan] (
-  protected val name: String,
-  protected val rngType: R,
+case class StanContinuousDistribution[T <: StanType, R <: StanType](
+  name: String,
+  rngType: R,
   args: Seq[StanValue[_ <: StanType]],
-  protected val lowerOpt: Option[StanValue[R]] = None,
-  protected val upperOpt: Option[StanValue[R]] = None,
+  lowerOpt: Option[StanValue[R]] = None,
+  upperOpt: Option[StanValue[R]] = None,
   id: Int = StanNode.getNextId
 ) extends StanDistribution[T, R] {
   def lpdf(y: StanValue[T]): StanValue[StanReal] = StanDistributionNode(s"${name}_lpdf", y, "|", args)
@@ -61,15 +62,17 @@ case class StanContinuousDistribution[T <: StanType, R <: StanType] private[scal
     require(lowerOpt.isEmpty && upperOpt.isEmpty, "Distribution already truncated")
     StanContinuousDistribution(name, rngType, args, lowerOpt = lower, upperOpt = upper)
   }
-  def rng(implicit gen: InGeneratedQuantityBlock): StanCall[R] = StanCall(rngType, s"${name}_rng", args)
+  def rng(implicit gen: RngAvailable): StanCall[R] = StanCall(rngType, s"${name}_rng", args)
 }
 
 sealed abstract class StanDiscreteDistribution[T <: StanType, R <: StanType] extends StanDistribution[T, R] {
-  protected val rngType: R
+  val rngType: R
   def lpmf(
     y: StanValue[T]
   ): StanValue[StanReal] = StanDistributionNode(s"${name}_lpmf", y, "|", args)
-  def rng(implicit gen: InGeneratedQuantityBlock): StanCall[R] = StanCall(rngType, s"${name}_rng", args)
+
+  def rng(implicit gen: RngAvailable): StanCall[R] = StanCall(rngType, s"${name}_rng", args)
+
 }
 
 case class StanDiscreteDistributionWithoutCdf[T <: StanType, R <: StanType] private[scalastan] (

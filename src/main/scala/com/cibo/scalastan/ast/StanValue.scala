@@ -19,20 +19,21 @@ abstract class StanValue[T <: StanType] extends StanNode with Implicits {
 
   // The declaration type used to declare this value.
   // This is used to determine if assignment is allowed.
-  private[scalastan] type DECL_TYPE <: StanDeclaration[_]
+  type DECL_TYPE <: StanDeclaration[_]
 
-  private[scalastan] val returnType: T
+  val returnType: T
 
-  private[scalastan] def inputs: Seq[StanDeclaration[_ <: StanType]]
-  private[scalastan] def outputs: Seq[StanDeclaration[_ <: StanType]]
+  def inputs: Seq[StanDeclaration[_ <: StanType]]
+  def outputs: Seq[StanDeclaration[_ <: StanType]]
+  def children: Seq[StanValue[_ <: StanType]]
 
-  private[scalastan] def export(builder: CodeBuilder): Unit
+  def export(builder: CodeBuilder): Unit
 
   // Check if this value is derived from data only.
-  private[scalastan] def isDerivedFromData: Boolean
+  def isDerivedFromData: Boolean
 
   // Emit the Stan representation of this value.
-  private[scalastan] def emit: String
+  def emit: String
 
   def unary_-(): StanValue[T] = StanUnaryOperator(returnType, StanUnaryOperator.Negate, this)
 
@@ -62,7 +63,8 @@ abstract class StanValue[T <: StanType] extends StanNode with Implicits {
     right: StanValue[B]
   )(
     implicit ev: AdditionAllowed[R, T, B]
-  ): StanValue[R] = StanBinaryOperator(StanBinaryOperator.Add, ev.newType(returnType, right.returnType), this, right)
+  ): StanValue[R] =
+    StanBinaryOperator(StanBinaryOperator.Add, ev.newType(returnType, right.returnType), this, right)
 
   def -[B <: StanType, R <: StanType](
     right: StanValue[B]
@@ -198,20 +200,21 @@ case class BuiltinFunction(name: String) extends StanFunction {
   private[scalastan] def export(bulder: CodeBuilder): Unit = ()
 }
 
-case class StanCall[T <: StanType] private[scalastan] (
+case class StanCall[T <: StanType](
   returnType: T,
   function: StanFunction,
   args: Seq[StanValue[_ <: StanType]],
   id: Int
 ) extends StanValue[T] {
-  private[scalastan] def inputs: Seq[StanDeclaration[_ <: StanType]] = args.flatMap(_.inputs)
-  private[scalastan] def outputs: Seq[StanDeclaration[_ <: StanType]] = Seq.empty
-  private[scalastan] def isDerivedFromData: Boolean = args.forall(_.isDerivedFromData)
-  private[scalastan] def export(builder: CodeBuilder): Unit = {
+  def inputs: Seq[StanDeclaration[_ <: StanType]] = args.flatMap(_.inputs)
+  def outputs: Seq[StanDeclaration[_ <: StanType]] = Seq.empty
+  def children: Seq[StanValue[_ <: StanType]] = args
+  def isDerivedFromData: Boolean = args.forall(_.isDerivedFromData)
+  def export(builder: CodeBuilder): Unit = {
     args.foreach(_.export(builder))
     function.export(builder)
   }
-  private[scalastan] def emit: String = {
+  def emit: String = {
     val argStr = args.map(_.emit).mkString(",")
     s"${function.name}($argStr)"
   }
@@ -231,30 +234,32 @@ object StanCall {
   ): StanCall[T] = apply(returnType, BuiltinFunction(name), args)
 }
 
-case class StanGetTarget private[scalastan] (
+case class StanGetTarget(
   id: Int = StanNode.getNextId
 ) extends StanValue[StanReal] {
-  private[scalastan] val returnType: StanReal = StanReal()
-  private[scalastan] def inputs: Seq[StanDeclaration[_ <: StanType]] = Seq.empty
-  private[scalastan] def outputs: Seq[StanDeclaration[_ <: StanType]] = Seq.empty
-  private[scalastan] def isDerivedFromData: Boolean = false
-  private[scalastan] def export(builder: CodeBuilder): Unit = ()
-  private[scalastan] def emit: String = "target()"
+  val returnType: StanReal = StanReal()
+  def inputs: Seq[StanDeclaration[_ <: StanType]] = Seq.empty
+  def outputs: Seq[StanDeclaration[_ <: StanType]] = Seq.empty
+  def children: Seq[StanValue[_ <: StanType]] = Seq.empty
+  def isDerivedFromData: Boolean = false
+  def export(builder: CodeBuilder): Unit = ()
+  def emit: String = "target()"
 }
 
-case class StanTargetValue private[scalastan] (
+case class StanTargetValue(
   id: Int = StanNode.getNextId
 ) extends StanValue[StanReal] with Incrementable[StanReal] {
   val returnType: StanReal = StanReal()
-  private[scalastan] def inputs: Seq[StanDeclaration[_ <: StanType]] = Seq.empty
-  private[scalastan] def outputs: Seq[StanDeclaration[_ <: StanType]] = Seq.empty
-  private[scalastan] def isDerivedFromData: Boolean = false
-  private[scalastan] def export(builder: CodeBuilder): Unit = ()
-  private[scalastan] def emit: String = "target"
+  def inputs: Seq[StanDeclaration[_ <: StanType]] = Seq.empty
+  def outputs: Seq[StanDeclaration[_ <: StanType]] = Seq.empty
+  def children: Seq[StanValue[_ <: StanType]] = Seq.empty
+  def isDerivedFromData: Boolean = false
+  def export(builder: CodeBuilder): Unit = ()
+  def emit: String = "target"
   def apply(): StanGetTarget = StanGetTarget()
 }
 
-case class StanDistributionNode[T <: StanType] private[scalastan] (
+case class StanDistributionNode[T <: StanType](
   name: String,
   y: StanValue[T],
   sep: String,
@@ -262,30 +267,32 @@ case class StanDistributionNode[T <: StanType] private[scalastan] (
   id: Int = StanNode.getNextId
 ) extends StanValue[StanReal] {
   val returnType: StanReal = StanReal()
-  private[scalastan] def inputs: Seq[StanDeclaration[_ <: StanType]] = y.inputs ++ args.flatMap(_.inputs)
-  private[scalastan] def outputs: Seq[StanDeclaration[_ <: StanType]] = Seq.empty
-  private[scalastan] def isDerivedFromData: Boolean = false
-  private[scalastan] def export(builder: CodeBuilder): Unit = {
+  def inputs: Seq[StanDeclaration[_ <: StanType]] = y.inputs ++ args.flatMap(_.inputs)
+  def outputs: Seq[StanDeclaration[_ <: StanType]] = Seq.empty
+  def children: Seq[StanValue[_ <: StanType]] = y +: args
+  def isDerivedFromData: Boolean = false
+  def export(builder: CodeBuilder): Unit = {
     args.foreach(_.export(builder))
     y.export(builder)
   }
-  private[scalastan] def emit: String = {
+  def emit: String = {
     val argStr = args.map(_.emit).mkString(",")
     s"$name(${y.emit} $sep $argStr)"
   }
 }
 
-case class StanUnaryOperator[T <: StanType, R <: StanType] private[scalastan] (
+case class StanUnaryOperator[T <: StanType, R <: StanType](
   returnType: R,
   op: StanUnaryOperator.Operator,
   right: StanValue[T],
   id: Int = StanNode.getNextId
 ) extends StanValue[R] {
-  private[scalastan] def inputs: Seq[StanDeclaration[_ <: StanType]] = right.inputs
-  private[scalastan] def outputs: Seq[StanDeclaration[_ <: StanType]] = Seq.empty
-  private[scalastan] def isDerivedFromData: Boolean = right.isDerivedFromData
-  private[scalastan] def export(builder: CodeBuilder): Unit = right.export(builder)
-  private[scalastan] def emit: String = s"${op.name}(${right.emit})"
+  def inputs: Seq[StanDeclaration[_ <: StanType]] = right.inputs
+  def outputs: Seq[StanDeclaration[_ <: StanType]] = Seq.empty
+  def children: Seq[StanValue[_ <: StanType]] = Seq(right)
+  def isDerivedFromData: Boolean = right.isDerivedFromData
+  def export(builder: CodeBuilder): Unit = right.export(builder)
+  def emit: String = s"${op.name}(${right.emit})"
 }
 
 object StanUnaryOperator {
@@ -294,7 +301,7 @@ object StanUnaryOperator {
   case object LogicalNot extends Operator("!")
 }
 
-case class StanBinaryOperator[T <: StanType, L <: StanType, R <: StanType] private[scalastan] (
+case class StanBinaryOperator[T <: StanType, L <: StanType, R <: StanType](
   op: StanBinaryOperator.Operator,
   returnType: T,
   left: StanValue[L],
@@ -302,14 +309,15 @@ case class StanBinaryOperator[T <: StanType, L <: StanType, R <: StanType] priva
   parens: Boolean = true,
   id: Int = StanNode.getNextId
 ) extends StanValue[T] {
-  private[scalastan] def inputs: Seq[StanDeclaration[_ <: StanType]] = left.inputs ++ right.inputs
-  private[scalastan] def outputs: Seq[StanDeclaration[_ <: StanType]] = Seq.empty
-  private[scalastan] def isDerivedFromData: Boolean = left.isDerivedFromData && right.isDerivedFromData
-  private[scalastan] def export(builder: CodeBuilder): Unit = {
+  def inputs: Seq[StanDeclaration[_ <: StanType]] = left.inputs ++ right.inputs
+  def outputs: Seq[StanDeclaration[_ <: StanType]] = Seq.empty
+  def children: Seq[StanValue[_ <: StanType]] = Seq[StanValue[_ <: StanType]](left, right)
+  def isDerivedFromData: Boolean = left.isDerivedFromData && right.isDerivedFromData
+  def export(builder: CodeBuilder): Unit = {
     left.export(builder)
     right.export(builder)
   }
-  private[scalastan] def emit: String =
+  def emit: String =
     if (parens) {
       s"(${left.emit}) ${op.name} (${right.emit})"
     } else {
@@ -338,112 +346,120 @@ object StanBinaryOperator {
   case object LogicalAnd extends Operator("&&")
 }
 
-case class StanIndexOperator[T <: StanType, N <: StanType, D <: StanDeclaration[_]] private[scalastan] (
+case class StanIndexOperator[T <: StanType, N <: StanType, D <: StanDeclaration[_]](
   returnType: N,
   value: StanValue[_ <: StanType],
   indices: Seq[StanValue[_ <: StanType]],
   id: Int = StanNode.getNextId
 ) extends StanValue[N] {
-  private[scalastan] type DECL_TYPE = D
-  private[scalastan] def inputs: Seq[StanDeclaration[_ <: StanType]] = value.inputs ++ indices.flatMap(_.inputs)
-  private[scalastan] def outputs: Seq[StanDeclaration[_ <: StanType]] = Seq.empty
-  private[scalastan] def isDerivedFromData: Boolean = value.isDerivedFromData && indices.forall(_.isDerivedFromData)
-  private[scalastan] def export(builder: CodeBuilder): Unit = {
+  type DECL_TYPE = D
+  def inputs: Seq[StanDeclaration[_ <: StanType]] = value.inputs ++ indices.flatMap(_.inputs)
+  def outputs: Seq[StanDeclaration[_ <: StanType]] = Seq.empty
+  def children: Seq[StanValue[_ <: StanType]] = value +: indices
+  def isDerivedFromData: Boolean = value.isDerivedFromData && indices.forall(_.isDerivedFromData)
+  def export(builder: CodeBuilder): Unit = {
     value.export(builder)
     indices.foreach(_.export(builder))
   }
-  private[scalastan] def emit: String = value.emit + indices.map(_.emit).mkString("[", ",", "]")
+  def emit: String = value.emit + indices.map(_.emit).mkString("[", ",", "]")
 }
 
-case class StanSliceOperator[T <: StanType, D <: StanDeclaration[_]] private[scalastan] (
+case class StanSliceOperator[T <: StanType, D <: StanDeclaration[_]](
   value: StanValue[T],
   slice: StanValueRange,
   id: Int = StanNode.getNextId
 ) extends StanValue[T] {
-  private[scalastan] type DECL_TYPE = D
-  private[scalastan] val returnType: T = value.returnType.asInstanceOf[T]
-  private[scalastan] def inputs: Seq[StanDeclaration[_ <: StanType]] = value.inputs ++ slice.start.inputs ++ slice.end.inputs
-  private[scalastan] def outputs: Seq[StanDeclaration[_ <: StanType]] = Seq.empty
-  private[scalastan] def isDerivedFromData: Boolean =
+  type DECL_TYPE = D
+  val returnType: T = value.returnType.asInstanceOf[T]
+  def inputs: Seq[StanDeclaration[_ <: StanType]] = value.inputs ++ slice.start.inputs ++ slice.end.inputs
+  def outputs: Seq[StanDeclaration[_ <: StanType]] = Seq.empty
+  def children: Seq[StanValue[_ <: StanType]] = Seq[StanValue[_ <: StanType]](value, slice.start, slice.end)
+  def isDerivedFromData: Boolean =
     value.isDerivedFromData && slice.start.isDerivedFromData && slice.end.isDerivedFromData
-  private[scalastan] def export(builder: CodeBuilder): Unit = {
+  def export(builder: CodeBuilder): Unit = {
     value.export(builder)
     slice.export(builder)
   }
-  private[scalastan] def emit: String = s"${value.emit}[${slice.start.emit}:${slice.end.emit}]"
+  def emit: String = s"${value.emit}[${slice.start.emit}:${slice.end.emit}]"
 }
 
-case class StanTranspose[T <: StanType, R <: StanType] private[scalastan] (
+case class StanTranspose[T <: StanType, R <: StanType](
   returnType: R,
   value: StanValue[T],
   id: Int = StanNode.getNextId
 ) extends StanValue[R] {
-  private[scalastan] def inputs: Seq[StanDeclaration[_ <: StanType]] = value.inputs
-  private[scalastan] def outputs: Seq[StanDeclaration[_ <: StanType]] = Seq.empty
-  private[scalastan] def isDerivedFromData: Boolean = value.isDerivedFromData
-  private[scalastan] def export(builder: CodeBuilder): Unit = {
+  def inputs: Seq[StanDeclaration[_ <: StanType]] = value.inputs
+  def outputs: Seq[StanDeclaration[_ <: StanType]] = Seq.empty
+  def children: Seq[StanValue[_ <: StanType]] = Seq(value)
+  def isDerivedFromData: Boolean = value.isDerivedFromData
+  def export(builder: CodeBuilder): Unit = {
     value.export(builder)
   }
-  private[scalastan] def emit: String = s"(${value.emit})'"
+  def emit: String = s"(${value.emit})'"
 }
 
-case class StanConstant[T <: StanType] private[scalastan] (
+case class StanConstant[T <: StanType](
   returnType: T,
   value: T#SCALA_TYPE,
   id: Int = StanNode.getNextId
 ) extends StanValue[T] {
-  private[scalastan] def inputs: Seq[StanDeclaration[_ <: StanType]] = Seq.empty
-  private[scalastan] def outputs: Seq[StanDeclaration[_ <: StanType]] = Seq.empty
-  private[scalastan] def isDerivedFromData: Boolean = true
-  private[scalastan] def export(builder: CodeBuilder): Unit = ()
-  private[scalastan] def emit: String = value.toString
+  def inputs: Seq[StanDeclaration[_ <: StanType]] = Seq.empty
+  def outputs: Seq[StanDeclaration[_ <: StanType]] = Seq.empty
+  def children: Seq[StanValue[_ <: StanType]] = Seq.empty
+  def isDerivedFromData: Boolean = true
+  def export(builder: CodeBuilder): Unit = ()
+  def emit: String = value.toString
 }
 
-case class StanArrayLiteral[N <: StanType, T <: StanArray[N]] private[scalastan] (
+case class StanArrayLiteral[N <: StanType, T <: StanArray[N]](
   values: Seq[StanValue[N]],
   id: Int = StanNode.getNextId
 ) extends StanValue[T] {
   val returnType: T = StanArray(StanConstant[StanInt](StanInt(), values.length), values.head.returnType).asInstanceOf[T]
-  private[scalastan] def inputs: Seq[StanDeclaration[_ <: StanType]] = values.flatMap(_.inputs)
-  private[scalastan] def outputs: Seq[StanDeclaration[_ <: StanType]] = Seq.empty
-  private[scalastan] def isDerivedFromData: Boolean = true
-  private[scalastan] def export(builder: CodeBuilder): Unit = {
+  def inputs: Seq[StanDeclaration[_ <: StanType]] = values.flatMap(_.inputs)
+  def outputs: Seq[StanDeclaration[_ <: StanType]] = Seq.empty
+  def children: Seq[StanValue[_ <: StanType]] = values
+  def isDerivedFromData: Boolean = true
+  def export(builder: CodeBuilder): Unit = {
     values.foreach(_.export(builder))
   }
-  private[scalastan] def emit: String = values.map(_.emit).mkString("{", ",", "}")
+  def emit: String = values.map(_.emit).mkString("{", ",", "}")
 }
 
-case class StanStringLiteral private[scalastan] (
+case class StanStringLiteral(
   value: String,
   id: Int = StanNode.getNextId
 ) extends StanValue[StanString] {
   val returnType: StanString = StanString()
-  private[scalastan] def inputs: Seq[StanDeclaration[_ <: StanType]] = Seq.empty
-  private[scalastan] def outputs: Seq[StanDeclaration[_ <: StanType]] = Seq.empty
-  private[scalastan] def isDerivedFromData: Boolean = true
-  private[scalastan] def export(builder: CodeBuilder): Unit = ()
-  private[scalastan] def emit: String = s""""$value""""
+  def inputs: Seq[StanDeclaration[_ <: StanType]] = Seq.empty
+  def outputs: Seq[StanDeclaration[_ <: StanType]] = Seq.empty
+  def children: Seq[StanValue[_ <: StanType]] = Seq.empty
+  def isDerivedFromData: Boolean = true
+  def export(builder: CodeBuilder): Unit = ()
+  def emit: String = s""""$value""""
 }
 
-case class StanLiteral private[scalastan] (
+case class StanLiteral(
   value: String,
   id: Int = StanNode.getNextId
 ) extends StanValue[StanVoid] {
-  private[scalastan] val returnType: StanVoid = StanVoid()
-  private[scalastan] def inputs: Seq[StanDeclaration[_ <: StanType]] = Seq.empty
-  private[scalastan] def outputs: Seq[StanDeclaration[_ <: StanType]] = Seq.empty
-  private[scalastan] def isDerivedFromData: Boolean = true
-  private[scalastan] def export(builder: CodeBuilder): Unit = ()
-  private[scalastan] def emit: String = value.toString
+  val returnType: StanVoid = StanVoid()
+  def inputs: Seq[StanDeclaration[_ <: StanType]] = Seq.empty
+  def outputs: Seq[StanDeclaration[_ <: StanType]] = Seq.empty
+  def children: Seq[StanValue[_ <: StanType]] = Seq.empty
+  def isDerivedFromData: Boolean = true
+  def export(builder: CodeBuilder): Unit = ()
+  def emit: String = value.toString
 }
 
 case class StanUnknownDim(
   id: Int = StanNode.getNextId
 ) extends StanValue[StanInt] {
   val returnType: StanInt = StanInt()
-  private[scalastan] def inputs: Seq[StanDeclaration[_ <: StanType]] = Seq.empty
-  private[scalastan] def outputs: Seq[StanDeclaration[_ <: StanType]] = Seq.empty
-  private[scalastan] def isDerivedFromData: Boolean = true
-  private[scalastan] def export(builder: CodeBuilder): Unit = ()
-  private[scalastan] def emit: String = ""
+  def inputs: Seq[StanDeclaration[_ <: StanType]] = Seq.empty
+  def outputs: Seq[StanDeclaration[_ <: StanType]] = Seq.empty
+  def children: Seq[StanValue[_ <: StanType]] = Seq.empty
+  def isDerivedFromData: Boolean = true
+  def export(builder: CodeBuilder): Unit = ()
+  def emit: String = ""
 }

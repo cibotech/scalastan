@@ -13,23 +13,25 @@ import com.cibo.scalastan.ScalaStan
 import com.cibo.scalastan.ast.{StanBlock, StanForLoop, StanIfStatement, StanStatement}
 
 // Simplify the AST (remove empty blocks, etc.).
-case class AstSimplifier()(implicit val ss: ScalaStan) extends StanTransform {
+case class AstSimplifier()(implicit val ss: ScalaStan) extends StanTransform[Unit] {
+
+  def initialState: Unit = ()
 
   private def isEmpty(s: StanStatement): Boolean = s match {
     case b: StanBlock => b.children.isEmpty
     case _            => false
   }
 
-  override protected def handleBlock(b: StanBlock): StanStatement = {
-    val newChildren = b.children.map(c => dispatch(c))
-    if (newChildren.size == 1) newChildren.head else StanBlock(newChildren)
-  }
+  override def handleBlock(b: StanBlock): State[StanStatement] = for {
+    newChildren <- State.traverse(b.children)(dispatch)
+  } yield if (newChildren.size == 1) newChildren.head else StanBlock(newChildren)
 
-  override protected def handleIf(i: StanIfStatement): StanStatement = {
-    val newConds = i.conds.map { case (cond, body) =>
-      cond -> dispatch(body)
-    }.filterNot(s => isEmpty(s._2))
-    val newOtherwise = i.otherwise.map(o => dispatch(o)).filterNot(isEmpty)
+  override def handleIf(i: StanIfStatement): State[StanStatement] = for {
+    conds <- State.traverse(i.conds)(c => dispatch(c._2).map(x => c._1 -> x))
+    newConds = conds.filterNot(s => isEmpty(s._2))
+    otherwise <- dispatchOption(i.otherwise)
+    newOtherwise = otherwise.flatMap(o => if (isEmpty(o)) None else Some(o))
+  } yield {
     if (newConds.nonEmpty || newOtherwise.isDefined) {
       StanIfStatement(newConds, newOtherwise)
     } else {
@@ -37,8 +39,9 @@ case class AstSimplifier()(implicit val ss: ScalaStan) extends StanTransform {
     }
   }
 
-  override protected def handleFor(f: StanForLoop): StanStatement = {
-    val newBody = dispatch(f.body)
+  override def handleFor(f: StanForLoop): State[StanStatement] = for {
+    newBody <- dispatch(f.body)
+  } yield {
     if (isEmpty(newBody)) {
       newBody
     } else {

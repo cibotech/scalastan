@@ -65,12 +65,20 @@ object CmdStanRunner extends StanRunner[CmdStanCompiledModel] with LazyLogging {
     }
   }
 
+  private def runCommand(dir: File, command: Seq[String]): Int = {
+    val pb = new ProcessBuilder(command: _*).directory(dir).redirectErrorStream(true)
+    val process = pb.start()
+    io.Source.fromInputStream(process.getInputStream).getLines.foreach { line =>
+      logger.info(line)
+    }
+    process.waitFor()
+  }
+
   private def runStanc(dir: File): Unit = {
     val stancCommand = stanc.getOrElse {
       throw new IllegalStateException(s"Could not locate stanc.")
     }
-    val pb = new ProcessBuilder(stancCommand, stanFileName).directory(dir).inheritIO()
-    val rc = pb.start().waitFor()
+    val rc = runCommand(dir, Seq(stancCommand, stanFileName))
     if (rc != 0) {
       throw new IllegalStateException(s"$stanc returned $rc")
     }
@@ -84,8 +92,7 @@ object CmdStanRunner extends StanRunner[CmdStanCompiledModel] with LazyLogging {
     val stanPath = stanHome.getOrElse {
       throw new IllegalStateException("Could not locate Stan.")
     }
-    val pb = new ProcessBuilder(makeCommand, target).directory(new File(stanPath)).inheritIO()
-    val rc = pb.start().waitFor()
+    val rc = runCommand(new File(stanPath), Seq(makeCommand, target))
     if (rc != 0) {
       throw new IllegalStateException(s"$make returned $rc")
     }
@@ -165,8 +172,7 @@ object CmdStanRunner extends StanRunner[CmdStanCompiledModel] with LazyLogging {
               "random", s"seed=$chainSeed"
             ) ++ method.arguments
             logger.info("Running " + command.mkString(" "))
-            val pb = new ProcessBuilder(command: _*).directory(model.dir).inheritIO()
-            val rc = pb.start().waitFor()
+            val rc = runCommand(model.dir, command)
             if (rc != 0) {
               logger.error(s"model returned $rc")
               None

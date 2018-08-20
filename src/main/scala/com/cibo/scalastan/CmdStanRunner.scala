@@ -5,6 +5,8 @@ import java.io._
 import java.nio.file.{Files, Paths}
 import java.util.regex.Pattern
 
+import com.typesafe.scalalogging.LazyLogging
+
 /** A compiled model for CmdStan. */
 case class CmdStanCompiledModel(
   dir: File,
@@ -23,7 +25,7 @@ case class CmdStanCompiledModel(
   }
 }
 
-object CmdStanRunner extends StanRunner[CmdStanCompiledModel] {
+object CmdStanRunner extends StanRunner[CmdStanCompiledModel] with LazyLogging {
 
   private val modelExecutable: String = "model"
   private val stanFileName: String = s"$modelExecutable.stan"
@@ -111,12 +113,12 @@ object CmdStanRunner extends StanRunner[CmdStanCompiledModel] {
     val stanPath = stanHome.getOrElse {
       throw new IllegalStateException("Could not locate Stan.")
     }
-    println(s"found stan in $stanPath")
+    logger.info(s"found stan in $stanPath")
 
     model.synchronized {
       val dir = model.generate
       if (new File(s"${dir.getPath}/$modelExecutable").canExecute) {
-        println("found existing executable")
+        logger.info(s"found existing executable: ${dir.getPath}/$modelExecutable")
       } else {
         runStanc(dir)
         runMake(dir)
@@ -137,7 +139,7 @@ object CmdStanRunner extends StanRunner[CmdStanCompiledModel] {
     model.model.synchronized {
 
       // Emit the data file.
-      println(s"writing data to $dataFileName")
+      logger.info(s"writing data to $dataFileName")
       val dataWriter = ShaWriter(new PrintWriter(new File(s"${model.dir}/$dataFileName")))
       model.emitData(dataWriter)
       dataWriter.close()
@@ -153,7 +155,7 @@ object CmdStanRunner extends StanRunner[CmdStanCompiledModel] {
         } else None
         cachedResults match {
           case Some(r) if r.nonEmpty =>
-            println(s"Found cached results: $name")
+            logger.info(s"Found cached results: $name")
             Some(r)
           case _                     =>
             val command = Vector(
@@ -162,11 +164,11 @@ object CmdStanRunner extends StanRunner[CmdStanCompiledModel] {
               "output", s"file=$name",
               "random", s"seed=$chainSeed"
             ) ++ method.arguments
-            println("Running " + command.mkString(" "))
+            logger.info("Running " + command.mkString(" "))
             val pb = new ProcessBuilder(command: _*).directory(model.dir).inheritIO()
             val rc = pb.start().waitFor()
             if (rc != 0) {
-              println(s"ERROR: model returned $rc")
+              logger.error(s"model returned $rc")
               None
             } else {
               Some(readIterations(fileName))

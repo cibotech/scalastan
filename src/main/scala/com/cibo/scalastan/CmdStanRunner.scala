@@ -21,9 +21,13 @@ import com.typesafe.scalalogging.LazyLogging
 case class CmdStanCompiledModel(
   dir: File,
   model: ScalaStan#Model,
-  dataMapping: Map[String, DataMapping[_]] = Map.empty
+  dataMapping: Map[String, DataMapping[_]] = Map.empty,
+  initialValues: Map[String, DataMapping[_]] = Map.empty
 ) extends CompiledModel {
   def replaceMapping(newMapping: Map[String, DataMapping[_]]): CmdStanCompiledModel = copy(dataMapping = newMapping)
+  override def updateInitialValue(name: String, value: DataMapping[_]): CompiledModel = copy(
+    initialValues = initialValues.updated(name, value)
+  )
   def runChecked(chains: Int, seed: Int, cache: Boolean, method: RunMethod.Method): StanResults = {
     CmdStanRunner.run(
       model = this,
@@ -125,6 +129,7 @@ object CmdStanRunner extends StanRunner[CmdStanCompiledModel] with LazyLogging {
   }
 
   private val dataFileName: String = "input.R"
+  private val initialValueFileName: String = "initial.R"
 
   def compile(ss: ScalaStan, model: ScalaStan#Model): CmdStanCompiledModel = {
     val stanPath = stanHome.getOrElse {
@@ -144,6 +149,26 @@ object CmdStanRunner extends StanRunner[CmdStanCompiledModel] with LazyLogging {
     }
   }
 
+  private def writeData(model: CmdStanCompiledModel, method: RunMethod.Method): String = {
+    logger.info(s"writing data to $dataFileName")
+    val dataWriter = ShaWriter(new PrintWriter(new File(s"${model.dir}/$dataFileName")))
+    model.emitData(dataWriter)
+    dataWriter.close()
+    dataWriter.sha.update(method.toString).digest
+  }
+
+  private def writeInitialValue(model: CmdStanCompiledModel, runHash: String): String = {
+    if (model.initialValues.nonEmpty) {
+      logger.info(s"writing initial values to $initialValueFileName")
+      val writer = ShaWriter(new PrintWriter(new File(s"${model.dir}/$initialValueFileName")))
+      model.emitInitialValues(writer)
+      writer.close()
+      writer.sha.update(runHash).digest
+    } else {
+      runHash
+    }
+  }
+
   def run(
     model: CmdStanCompiledModel,
     chains: Int,
@@ -156,12 +181,12 @@ object CmdStanRunner extends StanRunner[CmdStanCompiledModel] with LazyLogging {
     model.model.synchronized {
 
       // Emit the data file.
-      logger.info(s"writing data to $dataFileName")
-      val dataWriter = ShaWriter(new PrintWriter(new File(s"${model.dir}/$dataFileName")))
-      model.emitData(dataWriter)
-      dataWriter.close()
-      val runHash = dataWriter.sha.update(method.toString).digest
+      val dataHash = writeData(model, method)
 
+      // Emit initial value file.
+      val runHash = writeInitialValue(model, dataHash)
+
+      val initArguments = if (model.initialValues.nonEmpty) Vector(s"init=$initialValueFileName") else Vector.empty
       val baseSeed = if (seed < 0) (System.currentTimeMillis % Int.MaxValue).toInt else seed
       val results = (0 until chains).par.flatMap { i =>
         val chainSeed = baseSeed + i
@@ -180,7 +205,7 @@ object CmdStanRunner extends StanRunner[CmdStanCompiledModel] with LazyLogging {
               "data", s"file=$dataFileName",
               "output", s"file=$name",
               "random", s"seed=$chainSeed"
-            ) ++ method.arguments
+            ) ++ initArguments ++ method.arguments
             logger.info("Running " + command.mkString(" "))
             val rc = runCommand(model.dir, command)
             if (rc != 0) {

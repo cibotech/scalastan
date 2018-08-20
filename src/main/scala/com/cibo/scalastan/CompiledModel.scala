@@ -12,21 +12,26 @@ package com.cibo.scalastan
 
 import java.io.{File, Writer}
 
-import com.cibo.scalastan.ast.StanDataDeclaration
+import com.cibo.scalastan.ast.{StanDataDeclaration, StanParameterDeclaration}
 
 abstract class CompiledModel {
   private[scalastan] val model: ScalaStan#Model
   protected val dataMapping: Map[String, DataMapping[_]]
+  protected val initialValues: Map[String, DataMapping[_]]
 
   protected def replaceMapping(newMapping: Map[String, DataMapping[_]]): CompiledModel
+  protected def updateInitialValue(name: String, value: DataMapping[_]): CompiledModel
   protected def runChecked(chains: Int, seed: Int, cache: Boolean, method: RunMethod.Method): StanResults
 
-  private[scalastan] final def emitData(writer: Writer): Unit = {
-    dataMapping.values.foreach { value =>
+  private def emitMapping(mapping: Map[String, DataMapping[_]], writer: Writer): Unit = {
+    mapping.values.foreach { value =>
       writer.write(value.emit)
       writer.write("\n")
     }
   }
+
+  private[scalastan] final def emitData(writer: Writer): Unit = emitMapping(dataMapping, writer)
+  private[scalastan] final def emitInitialValues(writer: Writer): Unit = emitMapping(initialValues, writer)
 
   /** Get the specified input data. */
   final def get[T <: StanType, R](
@@ -35,6 +40,18 @@ abstract class CompiledModel {
 
   /** Reset all data bindings. */
   final def reset: CompiledModel = replaceMapping(Map.empty)
+
+  /** Look up and set size declarations. */
+  private def setSizes[T <: StanType](valueType: T, data: Any): CompiledModel = {
+    valueType.getIndices.foldLeft((this, data)) { case ((old, d), dim) =>
+      val ds = d.asInstanceOf[Seq[_]]
+      val next = if (ds.nonEmpty) ds.head else Seq.empty
+      dim match {
+        case indexDecl: StanDataDeclaration[StanInt] => (old.withData(indexDecl, ds.size), next)
+        case _                                       => (old, next)
+      }
+    }._1
+  }
 
   /** Add a data binding. */
   final def withData[T <: StanType, V](
@@ -50,15 +67,8 @@ abstract class CompiledModel {
       case _                           => ()
     }
 
-    // Look up and set the size parameters.
-    val (withDecls, _) = decl.returnType.getIndices.foldLeft((this, conv: Any)) { case ((old, d), dim) =>
-      val ds = d.asInstanceOf[Seq[_]]
-      val next = if (ds.nonEmpty) ds.head else Seq.empty
-      dim match {
-        case indexDecl: StanDataDeclaration[StanInt] => (old.withData(indexDecl, ds.size), next)
-        case _                                       => (old, next)
-      }
-    }
+    // Insert/check size declarations.
+    val withDecls = setSizes(decl.returnType, conv)
 
     // Insert the binding.
     withDecls.replaceMapping(withDecls.dataMapping.updated(decl.emit, DataMapping[T](decl, conv)))
@@ -68,6 +78,20 @@ abstract class CompiledModel {
   final def withData[T <: StanType, V](
     value: (StanDataDeclaration[T], V)
   )(implicit ev: V <:< T#SCALA_TYPE): CompiledModel = withData(value._1, value._2)
+
+  /** Set the initial value for a parameter. */
+  final def withInitialValue[T <: StanType, V](
+    decl: StanParameterDeclaration[T],
+    value: V
+  )(implicit ev: V <:< T#SCALA_TYPE): CompiledModel = {
+    val conv = value.asInstanceOf[T#SCALA_TYPE]
+
+    // Insert/check size declarations
+    val withDecls = setSizes(decl.returnType, conv)
+
+    // Record the initial value.
+    withDecls.updateInitialValue(decl.emit, DataMapping[T](decl, conv))
+  }
 
   /** Run the model and get results. */
   final def run(

@@ -300,6 +300,15 @@ Before the model can be run, all inputs must be assigned.  To assign different i
 must be called.  Using the `reset` method will clear all assigned inputs, allowing the model to be run
 multiple times with different inputs.
 
+Initial Values
+--------------
+Initial values can be set for parameter declarations using the `withInitialValue` method on the model (like
+`withData`, this is actually on the `CompiledModel` class).  Here is an example to set the initial value
+for `b`:
+```scala
+model.withInitialValue(b, value)
+```
+
 Running the Model
 -----------------
 Once all inputs are assigned, the model can be run using the `run` method.  This method takes the following

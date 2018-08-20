@@ -10,10 +10,10 @@
 
 package com.cibo.scalastan
 
-import com.cibo.scalastan.ast.StanDataDeclaration
+import com.cibo.scalastan.ast.StanDeclaration
 
 protected case class DataMapping[T <: StanType] private[scalastan] (
-  decl: StanDataDeclaration[T],
+  decl: StanDeclaration[T],
   values: T#SCALA_TYPE
 ) {
   private[scalastan] def emit: String = {

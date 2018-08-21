@@ -15,9 +15,9 @@ import java.io.{File, Writer}
 import com.cibo.scalastan.ast.{StanDataDeclaration, StanParameterDeclaration}
 
 abstract class CompiledModel {
-  private[scalastan] val model: ScalaStan#Model
-  protected val dataMapping: Map[String, DataMapping[_]]
-  protected val initialValues: Map[String, DataMapping[_]]
+  val model: ScalaStan#Model
+  val dataMapping: Map[String, DataMapping[_]]
+  val initialValues: Map[String, DataMapping[_]]
 
   protected def replaceMapping(newMapping: Map[String, DataMapping[_]]): CompiledModel
   protected def updateInitialValue(name: String, value: DataMapping[_]): CompiledModel

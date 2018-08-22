@@ -10,7 +10,7 @@
 
 package com.cibo.scalastan
 
-protected trait StanRunner[M <: CompiledModel] {
+trait StanRunner[M <: CompiledModel] {
   def compile(ss: ScalaStan, model: ScalaStan#Model): CompiledModel
   def run(
     model: M,
@@ -21,7 +21,7 @@ protected trait StanRunner[M <: CompiledModel] {
   ): StanResults
 }
 
-protected object StanRunner {
+object StanRunner {
 
   // Use CmdStan to compile and run the model.
   implicit val defaultRunner: StanRunner[CmdStanCompiledModel] = CmdStanRunner

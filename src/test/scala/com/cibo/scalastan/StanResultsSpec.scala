@@ -18,7 +18,6 @@ class StanResultsSpec extends ScalaStanBaseSpec {
 
   private val model = CmdStanCompiledModel(new File("."), TestScalaStan.model)
 
-
   private val testData1 = Map[String, Int](
     "lp__" -> 1,
     TestScalaStan.v1.emit -> 1,
@@ -179,6 +178,12 @@ class StanResultsSpec extends ScalaStanBaseSpec {
 
     it("returns the mcse lp") {
       results.mcse(results.logPosterior) shouldBe 0.5
+    }
+  }
+
+  describe("psrf") {
+    it("returns a PSRF for a single chain") {
+      results.psrf(Seq(Seq(1.0, 2.0, 3.0, 5.0))) should be > 1.0
     }
   }
 

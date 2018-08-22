@@ -212,7 +212,7 @@ case class StanResults private (
   /** Get the (split) potential scale reduction factor for a set of chains. */
   def psrf(values: Seq[Seq[Double]]): Double = {
     // Split into 2m chains of length n/2
-    val groupSize = (iterationsPerChain + 1) + 2
+    val groupSize = (values.head.size + 1) / 2
     val groupedValues = values.flatMap(_.grouped(groupSize))
     val n = groupedValues.head.size.toDouble
     val w = withinSampleVariance(groupedValues)

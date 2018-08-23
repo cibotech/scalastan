@@ -10,17 +10,23 @@
 
 package com.cibo.scalastan
 
-import java.io.{File, Writer}
+import java.io.Writer
 
 import com.cibo.scalastan.ast.{StanDataDeclaration, StanParameterDeclaration}
+
+sealed trait InitialValue
+
+case object DefaultInitialValue extends InitialValue
+case class InitialValueDouble(v: Double) extends InitialValue
+case class InitialValueMapping(mapping: Map[String, DataMapping[_]]) extends InitialValue
 
 abstract class CompiledModel {
   val model: ScalaStan#Model
   val dataMapping: Map[String, DataMapping[_]]
-  val initialValues: Map[String, DataMapping[_]]
+  val initialValue: InitialValue
 
   protected def replaceMapping(newMapping: Map[String, DataMapping[_]]): CompiledModel
-  protected def updateInitialValue(name: String, value: DataMapping[_]): CompiledModel
+  protected def replaceInitialValue(newInitialValue: InitialValue): CompiledModel
   protected def runChecked(chains: Int, seed: Int, cache: Boolean, method: RunMethod.Method): StanResults
 
   private def emitMapping(mapping: Map[String, DataMapping[_]], writer: Writer): Unit = {
@@ -31,15 +37,18 @@ abstract class CompiledModel {
   }
 
   private[scalastan] final def emitData(writer: Writer): Unit = emitMapping(dataMapping, writer)
-  private[scalastan] final def emitInitialValues(writer: Writer): Unit = emitMapping(initialValues, writer)
+  private[scalastan] final def emitInitialValues(writer: Writer): Unit = initialValue match {
+    case InitialValueMapping(mapping) => emitMapping(mapping, writer)
+    case _                            => ()
+  }
 
   /** Get the specified input data. */
   final def get[T <: StanType, R](
     decl: StanDataDeclaration[T]
   ): T#SCALA_TYPE = dataMapping(decl.emit).values.asInstanceOf[T#SCALA_TYPE]
 
-  /** Reset all data bindings. */
-  final def reset: CompiledModel = replaceMapping(Map.empty)
+  /** Reset all bindings. */
+  final def reset: CompiledModel = replaceMapping(Map.empty).replaceInitialValue(DefaultInitialValue)
 
   /** Look up and set size declarations. */
   private def setSizes[T <: StanType](valueType: T, data: Any): CompiledModel = {
@@ -90,7 +99,22 @@ abstract class CompiledModel {
     val withDecls = setSizes(decl.returnType, conv)
 
     // Record the initial value.
-    withDecls.updateInitialValue(decl.emit, DataMapping[T](decl, conv))
+    val newValue = decl.emit -> DataMapping[T](decl, conv)
+    initialValue match {
+      case DefaultInitialValue          => withDecls.replaceInitialValue(InitialValueMapping(Map(newValue)))
+      case InitialValueMapping(mapping) => withDecls.replaceInitialValue(InitialValueMapping(mapping + newValue))
+      case InitialValueDouble(_)        =>
+        throw new IllegalStateException("Initial value already set.")
+    }
+  }
+
+  /** Set the bounds on initial values. */
+  final def withInitialValue(value: Double): CompiledModel = {
+    require(value >= 0, s"The upper bound on the initial value must be >= 0, got $value")
+    initialValue match {
+      case DefaultInitialValue => replaceInitialValue(InitialValueDouble(value))
+      case _                   => throw new IllegalStateException("Initial value already set.")
+    }
   }
 
   /** Run the model and get results. */

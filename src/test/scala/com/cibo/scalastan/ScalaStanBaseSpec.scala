@@ -11,7 +11,7 @@ trait ScalaStanBaseSpec extends FunSpec with Matchers {
     code: String,
     data: Vector[Map[String, String]] = Vector.empty,
     dataMapping: Map[String, DataMapping[_]] = Map.empty,
-    initialValues: Map[String, DataMapping[_]] = Map.empty
+    initialValue: InitialValue = DefaultInitialValue
   ) extends CompiledModel {
 
     private def set(prefix: String, values: Any, mapping: Map[String, String]): Map[String, String] = {
@@ -34,8 +34,8 @@ trait ScalaStanBaseSpec extends FunSpec with Matchers {
 
     protected def replaceMapping(newMapping: Map[String, DataMapping[_]]): CompiledModel =
       copy(dataMapping = newMapping)
-    protected def updateInitialValue(name: String, value: DataMapping[_]): CompiledModel =
-      copy(initialValues = initialValues.updated(name, value))
+    protected def replaceInitialValue(newInitialValue: InitialValue): CompiledModel =
+      copy(initialValue = newInitialValue)
     protected def runChecked(chains: Int, seed: Int, cache: Boolean, method: RunMethod.Method): StanResults =
       MockRunner.run(this, chains, seed, cache, method)
   }

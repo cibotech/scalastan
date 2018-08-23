@@ -163,6 +163,8 @@ object CmdStanRunner extends StanRunner[CmdStanCompiledModel] with LazyLogging {
         model.emitInitialValues(writer)
         writer.close()
         writer.sha.update(runHash).digest
+      case InitialValueDouble(v) =>
+        SHA().update(v.toString).update(runHash).digest
       case _ => runHash
     }
   }

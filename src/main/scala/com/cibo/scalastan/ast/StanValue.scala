@@ -473,6 +473,6 @@ case object StanUnknownReal extends StanUnknown[StanReal] {
 object StanUnknown {
   def boundOpt[T <: StanType](v: StanValue[T]): Option[StanValue[T]] = v match {
     case _: StanUnknown[T] => None
-    case _                 => v
+    case _                 => Some(v)
   }
 }

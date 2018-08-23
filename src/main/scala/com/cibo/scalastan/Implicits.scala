@@ -30,8 +30,6 @@ protected trait Implicits {
   implicit def doubleLiteral2optReal(value: Double): Option[StanConstant[StanReal]] =
     Some(StanConstant[StanReal](StanReal(), value))
 
-  implicit def stanValue2optValue[T <: StanType](value: StanValue[T]): Option[StanValue[T]] = Some(value)
-
   implicit def seq2array[T <: StanType](values: Seq[StanValue[T]]): StanValue[StanArray[T]] =
     StanArrayLiteral[T, StanArray[T]](values)
 }

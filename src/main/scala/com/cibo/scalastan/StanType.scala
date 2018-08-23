@@ -10,7 +10,7 @@
 
 package com.cibo.scalastan
 
-import com.cibo.scalastan.ast.{StanUnknownDim, StanValue}
+import com.cibo.scalastan.ast.{StanUnknownInt, StanValue}
 
 sealed trait StanType {
 
@@ -148,7 +148,7 @@ sealed trait StanType {
     lower.forall(_.isDerivedFromData) && upper.forall(_.isDerivedFromData) && getIndices.forall(_.isDerivedFromData)
 
   def apply(): StanArray[THIS_TYPE] = {
-    StanArray(StanUnknownDim(), this.asInstanceOf[THIS_TYPE])
+    StanArray(StanUnknownInt, this.asInstanceOf[THIS_TYPE])
   }
 
   def apply(
@@ -315,8 +315,8 @@ case class StanArray[CONTAINED <: StanType](
   def element: ELEMENT_TYPE = inner.element
   def realType: REAL_TYPE = StanArray(dim, inner.realType)
 
-  override def emitDims: Seq[String] = dim.map(_.emit).getOrElse("") +: inner.emitDims
-  override def getIndices: Seq[StanValue[StanInt]] = dim.get +: inner.getIndices
+  override def emitDims: Seq[String] = dim.emit +: inner.emitDims
+  override def getIndices: Seq[StanValue[StanInt]] = dim +: inner.getIndices
   def typeName: String = inner.typeName
   def getData(data: SCALA_TYPE): Seq[String] =
     data.map(d => inner.getData(d.asInstanceOf[inner.SCALA_TYPE])).transpose.flatten

@@ -452,14 +452,25 @@ case class StanLiteral(
   def emit: String = value.toString
 }
 
-case class StanUnknownDim(
-  id: Int = StanNode.getNextId
-) extends StanValue[StanInt] {
-  val returnType: StanInt = StanInt()
+sealed trait StanUnknown[T <: StanType] extends StanValue[T] {
+  val id: Int = StanNode.getNextId
   def inputs: Seq[StanDeclaration[_ <: StanType]] = Seq.empty
   def outputs: Seq[StanDeclaration[_ <: StanType]] = Seq.empty
   def children: Seq[StanValue[_ <: StanType]] = Seq.empty
   def isDerivedFromData: Boolean = true
   def export(builder: CodeBuilder): Unit = ()
   def emit: String = ""
+}
+
+case object StanUnknownInt extends StanUnknown[StanInt] {
+  val returnType: StanInt = StanInt(None, None)
+}
+
+case object StanUnknownReal extends StanUnknown[StanReal] {
+  val returnType: StanReal = StanReal(None, None)
+}
+
+object StanUnknown {
+  implicit val unknownInt: StanUnknown[StanInt] = StanUnknownInt
+  implicit val unknownReal: StanUnknown[StanReal] = StanUnknownReal
 }

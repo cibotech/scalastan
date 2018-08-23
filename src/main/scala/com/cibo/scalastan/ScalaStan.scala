@@ -80,23 +80,28 @@ trait ScalaStan extends Implicits with LazyLogging { ss =>
     StanParameterDeclaration[T](typeConstructor, fixName(name.value))
   }
 
+  private def boundOpt[T <: StanType](bound: StanValue[T]): Option[StanValue[T]] = bound match {
+    case _: StanUnknown[T] => None
+    case _                 => Some(bound)
+  }
+
   def int(
-    lower: Option[StanValue[StanInt]] = None,
-    upper: Option[StanValue[StanInt]] = None
-  ): StanInt = StanInt(lower, upper)
+    lower: StanValue[StanInt] = StanUnknownInt,
+    upper: StanValue[StanInt] = StanUnknownInt
+  ): StanInt = StanInt(boundOpt(lower), boundOpt(upper))
 
   def categorical(): StanCategorical = StanCategorical()
 
   def real(
-    lower: Option[StanValue[StanReal]] = None,
-    upper: Option[StanValue[StanReal]] = None
-  ): StanReal = StanReal(lower, upper)
+    lower: StanValue[StanReal] = StanUnknownReal,
+    upper: StanValue[StanReal] = StanUnknownReal
+  ): StanReal = StanReal(boundOpt(lower), boundOpt(upper))
 
   def vector(
     dim: StanValue[StanInt],
-    lower: Option[StanValue[StanReal]] = None,
-    upper: Option[StanValue[StanReal]] = None
-  ): StanVector = StanVector(dim, lower, upper)
+    lower: StanValue[StanReal] = StanUnknownReal,
+    upper: StanValue[StanReal] = StanUnknownReal
+  ): StanVector = StanVector(dim, boundOpt(lower), boundOpt(upper))
 
   def simplex(dim: StanValue[StanInt]): StanVector =
     StanVector(dim, constraint = VectorConstraint.Simplex)
@@ -112,16 +117,16 @@ trait ScalaStan extends Implicits with LazyLogging { ss =>
 
   def rowVector(
     dim: StanValue[StanInt],
-    lower: Option[StanValue[StanReal]] = None,
-    upper: Option[StanValue[StanReal]] = None
-  ): StanRowVector = StanRowVector(dim, lower, upper)
+    lower: StanValue[StanReal] = StanUnknownReal,
+    upper: StanValue[StanReal] = StanUnknownReal
+  ): StanRowVector = StanRowVector(dim, boundOpt(lower), boundOpt(upper))
 
   def matrix(
     rows: StanValue[StanInt],
     cols: StanValue[StanInt],
-    lower: Option[StanValue[StanReal]] = None,
-    upper: Option[StanValue[StanReal]] = None
-  ): StanMatrix = StanMatrix(rows, cols, lower, upper)
+    lower: StanValue[StanReal] = StanUnknownReal,
+    upper: StanValue[StanReal] = StanUnknownReal
+  ): StanMatrix = StanMatrix(rows, cols, boundOpt(lower), boundOpt(upper))
 
   def corrMatrix(
     dim: StanValue[StanInt]

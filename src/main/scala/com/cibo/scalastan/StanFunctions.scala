@@ -497,7 +497,7 @@ protected trait StanFunctions {
   def to_array_1d[T <: StanCompoundType](
     v: StanValue[T]
   ): StanValue[StanArray[v.returnType.ELEMENT_TYPE]] =
-    StanCall[StanArray[v.returnType.ELEMENT_TYPE]](StanArray(StanUnknownDim(), v.returnType.element), "to_array_1d", Seq(v))
+    StanCall[StanArray[v.returnType.ELEMENT_TYPE]](StanArray(StanUnknownInt, v.returnType.element), "to_array_1d", Seq(v))
 
   // ODE Solvers (45).
   def integrate_ode_rk45[T <: StanScalarType](

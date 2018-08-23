@@ -44,7 +44,7 @@ case class Horseshoe(
   val beta0: ParameterDeclaration[StanReal] = parameter(real())   // y-intercept
   val sigma: ParameterDeclaration[StanReal] = parameter(real(lower = 0))            // Noise standard deviation
   
-  private val z = parameter(vector(p))
+  val z: ParameterDeclaration[StanVector] = parameter(vector(p))
   private val aux1Global = parameter(real(lower = 0))
   private val aux2Global = parameter(real(lower = 0))
   private val aux1Local = parameter(vector(p, lower = 0))
@@ -56,22 +56,22 @@ case class Horseshoe(
   }
 
   // Global shrinkage parameter.
-  private val tau = new TransformedParameter(real(lower = 0)) {
+  val tau: ParameterDeclaration[StanReal] = new TransformedParameter(real(lower = 0)) {
     result := aux1Global * stan.sqrt(aux2Global) * tau0 * sigma
   }
 
   // Slab scale.
-  private val c = new TransformedParameter(real(lower = 0)) {
+  val c: ParameterDeclaration[StanReal] = new TransformedParameter(real(lower = 0)) {
     result := slabScale * stan.sqrt(caux)
   }
 
   // Local shrinkage parameter.
-  private val lambda = new TransformedParameter(vector(p, lower = 0)) {
+  val lambda: ParameterDeclaration[StanVector] = new TransformedParameter(vector(p, lower = 0)) {
     result := aux1Local *:* stan.sqrt(aux2Local)
   }
 
   // "Truncated" local shrinkage parameter.
-  private val lambdaTilde = new TransformedParameter(vector(p, lower = 0)) {
+  val lambdaTilde: ParameterDeclaration[StanVector] = new TransformedParameter(vector(p, lower = 0)) {
     result := stan.sqrt((c ^ 2) * stan.square(lambda) /:/ ((c ^ 2) + (tau ^ 2) * stan.square(lambda)))
   }
 
@@ -81,11 +81,11 @@ case class Horseshoe(
   }
 
   // Latent function values.
-  private val f = new TransformedParameter(vector(n)) {
+  val f: ParameterDeclaration[StanVector] = new TransformedParameter(vector(n)) {
     result := beta0 + x * beta
   }
 
-  val model = new Model {
+  val model: Model = new Model {
     sigma ~ stan.cauchy(0, 1)
     z ~ stan.normal(0, 1)
     aux1Local ~ stan.normal(0, 1)

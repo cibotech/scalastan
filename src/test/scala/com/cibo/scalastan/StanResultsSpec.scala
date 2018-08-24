@@ -51,6 +51,36 @@ class StanResultsSpec extends ScalaStanBaseSpec {
   )
   val results = StanResults(mappedData, model)
 
+  describe("parameters") {
+    it("returns all parameters") {
+      results.parameters.size shouldBe 3
+    }
+  }
+
+  describe("elements") {
+    it("returns all the elements of a parameter") {
+      results.elements(TestScalaStan.v3).size shouldBe 6
+    }
+
+    it("returns the right thing for an array") {
+      results.elements(TestScalaStan.v2).map(_.name) shouldBe Vector(
+        TestScalaStan.v2.get(1).name,
+        TestScalaStan.v2.get(2).name,
+        TestScalaStan.v2.get(3).name
+      )
+    }
+
+    it("returns the right value for a scalar") {
+      results.elements(TestScalaStan.v1).map(_.name) shouldBe Seq(TestScalaStan.v1.name)
+    }
+  }
+
+  describe("data") {
+    it("returns data") {
+      results.data.size shouldBe 1
+    }
+  }
+
   describe("samples") {
     it("returns all scalar samples") {
       results.samples(TestScalaStan.v1) shouldBe Seq(Seq(1, 0))

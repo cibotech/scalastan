@@ -12,7 +12,7 @@ package com.cibo.scalastan.ast
 
 import com.cibo.scalastan._
 
-sealed abstract class StanDeclaration[T <: StanType](implicit ss: ScalaStan) extends StanValue[T] {
+sealed abstract class StanDeclaration[T <: StanType] extends StanValue[T] {
   val returnType: T
   val name: String
 
@@ -22,7 +22,7 @@ sealed abstract class StanDeclaration[T <: StanType](implicit ss: ScalaStan) ext
 
   def size(implicit ev: T <:< StanCompoundType): StanValue[StanInt] = dims.head
 
-  def range(implicit ev: T <:< StanCompoundType): StanValueRange = StanValueRange(1, size)
+  def range(implicit ev: T <:< StanCompoundType, ss: ScalaStan): StanValueRange = StanValueRange(1, size)
 
   def dims: Seq[StanValue[StanInt]] = returnType.getIndices
 
@@ -33,7 +33,7 @@ case class StanDataDeclaration[T <: StanType](
   returnType: T,
   name: String,
   id: Int = StanNode.getNextId
-)(implicit ss: ScalaStan) extends StanDeclaration[T] {
+) extends StanDeclaration[T] {
   require(returnType.isDerivedFromData,
     "data declaration bounds must be derived from other data declarations or constant")
   type DECL_TYPE = StanDataDeclaration[T]
@@ -55,7 +55,7 @@ case class StanParameterDeclaration[T <: StanType](
   indices: Seq[Int] = Seq.empty,
   owner: Option[ScalaStan#TransformBase[_, _]] = None,
   id: Int = StanNode.getNextId
-)(implicit ss: ScalaStan) extends StanDeclaration[T] with Updatable[T] {
+) extends StanDeclaration[T] with Updatable[T] {
   require(returnType.isDerivedFromData,
     "parameter declaration bounds must be derived from data declarations or constant")
   val value: StanDeclaration[_ <: StanType] = this
@@ -115,7 +115,7 @@ case class StanLocalDeclaration[T <: StanType] private[scalastan] (
   derivedFromData: Boolean = false,
   owner: Option[ScalaStan#TransformBase[_, _]] = None,
   id: Int = StanNode.getNextId
-)(implicit ss: ScalaStan) extends StanDeclaration[T] with Updatable[T] {
+) extends StanDeclaration[T] with Updatable[T] {
   val value: StanValue[_ <: StanType] = this
   type DECL_TYPE = StanLocalDeclaration[T]
   def isDerivedFromData: Boolean = derivedFromData

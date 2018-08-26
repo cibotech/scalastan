@@ -68,18 +68,21 @@ case class StanResults private (
     decl: StanParameterDeclaration[_ <: StanType],
     value: Any,
     indices: Vector[Int] = Vector.empty
-  ): Seq[StanParameterDeclaration[_ <: StanType]] = {
+  ): Seq[StanParameterDeclaration[StanReal]] = {
     value match {
       case vs: Seq[_] => vs.zipWithIndex.flatMap(v => elementsHelper(decl, v._1, indices :+ (v._2 + 1)))
       case x          =>
         val newName = if (indices.nonEmpty) indices.mkString(s"${decl.name}[", ",", "]") else decl.name
         val newReturnType: StanType = indices.foldLeft(decl.returnType: StanType) { (t, _) => t.next }
-        Seq(StanParameterDeclaration(newReturnType, newName, decl.rootOpt.orElse(Some(decl)), decl.indices ++ indices))
+
+        // Parameters always have "real" elements.
+        val realReturnType: StanReal = newReturnType.asInstanceOf[StanReal]
+        Seq(StanParameterDeclaration(realReturnType, newName, decl.rootOpt.orElse(Some(decl)), decl.indices ++ indices))
     }
   }
 
   /** Get scalar elements for a parameter declaration. */
-  def elements(decl: StanParameterDeclaration[_ <: StanType]): Seq[StanParameterDeclaration[_ <: StanType]] = {
+  def elements(decl: StanParameterDeclaration[_ <: StanType]): Seq[StanParameterDeclaration[StanReal]] = {
     val name = declName(decl)
     val parsed = decl.returnType.parse(name, parameterChains).head.head
     elementsHelper(decl, parsed)

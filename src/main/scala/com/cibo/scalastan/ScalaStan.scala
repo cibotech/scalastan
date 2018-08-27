@@ -143,7 +143,7 @@ trait ScalaStan extends Implicits with LazyLogging { ss =>
 
   trait StanCode {
 
-    implicit val _code: CodeBuilder = new CodeBuilder
+    implicit val _code: StanProgramBuilder = new StanProgramBuilder
 
     def local[T <: StanType](typeConstructor: T)(implicit name: sourcecode.Name): StanLocalDeclaration[T] = {
       if (typeConstructor.lower.isDefined || typeConstructor.upper.isDefined) {
@@ -211,7 +211,7 @@ trait ScalaStan extends Implicits with LazyLogging { ss =>
 
   abstract class TransformBase[T <: StanType, D <: StanDeclaration[T]] extends StanCode {
     private[scalastan] val result: D
-    private[scalastan] def export(builder: CodeBuilder): Unit
+    private[scalastan] def export(builder: StanProgramBuilder): Unit
     val name: String
   }
 
@@ -238,7 +238,7 @@ trait ScalaStan extends Implicits with LazyLogging { ss =>
       _code.append(StanReturnStatement(value))
     }
 
-    def apply(args: StanValue[_ <: StanType]*)(implicit code: CodeBuilder): StanCall[RETURN_TYPE] = {
+    def apply(args: StanValue[_ <: StanType]*)(implicit code: StanProgramBuilder): StanCall[RETURN_TYPE] = {
       val node = StanCall[RETURN_TYPE](returnType, this, args)
       if (returnType == StanVoid()) {
         code.append(StanValueStatement(node))
@@ -246,7 +246,7 @@ trait ScalaStan extends Implicits with LazyLogging { ss =>
       node
     }
 
-    private[scalastan] def export(builder: CodeBuilder): Unit = builder.append(this)
+    private[scalastan] def export(builder: StanProgramBuilder): Unit = builder.append(this)
 
     private[scalastan] lazy val generate: StanFunctionDeclaration = StanFunctionDeclaration(
       result,
@@ -267,7 +267,7 @@ trait ScalaStan extends Implicits with LazyLogging { ss =>
       typeConstructor, name, derivedFromData = true, owner = Some(this)
     )
 
-    private[scalastan] def export(builder: CodeBuilder): Unit = builder.append(this)
+    private[scalastan] def export(builder: StanProgramBuilder): Unit = builder.append(this)
 
     private[scalastan] lazy val generate: StanTransformedData = StanTransformedData(result, _code.results)
   }
@@ -284,7 +284,7 @@ trait ScalaStan extends Implicits with LazyLogging { ss =>
       StanParameterDeclaration[T](typeConstructor, name, owner = Some(this))
     protected implicit val _parameterTransform: InParameterTransform = InParameterTransform
 
-    private[scalastan] def export(builder: CodeBuilder): Unit = builder.append(this)
+    private[scalastan] def export(builder: StanProgramBuilder): Unit = builder.append(this)
 
     private[scalastan] lazy val generate: StanTransformedParameter = StanTransformedParameter(result, _code.results)
   }
@@ -314,7 +314,7 @@ trait ScalaStan extends Implicits with LazyLogging { ss =>
 
       protected implicit val _rngAvailable: RngAvailable = RngAvailable
 
-      private[scalastan] def export(builder: CodeBuilder): Unit = builder.append(this)
+      private[scalastan] def export(builder: StanProgramBuilder): Unit = builder.append(this)
 
       private[scalastan] lazy val generate: StanGeneratedQuantity = StanGeneratedQuantity(result, _code.results)
     }

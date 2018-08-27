@@ -38,7 +38,7 @@ case class StanDataDeclaration[T <: StanType](
     "data declaration bounds must be derived from other data declarations or constant")
   type DECL_TYPE = StanDataDeclaration[T]
   def isDerivedFromData: Boolean = true
-  def export(builder: CodeBuilder): Unit = {
+  def export(builder: StanProgramBuilder): Unit = {
     returnType.lower.foreach(_.export(builder))
     returnType.upper.foreach(_.export(builder))
     returnType.getIndices.foreach(_.export(builder))
@@ -61,7 +61,7 @@ case class StanParameterDeclaration[T <: StanType](
   val value: StanDeclaration[_ <: StanType] = this
   type DECL_TYPE = StanParameterDeclaration[T]
   def isDerivedFromData: Boolean = false
-  def export(builder: CodeBuilder): Unit = {
+  def export(builder: StanProgramBuilder): Unit = {
     indices.foreach(_.export(builder))
     returnType.lower.foreach(_.export(builder))
     returnType.upper.foreach(_.export(builder))
@@ -119,7 +119,7 @@ case class StanLocalDeclaration[T <: StanType] private[scalastan] (
   val value: StanValue[_ <: StanType] = this
   type DECL_TYPE = StanLocalDeclaration[T]
   def isDerivedFromData: Boolean = derivedFromData
-  def export(builder: CodeBuilder): Unit = {
+  def export(builder: StanProgramBuilder): Unit = {
     returnType.lower.foreach(_.export(builder))
     returnType.upper.foreach(_.export(builder))
     returnType.getIndices.foreach(_.export(builder))

@@ -47,8 +47,8 @@ case class StanContinuousDistribution[T <: StanType, R <: StanType](
   name: String,
   rngType: R,
   args: Seq[StanValue[_ <: StanType]],
-  lowerOpt: Option[StanValue[R]] = None,
-  upperOpt: Option[StanValue[R]] = None,
+  lowerOpt: Option[StanValue[StanReal]] = None,
+  upperOpt: Option[StanValue[StanReal]] = None,
   id: Int = StanNode.getNextId
 ) extends StanDistribution[T, R] {
   def lpdf(y: StanValue[T]): StanValue[StanReal] = StanDistributionNode(s"${name}_lpdf", y, "|", args)
@@ -56,11 +56,11 @@ case class StanContinuousDistribution[T <: StanType, R <: StanType](
   def lcdf(y: StanValue[T]): StanValue[StanReal] = StanDistributionNode(s"${name}_lcdf", y, "|", args)
   def lccdf(y: StanValue[T]): StanValue[StanReal] = StanDistributionNode(s"${name}_lccdf", y, "|", args)
   def truncate(
-    lower: Option[StanValue[R]] = None,
-    upper: Option[StanValue[R]] = None
+    lower: StanValue[StanReal] = StanUnknownReal,
+    upper: StanValue[StanReal] = StanUnknownReal
   ): StanContinuousDistribution[T, R] = {
     require(lowerOpt.isEmpty && upperOpt.isEmpty, "Distribution already truncated")
-    StanContinuousDistribution(name, rngType, args, lowerOpt = lower, upperOpt = upper)
+    copy(lowerOpt = StanUnknown.boundOpt(lower), upperOpt = StanUnknown.boundOpt(upper))
   }
   def rng(implicit gen: RngAvailable): StanCall[R] = StanCall(rngType, s"${name}_rng", args)
 }
@@ -79,16 +79,16 @@ case class StanDiscreteDistributionWithoutCdf[T <: StanType, R <: StanType] priv
   name: String,
   rngType: R,
   args: Seq[StanValue[_ <: StanType]],
-  lowerOpt: Option[StanValue[R]] = None,
-  upperOpt: Option[StanValue[R]] = None,
+  lowerOpt: Option[StanValue[StanInt]] = None,
+  upperOpt: Option[StanValue[StanInt]] = None,
   id: Int = StanNode.getNextId
 ) extends StanDiscreteDistribution[T, R] {
   def truncate(
-    lower: Option[StanValue[R]] = None,
-    upper: Option[StanValue[R]] = None
+    lower: StanValue[StanInt] = StanUnknownInt,
+    upper: StanValue[StanInt] = StanUnknownInt
   ): StanDiscreteDistributionWithoutCdf[T, R] = {
     require(lowerOpt.isEmpty && upperOpt.isEmpty, "Distribution already truncated")
-    StanDiscreteDistributionWithoutCdf(name, rngType, args, lowerOpt = lower, upperOpt = upper)
+    copy(lowerOpt = StanUnknown.boundOpt(lower), upperOpt = StanUnknown.boundOpt(upper))
   }
 }
 
@@ -96,19 +96,19 @@ case class StanDiscreteDistributionWithCdf[T <: StanType, R <: StanType] private
   name: String,
   rngType: R,
   args: Seq[StanValue[_ <: StanType]],
-  lowerOpt: Option[StanValue[T]] = None,
-  upperOpt: Option[StanValue[T]] = None,
+  lowerOpt: Option[StanValue[StanInt]] = None,
+  upperOpt: Option[StanValue[StanInt]] = None,
   id: Int = StanNode.getNextId
 ) extends StanDiscreteDistribution[T, R] {
   def cdf(y: StanValue[T]): StanValue[StanReal] = StanDistributionNode(s"${name}_cdf", y, ",", args)
   def lcdf(y: StanValue[T]): StanValue[StanReal] = StanDistributionNode(s"${name}_lcdf", y, "|", args)
   def lccdf(y: StanValue[T]): StanValue[StanReal] = StanDistributionNode(s"${name}_lccdf", y, "|", args)
   def truncate(
-    lower: Option[StanValue[T]] = None,
-    upper: Option[StanValue[T]] = None
+    lower: StanValue[StanInt] = StanUnknownInt,
+    upper: StanValue[StanInt] = StanUnknownInt
   ): StanDiscreteDistributionWithCdf[T, R] = {
     require(lowerOpt.isEmpty && upperOpt.isEmpty, "Distribution already truncated")
-    StanDiscreteDistributionWithCdf(name, rngType, args, lowerOpt = lower, upperOpt = upper)
+    copy(lowerOpt = StanUnknown.boundOpt(lower), upperOpt = StanUnknown.boundOpt(upper))
   }
 }
 

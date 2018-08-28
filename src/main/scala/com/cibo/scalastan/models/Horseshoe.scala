@@ -28,50 +28,50 @@ case class Horseshoe(
   // Shrinkage Priors", 2017.
   // This code is adapted from section C.2.
 
-  private val n = data(int(lower = 0))    // Number of observations
-  private val p = data(int(lower = 0))    // Number of parameters
+  val n: DataDeclaration[StanInt] = data(int(lower = 0))    // Number of observations
+  val p: DataDeclaration[StanInt] = data(int(lower = 0))    // Number of parameters
 
-  private val x: DataDeclaration[StanMatrix] = data(matrix(n, p))   // Inputs
-  private val y: DataDeclaration[StanVector] = data(vector(n))      // Outputs
+  val x: DataDeclaration[StanMatrix] = data(matrix(n, p))   // Inputs
+  val y: DataDeclaration[StanVector] = data(vector(n))      // Outputs
 
   // Priors
-  private val scaleIntercept = data(real(lower = 0))
-  private val nuLocal = data(real(lower = 1))
-  private val nuGlobal = data(real(lower = 1))
-  private val slabScale = data(real(lower = 0))
-  private val slabDf = data(real(lower = 0))
+  val scaleIntercept: DataDeclaration[StanReal] = data(real(lower = 0.0))
+  val nuLocal: DataDeclaration[StanReal] = data(real(lower = 1.0))
+  val nuGlobal: DataDeclaration[StanReal] = data(real(lower = 1.0))
+  val slabScale: DataDeclaration[StanReal] = data(real(lower = 0.0))
+  val slabDf: DataDeclaration[StanReal] = data(real(lower = 0.0))
 
   val beta0: ParameterDeclaration[StanReal] = parameter(real())   // y-intercept
-  val sigma: ParameterDeclaration[StanReal] = parameter(real(lower = 0))            // Noise standard deviation
+  val sigma: ParameterDeclaration[StanReal] = parameter(real(lower = 0.0)) // Noise standard deviation
   
-  private val z = parameter(vector(p))
-  private val aux1Global = parameter(real(lower = 0))
-  private val aux2Global = parameter(real(lower = 0))
-  private val aux1Local = parameter(vector(p, lower = 0))
-  private val aux2Local = parameter(vector(p, lower = 0))
-  private val caux = parameter(real(lower = 0))
+  val z: ParameterDeclaration[StanVector] = parameter(vector(p))
+  private val aux1Global = parameter(real(lower = 0.0))
+  private val aux2Global = parameter(real(lower = 0.0))
+  private val aux1Local = parameter(vector(p, lower = 0.0))
+  private val aux2Local = parameter(vector(p, lower = 0.0))
+  private val caux = parameter(real(lower = 0.0))
 
-  private val tau0 = new TransformedData(real(lower = 0)) {
+  private val tau0 = new TransformedData(real(lower = 0.0)) {
     result := stan.fmin(p0, p - 1) / (p - stan.fmin(p0, p - 1)) / stan.pow(n, 0.5)
   }
 
   // Global shrinkage parameter.
-  private val tau = new TransformedParameter(real(lower = 0)) {
+  val tau: ParameterDeclaration[StanReal] = new TransformedParameter(real(lower = 0)) {
     result := aux1Global * stan.sqrt(aux2Global) * tau0 * sigma
   }
 
   // Slab scale.
-  private val c = new TransformedParameter(real(lower = 0)) {
+  val c: ParameterDeclaration[StanReal] = new TransformedParameter(real(lower = 0)) {
     result := slabScale * stan.sqrt(caux)
   }
 
   // Local shrinkage parameter.
-  private val lambda = new TransformedParameter(vector(p, lower = 0)) {
+  val lambda: ParameterDeclaration[StanVector] = new TransformedParameter(vector(p, lower = 0)) {
     result := aux1Local *:* stan.sqrt(aux2Local)
   }
 
   // "Truncated" local shrinkage parameter.
-  private val lambdaTilde = new TransformedParameter(vector(p, lower = 0)) {
+  val lambdaTilde: ParameterDeclaration[StanVector] = new TransformedParameter(vector(p, lower = 0)) {
     result := stan.sqrt((c ^ 2) * stan.square(lambda) /:/ ((c ^ 2) + (tau ^ 2) * stan.square(lambda)))
   }
 
@@ -81,11 +81,11 @@ case class Horseshoe(
   }
 
   // Latent function values.
-  private val f = new TransformedParameter(vector(n)) {
+  val f: ParameterDeclaration[StanVector] = new TransformedParameter(vector(n)) {
     result := beta0 + x * beta
   }
 
-  val model = new Model {
+  val model: Model = new Model {
     sigma ~ stan.cauchy(0, 1)
     z ~ stan.normal(0, 1)
     aux1Local ~ stan.normal(0, 1)

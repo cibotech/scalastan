@@ -199,15 +199,15 @@ abstract class StanTransform[STATE](implicit ss: ScalaStan) {
     case dn: StanDistributionNode[_] => handleDistributionNode(dn)
     case un: StanUnaryOperator[_, T] => handleUnaryOperator(un)
     case bn: StanBinaryOperator[T, _, _] => handleBinaryOperator(bn)
-    case in: StanIndexOperator[_, T, _] => handleIndexOperator(in)
-    case sl: StanSliceOperator[T, _] => handleSliceOperator(sl)
-    case tr: StanTranspose[_, T] => handleTranspose(tr)
-    case vr: StanDeclaration[T] => handleVariable(vr)
-    case cn: StanConstant[T] => handleConstant(cn)
-    case ar: StanArrayLiteral[_, _] => handleArray(ar)
-    case st: StanStringLiteral => handleString(st)
-    case lt: StanLiteral => handleLiteral(lt)
-    case ud: StanUnknownDim => handleUnknownDim(ud)
+    case in: StanIndexOperator[_, T, _]  => handleIndexOperator(in)
+    case sl: StanSliceOperator[T, _]     => handleSliceOperator(sl)
+    case tr: StanTranspose[_, T]         => handleTranspose(tr)
+    case vr: StanDeclaration[T]          => handleVariable(vr)
+    case cn: StanConstant[T]             => handleConstant(cn)
+    case ar: StanArrayLiteral[_, _]      => handleArray(ar)
+    case st: StanStringLiteral           => handleString(st)
+    case lt: StanLiteral                 => handleLiteral(lt)
+    case un: StanUnknown[T]              => handleUnknown(un)
   }
 
   def handleCall[T <: StanType](call: StanCall[T]): State[StanValue[T]] = {
@@ -275,8 +275,7 @@ abstract class StanTransform[STATE](implicit ss: ScalaStan) {
 
   def handleLiteral[T <: StanType](l: StanLiteral): State[StanValue[T]] = State.pure(l.asInstanceOf[StanValue[T]])
 
-  def handleUnknownDim[T <: StanType](ud: StanUnknownDim): State[StanValue[T]] =
-    State.pure(ud.asInstanceOf[StanValue[T]])
+  def handleUnknown[T <: StanType](un: StanUnknown[T]): State[StanValue[T]] = State.pure(un.asInstanceOf[StanValue[T]])
 
   def handleVariable[T <: StanType](decl: StanDeclaration[T]): State[StanValue[T]] = State.pure(decl)
 

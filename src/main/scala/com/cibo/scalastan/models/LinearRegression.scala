@@ -28,7 +28,7 @@ case class LinearRegression(
   val beta: ParameterDeclaration[StanVector] = parameter(vector(p))         // Coefficients
   val sigma: ParameterDeclaration[StanReal] = parameter(real(lower = 0))    // Error
 
-  val model = new Model {
+  val model: Model = new Model {
     sigma ~ stan.cauchy(0, 1)
     y ~ stan.normal(x * beta + beta0, sigma)
   }

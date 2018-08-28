@@ -81,22 +81,22 @@ trait ScalaStan extends Implicits with LazyLogging { ss =>
   }
 
   def int(
-    lower: Option[StanValue[StanInt]] = None,
-    upper: Option[StanValue[StanInt]] = None
-  ): StanInt = StanInt(lower, upper)
+    lower: StanValue[StanInt] = StanUnknownInt,
+    upper: StanValue[StanInt] = StanUnknownInt
+  ): StanInt = StanInt(StanUnknown.boundOpt(lower), StanUnknown.boundOpt(upper))
 
   def categorical(): StanCategorical = StanCategorical()
 
   def real(
-    lower: Option[StanValue[StanReal]] = None,
-    upper: Option[StanValue[StanReal]] = None
-  ): StanReal = StanReal(lower, upper)
+    lower: StanValue[StanReal] = StanUnknownReal,
+    upper: StanValue[StanReal] = StanUnknownReal
+  ): StanReal = StanReal(StanUnknown.boundOpt(lower), StanUnknown.boundOpt(upper))
 
   def vector(
     dim: StanValue[StanInt],
-    lower: Option[StanValue[StanReal]] = None,
-    upper: Option[StanValue[StanReal]] = None
-  ): StanVector = StanVector(dim, lower, upper)
+    lower: StanValue[StanReal] = StanUnknownReal,
+    upper: StanValue[StanReal] = StanUnknownReal
+  ): StanVector = StanVector(dim, StanUnknown.boundOpt(lower), StanUnknown.boundOpt(upper))
 
   def simplex(dim: StanValue[StanInt]): StanVector =
     StanVector(dim, constraint = VectorConstraint.Simplex)
@@ -112,16 +112,16 @@ trait ScalaStan extends Implicits with LazyLogging { ss =>
 
   def rowVector(
     dim: StanValue[StanInt],
-    lower: Option[StanValue[StanReal]] = None,
-    upper: Option[StanValue[StanReal]] = None
-  ): StanRowVector = StanRowVector(dim, lower, upper)
+    lower: StanValue[StanReal] = StanUnknownReal,
+    upper: StanValue[StanReal] = StanUnknownReal
+  ): StanRowVector = StanRowVector(dim, StanUnknown.boundOpt(lower), StanUnknown.boundOpt(upper))
 
   def matrix(
     rows: StanValue[StanInt],
     cols: StanValue[StanInt],
-    lower: Option[StanValue[StanReal]] = None,
-    upper: Option[StanValue[StanReal]] = None
-  ): StanMatrix = StanMatrix(rows, cols, lower, upper)
+    lower: StanValue[StanReal] = StanUnknownReal,
+    upper: StanValue[StanReal] = StanUnknownReal
+  ): StanMatrix = StanMatrix(rows, cols, StanUnknown.boundOpt(lower), StanUnknown.boundOpt(upper))
 
   def corrMatrix(
     dim: StanValue[StanInt]

@@ -12,11 +12,12 @@ package com.cibo.scalastan.ast
 
 import java.io.PrintWriter
 
+import com.cibo.scalastan.StanType
 import com.cibo.scalastan.transform.StanTransform
 
 case class StanProgram(
-  data: Seq[StanDataDeclaration[_]] = Seq.empty,
-  parameters: Seq[StanParameterDeclaration[_]] = Seq.empty,
+  data: Seq[StanDataDeclaration[_ <: StanType]] = Seq.empty,
+  parameters: Seq[StanParameterDeclaration[_ <: StanType]] = Seq.empty,
   functions: Seq[StanFunctionDeclaration] = Seq.empty,
   transformedData: Seq[StanTransformedData] = Seq.empty,
   transformedParameters: Seq[StanTransformedParameter] = Seq.empty,

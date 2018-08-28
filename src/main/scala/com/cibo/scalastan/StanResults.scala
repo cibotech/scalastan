@@ -46,6 +46,48 @@ case class StanResults private (
   val iterationsPerChain: Int = parameterChains.head._2.head.size
   val iterationsTotal: Int = chainCount * iterationsPerChain
 
+  /** Get all parameter declarations. */
+  def parameters: Seq[StanParameterDeclaration[_ <: StanType]] = model.model.program.parameters
+
+  /** Get all transformed parameters. */
+  def transformedParameters: Seq[StanParameterDeclaration[_ <: StanType]] =
+    model.model.program.transformedParameters.map(_.result)
+
+  /** Get all generated quantities. */
+  def generatedQuantities: Seq[StanParameterDeclaration[_ <: StanType]] =
+    model.model.program.generatedQuantities.map(_.result)
+
+  /** Get all data declarations. */
+  def data: Seq[StanDataDeclaration[_ <: StanType]] = model.model.program.data
+
+  private def declName(decl: StanParameterDeclaration[_ <: StanType]): String = {
+    decl.root.emit + (if (decl.indices.nonEmpty) decl.indices.mkString(".", ".", "") else "")
+  }
+
+  private def elementsHelper(
+    decl: StanParameterDeclaration[_ <: StanType],
+    value: Any,
+    indices: Vector[Int] = Vector.empty
+  ): Seq[StanParameterDeclaration[StanReal]] = {
+    value match {
+      case vs: Seq[_] => vs.zipWithIndex.flatMap(v => elementsHelper(decl, v._1, indices :+ (v._2 + 1)))
+      case x          =>
+        val newName = if (indices.nonEmpty) indices.mkString(s"${decl.name}[", ",", "]") else decl.name
+        val newReturnType: StanType = indices.foldLeft(decl.returnType: StanType) { (t, _) => t.next }
+
+        // Parameters always have "real" elements.
+        val realReturnType: StanReal = newReturnType.asInstanceOf[StanReal]
+        Seq(StanParameterDeclaration(realReturnType, newName, decl.rootOpt.orElse(Some(decl)), decl.indices ++ indices))
+    }
+  }
+
+  /** Get scalar elements for a parameter declaration. */
+  def elements(decl: StanParameterDeclaration[_ <: StanType]): Seq[StanParameterDeclaration[StanReal]] = {
+    val name = declName(decl)
+    val parsed = decl.returnType.parse(name, parameterChains).head.head
+    elementsHelper(decl, parsed)
+  }
+
   /** Get the specified input data. */
   def get[T <: StanType, R](
     decl: StanDataDeclaration[T]
@@ -55,7 +97,7 @@ case class StanResults private (
   def samples[T <: StanType, R](
     decl: StanParameterDeclaration[T]
   )(implicit ev: R =:= T#SCALA_TYPE): Seq[Seq[R]] = {
-    val name = decl.root.emit + (if (decl.indices.nonEmpty) decl.indices.mkString(".", ".", "") else "")
+    val name = declName(decl)
     decl.returnType.parse(name, parameterChains).asInstanceOf[Seq[Seq[R]]]
   }
 
@@ -294,11 +336,7 @@ case class StanResults private (
     val fieldWidth = 8
 
     // Get a mapping from Stan name to ScalaStan name.
-    val parametersToShow = if (parameters.nonEmpty) {
-      parameters
-    } else {
-      model.model.program.parameters ++ model.model.program.transformedParameters.map(_.result)
-    }
+    val parametersToShow = if (parameters.nonEmpty) parameters else this.parameters ++ this.transformedParameters
     val mapping = parametersToShow.map(p => p.emit -> p.name).toMap
 
     // Build a mapping of name -> chain -> iteration -> value

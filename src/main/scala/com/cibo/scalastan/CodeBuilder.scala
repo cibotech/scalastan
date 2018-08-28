@@ -21,8 +21,8 @@ protected class CodeBuilder {
   // Entering a new scope extends the number of buffers.
   private val stack = new ArrayBuffer[ArrayBuffer[StanStatement]]()
 
-  private val dataValues = ArrayBuffer[StanDataDeclaration[_]]()
-  private val parameterValues = ArrayBuffer[StanParameterDeclaration[_]]()
+  private val dataValues = ArrayBuffer[StanDataDeclaration[_ <: StanType]]()
+  private val parameterValues = ArrayBuffer[StanParameterDeclaration[_ <: StanType]]()
   private val functions = ArrayBuffer[ScalaStan#Function[_]]()
   private val transformedData = ArrayBuffer[ScalaStan#TransformedData[_]]()
   private val transformedParameters = ArrayBuffer[ScalaStan#TransformedParameter[_]]()
@@ -72,13 +72,13 @@ protected class CodeBuilder {
     other.generatedQuantities.foreach(append)
   }
 
-  def append(d: StanDataDeclaration[_]): Unit = {
+  def append(d: StanDataDeclaration[_ <: StanType]): Unit = {
     if (!dataValues.exists(_.id == d.id)) {
       dataValues += d
     }
   }
 
-  def append(d: StanParameterDeclaration[_]): Unit = {
+  def append(d: StanParameterDeclaration[_ <: StanType]): Unit = {
     if (!parameterValues.exists(_.id == d.id)) {
       parameterValues += d
     }

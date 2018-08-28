@@ -297,8 +297,23 @@ val data: Seq[Double] = source.read(x, "X")
 ```
 
 Before the model can be run, all inputs must be assigned.  To assign different inputs, the `reset` method
-must be called.  Using the `reset` method will clear all assigned inputs, allowing the model to be run
-multiple times with different inputs.
+must be called.  Using the `reset` method will clear all assigned inputs and initial values, allowing the
+model to be run multiple times with different inputs.  The `reset` method, like the `withData`
+method, returns an updated copy of the model.
+
+Initial Values
+--------------
+Initial values can be set for parameter declarations using the `withInitialValue` method on the model (like
+`withData`, this is actually on the `CompiledModel` class).  Here is an example to set the initial value
+for `b`:
+```scala
+model.withInitialValue(b, value)
+```
+
+It is also possible to set the initial value to a range [-x, x] for all parameters using:
+```scala
+model.withInitialValue(x)
+```
 
 Running the Model
 -----------------

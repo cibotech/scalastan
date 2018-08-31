@@ -11,6 +11,7 @@
 package com.cibo.scalastan.models
 
 import com.cibo.scalastan._
+import com.cibo.scalastan.run.{StanCompiler, StanRunner}
 
 case class Horseshoe(
   xs: Seq[Seq[Double]],                 // Inputs
@@ -97,7 +98,7 @@ case class Horseshoe(
     y ~ stan.normal(f, sigma)
   }
 
-  def compile[M <: CompiledModel](implicit runner: StanRunner[M]): CompiledModel = model.compile
+  def compile(implicit compiler: StanCompiler): CompiledModel = model.compile
     .withData(scaleIntercept, scaleInterceptPrior)
     .withData(nuGlobal, nuGlobalPrior)
     .withData(nuLocal, nuLocalPrior)

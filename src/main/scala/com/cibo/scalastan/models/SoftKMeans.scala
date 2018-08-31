@@ -11,6 +11,7 @@
 package com.cibo.scalastan.models
 
 import com.cibo.scalastan._
+import com.cibo.scalastan.run.{StanCompiler, StanRunner}
 
 case class SoftKMeans(
   clusterCount: Int,              // Number of clusters
@@ -27,11 +28,11 @@ case class SoftKMeans(
 
   val mu: ParameterDeclaration[StanArray[StanVector]] = parameter(vector(d)(k))  // Cluster means
 
-  private val negLogK = new TransformedData(real(upper = 0)) {
+  private val negLogK = new TransformedData(real(upper = 0.0)) {
     result := -stan.log(k)
   }
 
-  val softZ: ParameterDeclaration[StanArray[StanArray[StanReal]]] = new TransformedParameter(real(upper = 0)(n, k)) {
+  val softZ: ParameterDeclaration[StanArray[StanArray[StanReal]]] = new TransformedParameter(real(upper = 0.0)(n, k)) {
     for (i <- range(1, n)) {
       for (j <- range(1, k)) {
         result(i, j) := negLogK - 0.5 * stan.dot_self(mu(j) - y(i))
@@ -51,7 +52,7 @@ case class SoftKMeans(
     }
   }
 
-  def compile[M <: CompiledModel](implicit runner: StanRunner[M]): CompiledModel = model.compile
+  def compile(implicit compiler: StanCompiler): CompiledModel = model.compile
     .withData(k, clusterCount)
     .withData(y, observations)
 

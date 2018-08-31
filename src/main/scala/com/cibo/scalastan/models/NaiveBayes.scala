@@ -11,6 +11,7 @@
 package com.cibo.scalastan.models
 
 import com.cibo.scalastan._
+import com.cibo.scalastan.run.{StanCompiler, StanRunner}
 
 case class NaiveBayes(
   data: Seq[Map[Int, Set[Int]]],            // Mapping from group -> document ID (1 based) -> word IDs (1 based)
@@ -68,7 +69,7 @@ case class NaiveBayes(
 
   private def defaultWordPrior: Seq[Double] = Seq.fill[Double](wordCount)(1.0 / wordCount)
 
-  def compile[M <: CompiledModel](implicit runner: StanRunner[M]): CompiledModel = model.compile
+  def compile(implicit compiler: StanCompiler): CompiledModel = model.compile
     .withData(k, topicCount)
     .withData(v, wordCount)
     .withData(m, documentCount)

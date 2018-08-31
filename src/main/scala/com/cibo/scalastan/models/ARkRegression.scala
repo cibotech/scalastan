@@ -12,6 +12,7 @@ package com.cibo.scalastan.models
 
 import com.cibo.scalastan._
 import com.cibo.scalastan.ast.StanParameterDeclaration
+import com.cibo.scalastan.run.{StanCompiler, StanRunner}
 
 case class ARkRegression(
   xs: Seq[Seq[Double]],                       // Inputs
@@ -40,7 +41,7 @@ case class ARkRegression(
   val alpha: StanParameterDeclaration[StanReal] = parameter(real())
   val beta: StanParameterDeclaration[StanMatrix] = parameter(matrix(m, k))
   val xbeta: StanParameterDeclaration[StanVector] = parameter(vector(p))
-  val sigma: StanParameterDeclaration[StanReal] = parameter(real(lower = 0))
+  val sigma: StanParameterDeclaration[StanReal] = parameter(real(lower = 0.0))
 
   private val model = new Model {
 
@@ -86,7 +87,7 @@ case class ARkRegression(
   private lazy val sortedYs = sortedIndices.map(ys.apply)
   private lazy val groupCount = groupingFactor.max
 
-  def compile[M <: CompiledModel](implicit runner: StanRunner[M]): CompiledModel = model.compile
+  def compile(implicit compiler: StanCompiler): CompiledModel = model.compile
     .withData(x, sortedXs)
     .withData(y, sortedYs)
     .withData(group, sortedGroups)

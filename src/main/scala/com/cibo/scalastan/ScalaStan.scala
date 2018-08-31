@@ -14,6 +14,7 @@ import java.io._
 import java.nio.file.{Files, Path, Paths}
 
 import com.cibo.scalastan.ast._
+import com.cibo.scalastan.run.{StanCompiler, StanRunner}
 import com.cibo.scalastan.transform.{LoopChecker, StanTransform}
 import com.typesafe.scalalogging.LazyLogging
 
@@ -389,11 +390,11 @@ trait ScalaStan extends Implicits with LazyLogging { ss =>
 
     def transform(t: StanTransform[_]): Model = TransformedModel(this).transform(t)
 
-    def compile[M <: CompiledModel](implicit runner: StanRunner[M]): CompiledModel =
-      TransformedModel(this).compile(runner)
+    def compile(implicit compiler: StanCompiler): CompiledModel =
+      TransformedModel(this).compile(compiler)
   }
 
-  implicit def compile[M <: CompiledModel](model: Model)(implicit runner: StanRunner[M]): CompiledModel = model.compile
+  implicit def compile(model: Model)(implicit compiler: StanCompiler): CompiledModel = model.compile
 
   implicit def dataTransform2Value[T <: StanType](transform: TransformedData[T]): StanLocalDeclaration[T] = {
     transform.result
@@ -419,8 +420,7 @@ trait ScalaStan extends Implicits with LazyLogging { ss =>
 
     override final def emit(writer: PrintWriter): Unit = program.emit(writer)
 
-    override final def compile[M <: CompiledModel](implicit runner: StanRunner[M]): CompiledModel =
-      runner.compile(ss, this)
+    override final def compile(implicit compiler: StanCompiler): CompiledModel = compiler.compile(ss, this)
   }
 
   private case class BlackBoxModel private (
@@ -429,8 +429,7 @@ trait ScalaStan extends Implicits with LazyLogging { ss =>
 
     override def emit(pw: PrintWriter): Unit = pw.write(model)
 
-    override final def compile[M <: CompiledModel](implicit runner: StanRunner[M]): CompiledModel =
-      runner.compile(ss, this)
+    override final def compile(implicit compiler: StanCompiler): CompiledModel = compiler.compile(ss, this)
   }
 
   object Model {

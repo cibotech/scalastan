@@ -1,18 +1,14 @@
 package com.cibo.scalastan
 
 import com.cibo.scalastan.ast.StanParameterDeclaration
+import com.cibo.scalastan.run.{StanCompiler, StanRunner}
 import org.scalatest.{FunSpec, Matchers}
 
 trait ScalaStanBaseSpec extends FunSpec with Matchers {
 
-  case class MockCompiledModel(
-    ss: ScalaStan,
-    model: ScalaStan#Model,
-    code: String,
-    data: Vector[Map[String, String]] = Vector.empty,
-    dataMapping: Map[String, DataMapping[_]] = Map.empty,
-    initialValue: InitialValue = DefaultInitialValue
-  ) extends CompiledModel {
+  case class MockRunner(data: Vector[Map[String, String]] = Vector.empty) extends StanRunner {
+
+    private val results = scala.collection.mutable.ArrayBuffer[(String, Vector[Vector[String]])]()
 
     private def set(prefix: String, values: Any, mapping: Map[String, String]): Map[String, String] = {
       values match {
@@ -24,7 +20,8 @@ trait ScalaStanBaseSpec extends FunSpec with Matchers {
       }
     }
 
-    def set[T <: StanType](decl: StanParameterDeclaration[T], values: Seq[T#SCALA_TYPE]): MockCompiledModel = {
+
+    def set[T <: StanType](decl: StanParameterDeclaration[T], values: Seq[T#SCALA_TYPE]): MockRunner = {
       require(data.isEmpty || data.length == values.length)
       val dataBefore = if (data.isEmpty) values.map(_ => Map[String, String]("lp__" -> "1")) else data
       val prefix = decl.emit
@@ -32,33 +29,20 @@ trait ScalaStanBaseSpec extends FunSpec with Matchers {
       copy(data = newData.toVector)
     }
 
-    protected def replaceMapping(newMapping: Map[String, DataMapping[_]]): CompiledModel =
-      copy(dataMapping = newMapping)
-    protected def replaceInitialValue(newInitialValue: InitialValue): CompiledModel =
-      copy(initialValue = newInitialValue)
-    protected def runChecked(chains: Int, seed: Int, cache: Boolean, method: RunMethod.Method): StanResults =
-      MockRunner.run(this, chains, seed, cache, method)
-  }
-
-  implicit object MockRunner extends StanRunner[MockCompiledModel] {
-    def compile(ss: ScalaStan, model: ScalaStan#Model): CompiledModel = MockCompiledModel(
-      ss = ss,
-      model = model,
-      code = model.getCode
-    )
-    def run(
-      model: MockCompiledModel,
-      chains: Int,
-      seed: Int,
-      cache: Boolean,
-      method: RunMethod.Method
-    ): StanResults = {
-      val mappedData: Map[String, Vector[Vector[String]]] = model.data.flatten.groupBy(_._1).mapValues { grouped =>
-        val iterations = grouped.map{ case(k, v) => v }
+    def run(model: CompiledModel, chains: Int, seed: Int, cache: Boolean, method: RunMethod.Method): StanResults = {
+      val mappedData: Map[String, Vector[Vector[String]]] = data.flatten.groupBy(_._1).mapValues { grouped =>
+        val iterations = grouped.map { case (k, v) => v }
         Vector.fill(chains)(iterations)
       }
       StanResults(mappedData, model)
     }
+  }
+
+  implicit object MockCompiler extends StanCompiler {
+    def compile(ss: ScalaStan, model: ScalaStan#Model): CompiledModel = CompiledModel(
+      model = model,
+      runner = MockRunner()
+    )
   }
 
   private def removeSpaces(str: String): String = str.replaceAllLiterally(" ", "").replaceAllLiterally("\n", "")

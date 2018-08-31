@@ -11,6 +11,7 @@
 package com.cibo.scalastan.models
 
 import com.cibo.scalastan._
+import com.cibo.scalastan.run.{StanCompiler, StanRunner}
 
 case class LinearRegression(
   xs: Seq[Seq[Double]],   // Inputs
@@ -26,14 +27,14 @@ case class LinearRegression(
 
   val beta0: ParameterDeclaration[StanReal] = parameter(real())             // Offset
   val beta: ParameterDeclaration[StanVector] = parameter(vector(p))         // Coefficients
-  val sigma: ParameterDeclaration[StanReal] = parameter(real(lower = 0))    // Error
+  val sigma: ParameterDeclaration[StanReal] = parameter(real(lower = 0.0))  // Error
 
   val model: Model = new Model {
     sigma ~ stan.cauchy(0, 1)
     y ~ stan.normal(x * beta + beta0, sigma)
   }
 
-  def compile[M <: CompiledModel](implicit runner: StanRunner[M]): CompiledModel = model.compile
+  def compile(implicit compiler: StanCompiler): CompiledModel = model.compile
     .withData(x, xs)
     .withData(y, ys)
 

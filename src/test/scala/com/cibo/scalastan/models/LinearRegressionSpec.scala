@@ -11,7 +11,7 @@ class LinearRegressionSpec extends ScalaStanBaseSpec {
 
     it("generates the model") {
       val model = lr.compile
-      check(model.model.getCode,
+      checkCode(model.model,
         """
            model {
              sigma ~ cauchy(0,1);

@@ -11,10 +11,9 @@
 package com.cibo.scalastan
 
 import java.io._
-import java.nio.file.{Files, Path, Paths}
 
 import com.cibo.scalastan.ast._
-import com.cibo.scalastan.run.{StanCompiler, StanRunner}
+import com.cibo.scalastan.run.StanCompiler
 import com.cibo.scalastan.transform.{LoopChecker, StanTransform}
 import com.typesafe.scalalogging.LazyLogging
 
@@ -29,10 +28,7 @@ trait ScalaStan extends Implicits with LazyLogging { ss =>
   protected object stan extends StanFunctions with StanDistributions
 
   // Maximum number of models to cache.
-  protected val maxCacheSize: Int = 100
-
-  private val modelExecutable: String = "model"
-  private val stanFileName: String = s"$modelExecutable.stan"
+  val maxCacheSize: Int = 100
 
   protected implicit val _scalaStan: ScalaStan = this
 
@@ -332,60 +328,6 @@ trait ScalaStan extends Implicits with LazyLogging { ss =>
       val pw = new PrintWriter(ps)
       emit(pw)
       pw.flush()
-    }
-
-    private[scalastan] def getCode: String = {
-      val writer = new StringWriter()
-      emit(new PrintWriter(writer))
-      writer.close()
-      writer.toString
-    }
-
-    private[scalastan] def getBasePath: Path = {
-      Option(System.getenv("HOME")) match {
-        case Some(home) => Paths.get(home).resolve(".scalastan")
-        case None       => Paths.get("/tmp").resolve("scalastan")
-      }
-    }
-
-    private[scalastan] def cleanOldModels(base: Path, hash: String): Unit = {
-      if (base.toFile.exists) {
-        val dirs = base.toFile.listFiles.filter { f =>
-          f.isDirectory && f.getName != hash
-        }.sortBy(_.lastModified).dropRight(maxCacheSize - 1)
-        dirs.foreach { dir =>
-          logger.info(s"removing old cache directory ${dir.getAbsolutePath}")
-          try {
-            dir.listFiles.foreach(_.delete())
-            dir.delete()
-          } catch {
-            case ex: Exception =>
-              logger.warn("unable to remove cache directory", ex)
-          }
-        }
-      }
-    }
-
-    private[scalastan] def generate: File = {
-      val str = getCode
-      logger.info(s"code:\n$str")
-
-      val hash = SHA.hash(str)
-      val base = getBasePath
-      cleanOldModels(base, hash)
-      val dir = base.resolve(hash).toFile
-
-      if (!dir.exists || !dir.listFiles().exists(f => f.getName == stanFileName)) {
-        logger.info(s"writing code to $dir/$stanFileName")
-        Files.createDirectories(dir.toPath)
-        val codeFile = new File(s"${dir.getPath}/$stanFileName")
-        val codeWriter = new PrintWriter(codeFile)
-        codeWriter.print(str)
-        codeWriter.close()
-      } else {
-        logger.info(s"found existing code in $dir/$stanFileName")
-      }
-      dir
     }
 
     def transform(t: StanTransform[_]): Model = TransformedModel(this).transform(t)

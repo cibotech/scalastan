@@ -1,5 +1,7 @@
 package com.cibo.scalastan
 
+import java.io.{PrintWriter, StringWriter}
+
 class ScalaStanSpec extends ScalaStanBaseSpec {
   describe("data") {
     it("causes a data declaration to be generated") {
@@ -302,7 +304,7 @@ class ScalaStanSpec extends ScalaStanBaseSpec {
               when(1) {
                 break
               }
-            }.getCode
+            }.emit(new PrintWriter(new StringWriter()))
           }
         }
       }

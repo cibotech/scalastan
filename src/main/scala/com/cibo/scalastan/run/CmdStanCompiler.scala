@@ -10,8 +10,8 @@
 
 package com.cibo.scalastan.run
 
-import java.io.File
-import java.nio.file.{Files, Paths}
+import java.io.{File, PrintWriter, StringWriter}
+import java.nio.file.{Files, Path, Paths}
 import java.util.regex.Pattern
 
 import com.cibo.scalastan._
@@ -81,6 +81,56 @@ object CmdStanCompiler extends StanCompiler with LazyLogging {
     }
   }
 
+  lazy val basePath: Path = {
+    Option(System.getenv("HOME")) match {
+      case Some(home) => Paths.get(home).resolve(".scalastan")
+      case None       => Paths.get("/tmp").resolve("scalastan")
+    }
+  }
+
+  def cleanOldModels(base: Path, hash: String, maxCacheSize: Int): Unit = {
+    if (base.toFile.exists) {
+      val dirs = base.toFile.listFiles.filter { f =>
+        f.isDirectory && f.getName != hash
+      }.sortBy(_.lastModified).dropRight(maxCacheSize - 1)
+      dirs.foreach { dir =>
+        logger.info(s"removing old cache directory ${dir.getAbsolutePath}")
+        try {
+          dir.listFiles.foreach(_.delete())
+          dir.delete()
+        } catch {
+          case ex: Exception =>
+            logger.warn("unable to remove cache directory", ex)
+        }
+      }
+    }
+  }
+
+  def generate(model: ScalaStan#Model, maxCacheSize: Int): File = {
+
+    val writer = new StringWriter()
+    model.emit(new PrintWriter(writer))
+    writer.close()
+    val str = writer.toString
+    logger.info(s"code:\n$str")
+
+    val hash = SHA.hash(str)
+    cleanOldModels(basePath, hash, maxCacheSize)
+    val dir = basePath.resolve(hash).toFile
+
+    if (!dir.exists || !dir.listFiles().exists(_.getName == stanFileName)) {
+      logger.info(s"writing code to $dir/$stanFileName")
+      Files.createDirectories(dir.toPath)
+      val codeFile = new File(s"${dir.getPath}/$stanFileName")
+      val codeWriter = new PrintWriter(codeFile)
+      codeWriter.print(str)
+      codeWriter.close()
+    } else {
+      logger.info(s"found existing code in $dir/$stanFileName")
+    }
+    dir
+  }
+
   def compile(ss: ScalaStan, model: ScalaStan#Model): CompiledModel = {
     val stanPath = stanHome.getOrElse {
       throw new IllegalStateException("Could not locate Stan.")
@@ -88,7 +138,7 @@ object CmdStanCompiler extends StanCompiler with LazyLogging {
     logger.info(s"found stan in $stanPath")
 
     model.synchronized {
-      val dir = model.generate
+      val dir = generate(model, ss.maxCacheSize)
       if (new File(s"${dir.getPath}/$modelExecutable").canExecute) {
         logger.info(s"found existing executable: ${dir.getPath}/$modelExecutable")
       } else {

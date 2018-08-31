@@ -1,5 +1,7 @@
 package com.cibo.scalastan
 
+import java.io.{PrintWriter, StringWriter}
+
 import com.cibo.scalastan.ast.StanParameterDeclaration
 import com.cibo.scalastan.run.{StanCompiler, StanRunner}
 import org.scalatest.{FunSpec, Matchers}
@@ -63,5 +65,10 @@ trait ScalaStanBaseSpec extends FunSpec with Matchers {
 
   // Compare the code output of the model with a template.
   // Spaces are ignored and "#" in the template matches any integer.
-  def checkCode(model: ScalaStan#Model, template: String): Unit = check(model.getCode, template)
+  def checkCode(model: ScalaStan#Model, template: String): Unit = {
+    val sw = new StringWriter()
+    model.emit(new PrintWriter(sw))
+    sw.close()
+    check(sw.toString, template)
+  }
 }

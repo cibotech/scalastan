@@ -375,7 +375,7 @@ trait ScalaStan extends Implicits with LazyLogging { ss =>
       cleanOldModels(base, hash)
       val dir = base.resolve(hash).toFile
 
-      if (!dir.exists || !dir.listFiles().exists(f => f.getName == stanFileName && f.canExecute)) {
+      if (!dir.exists || !dir.listFiles().exists(f => f.getName == stanFileName)) {
         logger.info(s"writing code to $dir/$stanFileName")
         Files.createDirectories(dir.toPath)
         val codeFile = new File(s"${dir.getPath}/$stanFileName")
@@ -383,7 +383,7 @@ trait ScalaStan extends Implicits with LazyLogging { ss =>
         codeWriter.print(str)
         codeWriter.close()
       } else {
-        logger.info(s"writing code to $dir/$stanFileName")
+        logger.info(s"found existing code in $dir/$stanFileName")
       }
       dir
     }

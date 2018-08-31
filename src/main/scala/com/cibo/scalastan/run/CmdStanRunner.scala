@@ -17,15 +17,50 @@ import com.typesafe.scalalogging.LazyLogging
 
 import scala.collection.JavaConverters._
 
-class CmdStanRunner(modelDir: File) extends StanRunner with LazyLogging {
+case class CmdStanChainContext(
+  compiledModel: CompiledModel,
+  method: RunMethod.Method,
+  modelDir: File,
+  outputFile: File,
+  modelExecutable: File,
+  dataFile: File,
+  initialValueFile: Option[File],
+  chainSeed: Int,
+  runHash: String
+) extends LazyLogging {
+
+  def initialValueArguments: Vector[String] = compiledModel.initialValue match {
+    case DefaultInitialValue => Vector.empty
+    case InitialValueMapping(_) => Vector(s"init=${initialValueFile.get.getName}")
+    case InitialValueDouble(d) => Vector(s"init=$d")
+  }
+
+  def run(): Int = {
+    val command = Vector(
+      s"./$modelExecutable",
+      "data", s"file=${dataFile.getName}",
+      "output", s"file=${outputFile.getName}",
+      "random", s"seed=$chainSeed"
+    ) ++ initialValueArguments ++ method.arguments
+    logger.info("Running " + command.mkString(" "))
+    CommandRunner.runCommand(modelDir, command)
+  }
+
+}
+
+class CmdStanRunner(
+  val modelDir: File,
+  val modelHash: String
+) extends StanRunner with LazyLogging {
 
   private val modelExecutable: String = CmdStanCompiler.modelExecutable
-  private val dataFileName: String = "input.R"
-  private val initialValueFileName: String = "initial.R"
 
-  private def writeData(model: CompiledModel, method: RunMethod.Method): String = {
+  def dataFileName: String = s"$modelDir/input.R"
+  def initialValueFileName: String = s"$modelDir/initial.R"
+
+  def writeData(model: CompiledModel, method: RunMethod.Method): String = {
     logger.info(s"writing data to $dataFileName")
-    val dataWriter = ShaWriter(new PrintWriter(new File(s"$modelDir/$dataFileName")))
+    val dataWriter = ShaWriter(new PrintWriter(new File(dataFileName)))
     model.emitData(dataWriter)
     dataWriter.close()
     dataWriter.sha.update(method.toString).digest
@@ -35,7 +70,7 @@ class CmdStanRunner(modelDir: File) extends StanRunner with LazyLogging {
     model.initialValue match {
       case InitialValueMapping(_) =>
         logger.info(s"writing initial values to $initialValueFileName")
-        val writer = ShaWriter(new PrintWriter(new File(s"$modelDir/$initialValueFileName")))
+        val writer = ShaWriter(new PrintWriter(new File(initialValueFileName)))
         model.emitInitialValues(writer)
         writer.close()
         writer.sha.update(runHash).digest
@@ -45,14 +80,13 @@ class CmdStanRunner(modelDir: File) extends StanRunner with LazyLogging {
     }
   }
 
-  private def initialValueArguments(model: CompiledModel): Vector[String] = model.initialValue match {
-    case DefaultInitialValue => Vector.empty
-    case InitialValueMapping(_) => Vector(s"init=$initialValueFileName")
-    case InitialValueDouble(d) => Vector(s"init=$d")
+  def initialValueFile(model: CompiledModel): Option[File] = model.initialValue match {
+    case InitialValueMapping(_) => Some(new File(initialValueFileName))
+    case _                      => None
   }
 
-  private def readIterations(fileName: String): Map[String, Vector[String]] = {
-    val reader = new BufferedReader(new FileReader(fileName))
+  def readIterations(file: File): Map[String, Vector[String]] = {
+    val reader = new BufferedReader(new FileReader(file))
     try {
       val lines = reader.lines.iterator.asScala.filterNot(_.startsWith("#")).toVector
       if (lines.nonEmpty) {
@@ -67,8 +101,31 @@ class CmdStanRunner(modelDir: File) extends StanRunner with LazyLogging {
     }
   }
 
+  def outputFileName(runHash: String, seed: Int, chainIndex: Int): String = s"$runHash-$seed-$chainIndex.csv"
+
+  def loadFromCache(file: File): Option[Map[String, Vector[String]]] = {
+    if (file.exists) Some(readIterations(file)) else None
+  }
+
+  // Write data and initial value files and return the run hash.
+  def writeFiles(compiledModel: CompiledModel, method: RunMethod.Method): String = {
+    // Emit the data and initial value files.
+    val dataHash = writeData(compiledModel, method)
+    writeInitialValue(compiledModel, dataHash)
+  }
+
+  def runChain(context: CmdStanChainContext): Option[Map[String, Vector[String]]] = {
+    val rc = context.run()
+    if (rc != 0) {
+      logger.error(s"model returned $rc")
+      None
+    } else {
+      Some(readIterations(context.outputFile))
+    }
+  }
+
   def run(
-    model: CompiledModel,
+    compiledModel: CompiledModel,
     chains: Int,
     seed: Int,
     cache: Boolean,
@@ -76,47 +133,36 @@ class CmdStanRunner(modelDir: File) extends StanRunner with LazyLogging {
   ): StanResults = {
 
     // Only allow one instance of a model to run at a time.
-    model.model.synchronized {
+    compiledModel.model.synchronized {
 
-      // Emit the data file.
-      val dataHash = writeData(model, method)
-
-      // Emit initial value file.
-      val runHash = writeInitialValue(model, dataHash)
-
-      val initArguments = initialValueArguments(model)
+      val runHash = writeFiles(compiledModel, method)
       val baseSeed = if (seed < 0) (System.currentTimeMillis % Int.MaxValue).toInt else seed
-      val results = (0 until chains).par.flatMap { i =>
-        val chainSeed = baseSeed + i
-        val name = s"$runHash-$seed-$i.csv"
-        val fileName = s"$modelDir/$name"
-        val cachedResults = if (cache && new File(fileName).exists) {
-          Some(readIterations(fileName))
-        } else None
+      val results = Vector.range(0, chains).par.flatMap { chainIndex =>
+        val chainSeed = ((baseSeed.toLong + chainIndex) % Int.MaxValue).toInt
+        val outputName = outputFileName(runHash, seed, chainIndex)
+        val outputFile = new File(s"$modelDir/$outputName")
+        val context = CmdStanChainContext(
+          compiledModel = compiledModel,
+          method = method,
+          modelDir = modelDir,
+          outputFile = outputFile,
+          modelExecutable = new File(s"./$modelExecutable"),
+          dataFile = new File(dataFileName),
+          initialValueFile = initialValueFile(compiledModel),
+          chainSeed = chainSeed,
+          runHash = runHash
+        )
+        val cachedResults = if (cache) loadFromCache(outputFile) else None
         cachedResults match {
           case Some(r) if r.nonEmpty =>
-            logger.info(s"Found cached results: $name")
+            logger.info(s"Found cached results: $outputName")
             Some(r)
-          case _                     =>
-            val command = Vector(
-              s"./$modelExecutable",
-              "data", s"file=$dataFileName",
-              "output", s"file=$name",
-              "random", s"seed=$chainSeed"
-            ) ++ initArguments ++ method.arguments
-            logger.info("Running " + command.mkString(" "))
-            val rc = CommandRunner.runCommand(modelDir, command)
-            if (rc != 0) {
-              logger.error(s"model returned $rc")
-              None
-            } else {
-              Some(readIterations(fileName))
-            }
+          case _ => runChain(context)
         }
-      }.seq.toVector
+      }.seq
 
       val parameterChains: Map[String, Vector[Vector[String]]] = results.flatten.groupBy(_._1).mapValues(_.map(_._2))
-      StanResults(parameterChains, model)
+      StanResults(parameterChains, compiledModel)
     }
   }
 }

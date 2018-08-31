@@ -88,10 +88,12 @@ object CmdStanCompiler extends StanCompiler with LazyLogging {
     }
   }
 
-  def cleanOldModels(base: Path, hash: String, maxCacheSize: Int): Unit = {
-    if (base.toFile.exists) {
-      val dirs = base.toFile.listFiles.filter { f =>
-        f.isDirectory && f.getName != hash
+  def modelDir(modelHash: String): File = basePath.resolve(modelHash).toFile
+
+  def cleanOldModels(modelHash: String, maxCacheSize: Int): Unit = {
+    if (basePath.toFile.exists) {
+      val dirs = basePath.toFile.listFiles.filter { f =>
+        f.isDirectory && f.getName != modelHash
       }.sortBy(_.lastModified).dropRight(maxCacheSize - 1)
       dirs.foreach { dir =>
         logger.info(s"removing old cache directory ${dir.getAbsolutePath}")
@@ -106,7 +108,7 @@ object CmdStanCompiler extends StanCompiler with LazyLogging {
     }
   }
 
-  def generate(model: ScalaStan#Model, maxCacheSize: Int): File = {
+  def generate(model: ScalaStan#Model, maxCacheSize: Int): String = {
 
     val writer = new StringWriter()
     model.emit(new PrintWriter(writer))
@@ -114,10 +116,10 @@ object CmdStanCompiler extends StanCompiler with LazyLogging {
     val str = writer.toString
     logger.info(s"code:\n$str")
 
-    val hash = SHA.hash(str)
-    cleanOldModels(basePath, hash, maxCacheSize)
-    val dir = basePath.resolve(hash).toFile
+    val modelHash = SHA.hash(str)
+    cleanOldModels(modelHash, maxCacheSize)
 
+    val dir = modelDir(modelHash)
     if (!dir.exists || !dir.listFiles().exists(_.getName == stanFileName)) {
       logger.info(s"writing code to $dir/$stanFileName")
       Files.createDirectories(dir.toPath)
@@ -128,7 +130,7 @@ object CmdStanCompiler extends StanCompiler with LazyLogging {
     } else {
       logger.info(s"found existing code in $dir/$stanFileName")
     }
-    dir
+    modelHash
   }
 
   def compile(ss: ScalaStan, model: ScalaStan#Model): CompiledModel = {
@@ -138,14 +140,15 @@ object CmdStanCompiler extends StanCompiler with LazyLogging {
     logger.info(s"found stan in $stanPath")
 
     model.synchronized {
-      val dir = generate(model, ss.maxCacheSize)
+      val modelHash = generate(model, ss.maxCacheSize)
+      val dir = modelDir(modelHash)
       if (new File(s"${dir.getPath}/$modelExecutable").canExecute) {
         logger.info(s"found existing executable: ${dir.getPath}/$modelExecutable")
       } else {
         runStanc(dir)
         runMake(dir)
       }
-      CompiledModel(model, new CmdStanRunner(dir))
+      CompiledModel(model, new CmdStanRunner(dir, modelHash))
     }
   }
 

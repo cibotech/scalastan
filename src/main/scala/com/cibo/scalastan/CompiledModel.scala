@@ -136,7 +136,7 @@ case class CompiledModel(
     }
 
     runner.run(
-      model = this,
+      compiledModel = this,
       chains = chains,
       seed = seed,
       cache = cache,

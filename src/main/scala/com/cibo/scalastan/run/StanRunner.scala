@@ -14,7 +14,7 @@ import com.cibo.scalastan.{CompiledModel, RunMethod, StanResults}
 
 trait StanRunner {
   def run(
-    model: CompiledModel,
+    compiledModel: CompiledModel,
     chains: Int,
     seed: Int,
     cache: Boolean,

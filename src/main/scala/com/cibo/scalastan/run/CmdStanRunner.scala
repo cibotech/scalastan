@@ -11,7 +11,7 @@
 package com.cibo.scalastan.run
 
 import java.io._
-import java.nio.file.{Files, Paths, StandardCopyOption}
+import java.nio.file._
 
 import com.cibo.scalastan._
 import com.typesafe.scalalogging.LazyLogging
@@ -37,14 +37,21 @@ case class CmdStanChainContext(
   }
 
   def run(): Int = {
+    val temp = Files.createTempFile(outputFile.getParentFile.toPath, "iterations", ".csv").toFile
     val command = Vector(
       s"./$modelExecutable",
       "data", s"file=${dataFile.getName}",
-      "output", s"file=${outputFile.getName}",
+      "output", s"file=${temp.getName}",
       "random", s"seed=$chainSeed"
     ) ++ initialValueArguments ++ method.arguments
     logger.info("Running " + command.mkString(" "))
-    CommandRunner.runCommand(modelDir, command)
+    val rc = CommandRunner.runCommand(modelDir, command)
+    if (rc == 0) {
+      Files.move(temp.toPath, outputFile.toPath, StandardCopyOption.ATOMIC_MOVE)
+    } else {
+      temp.delete()
+    }
+    rc
   }
 
 }
@@ -67,16 +74,16 @@ class CmdStanRunner(
   def writeToHashedFileName(prefix: String, emit: Writer => Unit): String = {
 
     // Write the data with a temporary file name to get the hash.
-    val temp = Files.createTempFile(prefix, ".R").toFile
+    val temp = Files.createTempFile(modelDir.toPath, prefix, ".R").toFile
     val writer = ShaWriter(new FileWriter(temp))
     emit(writer)
     writer.close()
+    val hash = writer.sha.digest
 
     // Move the temp file to the expected name.
-    val hash = writer.sha.digest
     val fileName = s"$modelDir/$prefix-$hash.R"
     logger.info(s"writing $prefix to $fileName")
-    Files.move(temp.toPath, Paths.get(fileName), StandardCopyOption.REPLACE_EXISTING)
+    Files.move(temp.toPath, Paths.get(fileName), StandardCopyOption.ATOMIC_MOVE)
 
     hash
   }
@@ -151,40 +158,36 @@ class CmdStanRunner(
     method: RunMethod.Method
   ): StanResults = {
 
-    // Only allow one instance of a model to run at a time.
-    compiledModel.model.synchronized {
+    val dataHash = writeData(compiledModel)
+    val initialValueHash = writeInitialValue(compiledModel)
+    val runHash = computeRunHash(dataHash, initialValueHash, method)
+    val baseSeed = if (seed < 0) (System.currentTimeMillis % Int.MaxValue).toInt else seed
+    val results = Vector.range(0, chains).par.flatMap { chainIndex =>
+      val chainSeed = ((baseSeed.toLong + chainIndex) % Int.MaxValue).toInt
+      val outputName = outputFileName(runHash, seed, chainIndex)
+      val outputFile = new File(s"$modelDir/$outputName")
+      val context = CmdStanChainContext(
+        compiledModel = compiledModel,
+        method = method,
+        modelDir = modelDir,
+        outputFile = outputFile,
+        modelExecutable = new File(s"./$modelExecutable"),
+        dataFile = new File(dataFileName(dataHash)),
+        initialValueFile = initialValueFile(compiledModel, initialValueHash),
+        chainSeed = chainSeed,
+        runHash = runHash
+      )
+      val cachedResults = if (cache) loadFromCache(outputFile) else None
+      cachedResults match {
+        case Some(r) if r.nonEmpty =>
+          logger.info(s"Found cached results: $outputName")
+          Some(r)
+        case _                     => runChain(context)
+      }
+    }.seq
 
-      val dataHash = writeData(compiledModel)
-      val initialValueHash = writeInitialValue(compiledModel)
-      val runHash = computeRunHash(dataHash, initialValueHash, method)
-      val baseSeed = if (seed < 0) (System.currentTimeMillis % Int.MaxValue).toInt else seed
-      val results = Vector.range(0, chains).par.flatMap { chainIndex =>
-        val chainSeed = ((baseSeed.toLong + chainIndex) % Int.MaxValue).toInt
-        val outputName = outputFileName(runHash, seed, chainIndex)
-        val outputFile = new File(s"$modelDir/$outputName")
-        val context = CmdStanChainContext(
-          compiledModel = compiledModel,
-          method = method,
-          modelDir = modelDir,
-          outputFile = outputFile,
-          modelExecutable = new File(s"./$modelExecutable"),
-          dataFile = new File(dataFileName(dataHash)),
-          initialValueFile = initialValueFile(compiledModel, initialValueHash),
-          chainSeed = chainSeed,
-          runHash = runHash
-        )
-        val cachedResults = if (cache) loadFromCache(outputFile) else None
-        cachedResults match {
-          case Some(r) if r.nonEmpty =>
-            logger.info(s"Found cached results: $outputName")
-            Some(r)
-          case _ => runChain(context)
-        }
-      }.seq
-
-      val parameterChains: Map[String, Vector[Vector[String]]] = results.flatten.groupBy(_._1).mapValues(_.map(_._2))
-      StanResults(parameterChains, compiledModel)
-    }
+    val parameterChains: Map[String, Vector[Vector[String]]] = results.flatten.groupBy(_._1).mapValues(_.map(_._2))
+    StanResults(parameterChains, compiledModel)
   }
 }
 

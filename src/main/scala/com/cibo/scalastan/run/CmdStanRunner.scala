@@ -11,6 +11,7 @@
 package com.cibo.scalastan.run
 
 import java.io._
+import java.nio.file.{Files, Paths, StandardCopyOption}
 
 import com.cibo.scalastan._
 import com.typesafe.scalalogging.LazyLogging
@@ -55,33 +56,58 @@ class CmdStanRunner(
 
   private val modelExecutable: String = CmdStanCompiler.modelExecutable
 
-  def dataFileName: String = s"$modelDir/input.R"
-  def initialValueFileName: String = s"$modelDir/initial.R"
+  private val initialValuePrefix: String = "initial"
+  private val dataPrefix: String = "input"
 
-  def writeData(model: CompiledModel, method: RunMethod.Method): String = {
-    logger.info(s"writing data to $dataFileName")
-    val dataWriter = ShaWriter(new PrintWriter(new File(dataFileName)))
-    model.emitData(dataWriter)
-    dataWriter.close()
-    dataWriter.sha.update(method.toString).digest
+  def initialValueFileName(hash: String): String = s"$modelDir/$initialValuePrefix-$hash.R"
+
+  def dataFileName(hash: String): String = s"$modelDir/$dataPrefix-$hash.R"
+
+  /** Write to a file whose name contains the hash. */
+  def writeToHashedFileName(prefix: String, emit: Writer => Unit): String = {
+
+    // Write the data with a temporary file name to get the hash.
+    val temp = Files.createTempFile(prefix, ".R").toFile
+    val writer = ShaWriter(new FileWriter(temp))
+    emit(writer)
+    writer.close()
+
+    // Move the temp file to the expected name.
+    val hash = writer.sha.digest
+    val fileName = s"$modelDir/$prefix-$hash.R"
+    logger.info(s"writing $prefix to $fileName")
+    Files.move(temp.toPath, Paths.get(fileName), StandardCopyOption.REPLACE_EXISTING)
+
+    hash
   }
 
-  private def writeInitialValue(model: CompiledModel, runHash: String): String = {
+  /** Write the data file. Returns the data hash. */
+  def writeData(model: CompiledModel): String = writeToHashedFileName(dataPrefix, model.emitData)
+
+  /** Write the initial value file. Returns the hash of the initial value (if any). */
+  def writeInitialValue(model: CompiledModel): Option[String] = {
     model.initialValue match {
       case InitialValueMapping(_) =>
-        logger.info(s"writing initial values to $initialValueFileName")
-        val writer = ShaWriter(new PrintWriter(new File(initialValueFileName)))
-        model.emitInitialValues(writer)
-        writer.close()
-        writer.sha.update(runHash).digest
-      case InitialValueDouble(v) =>
-        SHA().update(v.toString).update(runHash).digest
-      case _ => runHash
+        Some(writeToHashedFileName(initialValuePrefix, model.emitInitialValues))
+      case InitialValueDouble(d) => Some(SHA.hash(d.toString))
+      case _ => None
     }
   }
 
-  def initialValueFile(model: CompiledModel): Option[File] = model.initialValue match {
-    case InitialValueMapping(_) => Some(new File(initialValueFileName))
+  /** Compute the run hash (used for the output file name). */
+  def computeRunHash(dataHash: String, initialValueHash: Option[String], method: RunMethod.Method): String = {
+    val sha = SHA()
+    sha.update(dataHash)
+    initialValueHash.foreach(sha.update)
+    method.arguments.foreach(sha.update)
+    sha.digest
+  }
+
+  def initialValueFile(
+    model: CompiledModel,
+    initialValueHash: Option[String]
+  ): Option[File] = model.initialValue match {
+    case InitialValueMapping(_) => Some(new File(initialValueFileName(initialValueHash.get)))
     case _                      => None
   }
 
@@ -107,13 +133,6 @@ class CmdStanRunner(
     if (file.exists) Some(readIterations(file)) else None
   }
 
-  // Write data and initial value files and return the run hash.
-  def writeFiles(compiledModel: CompiledModel, method: RunMethod.Method): String = {
-    // Emit the data and initial value files.
-    val dataHash = writeData(compiledModel, method)
-    writeInitialValue(compiledModel, dataHash)
-  }
-
   def runChain(context: CmdStanChainContext): Option[Map[String, Vector[String]]] = {
     val rc = context.run()
     if (rc != 0) {
@@ -135,7 +154,9 @@ class CmdStanRunner(
     // Only allow one instance of a model to run at a time.
     compiledModel.model.synchronized {
 
-      val runHash = writeFiles(compiledModel, method)
+      val dataHash = writeData(compiledModel)
+      val initialValueHash = writeInitialValue(compiledModel)
+      val runHash = computeRunHash(dataHash, initialValueHash, method)
       val baseSeed = if (seed < 0) (System.currentTimeMillis % Int.MaxValue).toInt else seed
       val results = Vector.range(0, chains).par.flatMap { chainIndex =>
         val chainSeed = ((baseSeed.toLong + chainIndex) % Int.MaxValue).toInt
@@ -147,8 +168,8 @@ class CmdStanRunner(
           modelDir = modelDir,
           outputFile = outputFile,
           modelExecutable = new File(s"./$modelExecutable"),
-          dataFile = new File(dataFileName),
-          initialValueFile = initialValueFile(compiledModel),
+          dataFile = new File(dataFileName(dataHash)),
+          initialValueFile = initialValueFile(compiledModel, initialValueHash),
           chainSeed = chainSeed,
           runHash = runHash
         )

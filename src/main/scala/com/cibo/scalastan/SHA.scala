@@ -12,7 +12,7 @@ package com.cibo.scalastan
 
 import java.io.Writer
 
-private case class SHA() {
+case class SHA() {
 
   private val md = java.security.MessageDigest.getInstance("SHA-1")
 
@@ -32,7 +32,7 @@ private case class SHA() {
   }
 }
 
-private case class ShaWriter(writer: Writer) extends Writer {
+case class ShaWriter(writer: Writer) extends Writer {
 
   val sha = SHA()
 
@@ -46,6 +46,6 @@ private case class ShaWriter(writer: Writer) extends Writer {
   override def close(): Unit = writer.close()
 }
 
-private object SHA {
+object SHA {
   def hash(str: String): String = SHA().update(str).digest
 }

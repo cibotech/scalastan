@@ -139,6 +139,11 @@ trait ScalaStan extends Implicits with LazyLogging { ss =>
     dim: StanValue[StanInt]
   ): StanMatrix = StanMatrix(dim, dim, constraint = MatrixConstraint.CholeskyFactorCov)
 
+  def choleskyFactorCov(
+    rows: StanValue[StanInt],
+    cols: StanValue[StanInt]
+  ): StanMatrix = StanMatrix(rows, cols, constraint = MatrixConstraint.CholeskyFactorCov)
+
   trait StanCode {
 
     implicit val _code: CodeBuilder = new CodeBuilder

@@ -22,6 +22,7 @@ object CmdStanCompiler extends StanCompiler with LazyLogging {
   lazy val CMDSTAN_HOME: Option[String] = sys.env.get("CMDSTAN_HOME")
   val modelExecutable: String = "model"
   val stanFileName: String = s"$modelExecutable.stan"
+  val cacheVersion: Int = 1
 
   // Find a file in the path.
   // Returns the full path to the file.
@@ -88,12 +89,15 @@ object CmdStanCompiler extends StanCompiler with LazyLogging {
     }
   }
 
-  def modelDir(modelHash: String): File = basePath.resolve(modelHash).toFile
+  def modelDirString(modelHash: String): String = s"$modelHash-$cacheVersion"
+
+  def modelDir(modelHash: String): File = basePath.resolve(modelDirString(modelHash)).toFile
 
   def cleanOldModels(modelHash: String, maxCacheSize: Int): Unit = {
     if (basePath.toFile.exists) {
+      val dirString = modelDirString(modelHash)
       val dirs = basePath.toFile.listFiles.filter { f =>
-        f.isDirectory && f.getName != modelHash
+        f.isDirectory && f.getName != dirString
       }.sortBy(_.lastModified).dropRight(maxCacheSize - 1)
       dirs.foreach { dir =>
         logger.info(s"removing old cache directory ${dir.getAbsolutePath}")

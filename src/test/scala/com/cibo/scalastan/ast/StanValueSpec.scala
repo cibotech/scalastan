@@ -172,6 +172,25 @@ class StanValueSpec extends ScalaStanBaseSpec {
       d.emit shouldBe "d[1,2]"
     }
 
+    it("can slice a matrix") {
+      val i1 = StanConstant[StanInt](StanInt(), 1)
+      val i2 = StanConstant[StanInt](StanInt(), 2)
+      val d = StanLocalDeclaration(StanMatrix(i1, i2), "d").apply(i1)
+      d.returnType shouldBe an[StanRowVector]
+      d.emit shouldBe "d[1]"
+    }
+
+    it("can assign to a slice of a matrix") {
+      new ScalaStan {
+        val model = new Model {
+          val d = local(matrix(1, 2))
+          val rv = local(rowVector(2))
+          d(1) := rv
+        }
+        checkCode(model, "d[1] = rv;")
+      }
+    }
+
     it("can set vector") {
       new ScalaStan {
         val model = new Model {

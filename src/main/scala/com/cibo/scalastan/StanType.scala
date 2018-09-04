@@ -496,7 +496,7 @@ case class StanMatrix(
 ) extends StanVectorOrMatrix {
   protected type THIS_TYPE = StanMatrix
   type ELEMENT_TYPE = StanReal
-  type NEXT_TYPE = StanVector
+  type NEXT_TYPE = StanRowVector
   type REAL_TYPE = StanMatrix
   type SCALA_TYPE = Seq[Seq[Double]]
   type SUMMARY_TYPE = Seq[Seq[Double]]
@@ -560,5 +560,5 @@ case class StanMatrix(
     }.toVector
   }
 
-  final def next: NEXT_TYPE = StanVector(cols, lower, upper)
+  final def next: NEXT_TYPE = StanRowVector(cols, lower, upper)
 }

@@ -25,7 +25,7 @@ trait ScalaStan extends Implicits with LazyLogging { ss =>
   type ParameterDeclaration[T <: StanType] = StanParameterDeclaration[T]
   type DataDeclaration[T <: StanType] = StanDataDeclaration[T]
 
-  protected object stan extends StanFunctions with StanDistributions
+  object stan extends StanFunctions with StanDistributions
 
   // Maximum number of models to cache.
   val maxCacheSize: Int = 100

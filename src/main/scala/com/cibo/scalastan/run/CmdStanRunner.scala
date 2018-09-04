@@ -66,6 +66,11 @@ class CmdStanRunner(
   private val initialValuePrefix: String = "initial"
   private val dataPrefix: String = "input"
 
+  case class ChainResult(
+    iterations: Map[String, Vector[String]],
+    inverseMassMatrixDiagonals: Vector[Double]
+  )
+
   def initialValueFileName(hash: String): String = s"$modelDir/$initialValuePrefix-$hash.R"
 
   def dataFileName(hash: String): String = s"$modelDir/$dataPrefix-$hash.R"
@@ -118,16 +123,27 @@ class CmdStanRunner(
     case _                      => None
   }
 
-  def readIterations(file: File): Map[String, Vector[String]] = {
+  private def loadInverseMassMatrixDiagonals(rawLines: Vector[String]): Vector[Double] = {
+    val diagonalHeader = "# Diagonal elements of inverse mass matrix:"
+    val i = rawLines.indexWhere(_.startsWith(diagonalHeader))
+    if (i > 0 && i + 1 < rawLines.length) {
+      rawLines(i + 1).drop(1).split(',').map(_.toDouble).toVector
+    } else {
+      Vector.empty
+    }
+  }
+
+  def readIterations(file: File): ChainResult = {
     val reader = new BufferedReader(new FileReader(file))
     try {
-      val lines = reader.lines.iterator.asScala.filterNot(_.startsWith("#")).toVector
+      val rawLines = reader.lines.iterator.asScala.toVector
+      val lines = rawLines.filterNot(_.startsWith("#"))
       if (lines.nonEmpty) {
         val header = lines.head.split(',').toVector
         val columns = lines.tail.map(_.split(',').toVector).transpose
-        header.zip(columns).toMap
+        ChainResult(header.zip(columns).toMap, loadInverseMassMatrixDiagonals(rawLines))
       } else {
-        Map.empty
+        ChainResult(Map.empty, Vector.empty)
       }
     } finally {
       reader.close()
@@ -136,11 +152,11 @@ class CmdStanRunner(
 
   def outputFileName(runHash: String, seed: Int, chainIndex: Int): String = s"$runHash-$seed-$chainIndex.csv"
 
-  def loadFromCache(file: File): Option[Map[String, Vector[String]]] = {
+  def loadFromCache(file: File): Option[ChainResult] = {
     if (file.exists) Some(readIterations(file)) else None
   }
 
-  def runChain(context: CmdStanChainContext): Option[Map[String, Vector[String]]] = {
+  def runChain(context: CmdStanChainContext): Option[ChainResult] = {
     val rc = context.run()
     if (rc != 0) {
       logger.error(s"model returned $rc")
@@ -179,15 +195,16 @@ class CmdStanRunner(
       )
       val cachedResults = if (cache) loadFromCache(outputFile) else None
       cachedResults match {
-        case Some(r) if r.nonEmpty =>
+        case Some(r) if r.iterations.nonEmpty =>
           logger.info(s"Found cached results: $outputName")
           Some(r)
-        case _                     => runChain(context)
+        case _ => runChain(context)
       }
     }.seq
 
-    val parameterChains: Map[String, Vector[Vector[String]]] = results.flatten.groupBy(_._1).mapValues(_.map(_._2))
-    StanResults(parameterChains, compiledModel)
+    val parameterChains = results.flatMap(_.iterations).groupBy(_._1).mapValues(_.map(_._2))
+    val inverseMassMatrixDiagonals = results.map(_.inverseMassMatrixDiagonals)
+    StanResults(parameterChains, inverseMassMatrixDiagonals, compiledModel)
   }
 }
 

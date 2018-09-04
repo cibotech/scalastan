@@ -67,6 +67,22 @@ class StanValueSpec extends ScalaStanBaseSpec {
     }
   }
 
+  describe("*") {
+    it("can multiply doubles") {
+      val r = StanConstant[StanReal](StanReal(), 1) * 3.0
+      r.emit shouldBe "(1.0) * (3.0)"
+    }
+
+    it("can multiply matrices") {
+      val mat = StanLocalDeclaration(
+        StanMatrix(StanConstant[StanInt](StanInt(), 2), StanConstant[StanInt](StanInt(), 2)),
+        "mat"
+      )
+      val r = mat * mat
+      r.emit shouldBe "(mat) * (mat)"
+    }
+  }
+
   describe(":/") {
     it("can divide vectors") {
       val n = StanLocalDeclaration(StanInt(), "n")

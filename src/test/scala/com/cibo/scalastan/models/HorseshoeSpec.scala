@@ -9,10 +9,10 @@ class HorseshoeSpec extends ScalaStanBaseSpec {
     val hs = Horseshoe(xs, ys)
 
     it("generates predictions") {
-      val results = hs.compile.asInstanceOf[MockCompiledModel]
+      val runner = MockRunner()
         .set[StanVector](hs.beta, Seq(Seq(0.5, 1.5)))
         .set[StanReal](hs.beta0, Seq(2.0))
-        .run()
+      val results = hs.compile.copy(runner = runner).run()
       hs.predict(Seq(Seq(3.0, 4.0)), results) shouldBe Seq(2.0 + 0.5 * 3.0 + 1.5 * 4.0)
     }
   }

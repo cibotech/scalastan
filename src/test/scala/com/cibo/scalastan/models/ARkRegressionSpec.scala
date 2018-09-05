@@ -1,6 +1,6 @@
 package com.cibo.scalastan.models
 
-import com.cibo.scalastan.{ScalaStanBaseSpec, StanMatrix, StanReal, StanVector}
+import com.cibo.scalastan._
 
 class ARkRegressionSpec extends ScalaStanBaseSpec {
   describe("ARkRegression") {
@@ -10,11 +10,11 @@ class ARkRegressionSpec extends ScalaStanBaseSpec {
     val ar1 = ARkRegression(xs, ys, cs)
 
     it("generates predictions") {
-      val results = ar1.compile.asInstanceOf[MockCompiledModel]
+      val runner = MockRunner()
         .set[StanVector](ar1.xbeta, Seq(Seq(1.0, 1.5)))
         .set[StanMatrix](ar1.beta, Seq(Seq(Seq(0.5), Seq(1.5))))
         .set[StanReal](ar1.alpha, Seq(3.0))
-        .run()
+      val results = ar1.compile.copy(runner = runner).run()
 
       val expected1 = 3.0 + 1.5 * 1.0 + 2.5 * 1.5
       val expected2 = 3.0 + 3.5 * 1.0 + 4.5 * 1.5 + 1.5 * expected1

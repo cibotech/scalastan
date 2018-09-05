@@ -16,7 +16,7 @@ class StanResultsSpec extends ScalaStanBaseSpec {
     }
   }
 
-  private val model = CmdStanCompiledModel(new File("."), TestScalaStan.model)
+  private val model = CompiledModel(TestScalaStan.model, MockRunner())
 
   private val testData1 = Map[String, Int](
     "lp__" -> 1,

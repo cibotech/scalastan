@@ -13,6 +13,7 @@ package com.cibo.scalastan
 import java.io.Writer
 
 import com.cibo.scalastan.ast.{StanDataDeclaration, StanParameterDeclaration}
+import com.cibo.scalastan.run.StanRunner
 
 sealed trait InitialValue
 
@@ -20,14 +21,12 @@ case object DefaultInitialValue extends InitialValue
 case class InitialValueDouble(v: Double) extends InitialValue
 case class InitialValueMapping(mapping: Map[String, DataMapping[_]]) extends InitialValue
 
-abstract class CompiledModel {
-  val model: ScalaStan#Model
-  val dataMapping: Map[String, DataMapping[_]]
-  val initialValue: InitialValue
-
-  protected def replaceMapping(newMapping: Map[String, DataMapping[_]]): CompiledModel
-  protected def replaceInitialValue(newInitialValue: InitialValue): CompiledModel
-  protected def runChecked(chains: Int, seed: Int, cache: Boolean, method: RunMethod.Method): StanResults
+case class CompiledModel(
+  model: ScalaStan#Model,
+  runner: StanRunner,
+  dataMapping: Map[String, DataMapping[_]] = Map.empty,
+  initialValue: InitialValue = DefaultInitialValue
+) {
 
   private def emitMapping(mapping: Map[String, DataMapping[_]], writer: Writer): Unit = {
     mapping.values.foreach { value =>
@@ -48,7 +47,10 @@ abstract class CompiledModel {
   ): T#SCALA_TYPE = dataMapping(decl.emit).values.asInstanceOf[T#SCALA_TYPE]
 
   /** Reset all bindings. */
-  final def reset: CompiledModel = replaceMapping(Map.empty).replaceInitialValue(DefaultInitialValue)
+  final def reset: CompiledModel = copy(
+    dataMapping = Map.empty,
+    initialValue = DefaultInitialValue
+  )
 
   /** Look up and set size declarations. */
   private def setSizes[T <: StanType](valueType: T, data: Any): CompiledModel = {
@@ -80,7 +82,9 @@ abstract class CompiledModel {
     val withDecls = setSizes(decl.returnType, conv)
 
     // Insert the binding.
-    withDecls.replaceMapping(withDecls.dataMapping.updated(decl.emit, DataMapping[T](decl, conv)))
+    withDecls.copy(
+      dataMapping = withDecls.dataMapping.updated(decl.emit, DataMapping[T](decl, conv))
+    )
   }
 
   /** Add a binding from a data source. */
@@ -101,8 +105,8 @@ abstract class CompiledModel {
     // Record the initial value.
     val newValue = decl.emit -> DataMapping[T](decl, conv)
     initialValue match {
-      case DefaultInitialValue          => withDecls.replaceInitialValue(InitialValueMapping(Map(newValue)))
-      case InitialValueMapping(mapping) => withDecls.replaceInitialValue(InitialValueMapping(mapping + newValue))
+      case DefaultInitialValue          => withDecls.copy(initialValue = InitialValueMapping(Map(newValue)))
+      case InitialValueMapping(mapping) => withDecls.copy(initialValue = InitialValueMapping(mapping + newValue))
       case InitialValueDouble(_)        =>
         throw new IllegalStateException("Initial value already set.")
     }
@@ -112,7 +116,7 @@ abstract class CompiledModel {
   final def withInitialValue(value: Double): CompiledModel = {
     require(value >= 0, s"The upper bound on the initial value must be >= 0, got $value")
     initialValue match {
-      case DefaultInitialValue => replaceInitialValue(InitialValueDouble(value))
+      case DefaultInitialValue => copy(initialValue = InitialValueDouble(value))
       case _                   => throw new IllegalStateException("Initial value already set.")
     }
   }
@@ -131,7 +135,13 @@ abstract class CompiledModel {
       throw new IllegalStateException(s"data not supplied for ${v.name}")
     }
 
-    runChecked(chains, seed, cache, method)
+    runner.run(
+      compiledModel = this,
+      chains = chains,
+      seed = seed,
+      cache = cache,
+      method = method
+    )
   }
 }
 

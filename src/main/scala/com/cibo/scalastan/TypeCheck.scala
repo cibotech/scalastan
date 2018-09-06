@@ -63,6 +63,9 @@ protected object MultiplicationAllowed {
   implicit val vecRvMultiplication = new MultiplicationAllowed[StanMatrix, StanVector, StanRowVector] {
     def newType(left: StanVector, right: StanRowVector): StanMatrix = StanMatrix(left.dim, right.dim)
   }
+  implicit val matMatMultiplication = new MultiplicationAllowed[StanMatrix, StanMatrix, StanMatrix] {
+    def newType(left: StanMatrix, right: StanMatrix): StanMatrix = StanMatrix(left.rows, right.cols)
+  }
 }
 
 @implicitNotFound("division not allowed for ${R} = ${A} * ${B}")

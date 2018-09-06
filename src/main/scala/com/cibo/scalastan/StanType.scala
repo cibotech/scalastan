@@ -484,7 +484,7 @@ object MatrixConstraint {
   case object CorrMatrix extends MatrixConstraint("corr_matrix", 1)
   case object CholeskyFactorCorr extends MatrixConstraint("cholesky_factor_corr", 1)
   case object CovMatrix extends MatrixConstraint("cov_matrix", 1)
-  case object CholeskyFactorCov extends MatrixConstraint("cholesky_factor_cov", 1)
+  case object CholeskyFactorCov extends MatrixConstraint("cholesky_factor_cov", 2)
 }
 
 case class StanMatrix(
@@ -496,7 +496,7 @@ case class StanMatrix(
 ) extends StanVectorOrMatrix {
   protected type THIS_TYPE = StanMatrix
   type ELEMENT_TYPE = StanReal
-  type NEXT_TYPE = StanVector
+  type NEXT_TYPE = StanRowVector
   type REAL_TYPE = StanMatrix
   type SCALA_TYPE = Seq[Seq[Double]]
   type SUMMARY_TYPE = Seq[Seq[Double]]
@@ -560,5 +560,5 @@ case class StanMatrix(
     }.toVector
   }
 
-  final def next: NEXT_TYPE = StanVector(cols, lower, upper)
+  final def next: NEXT_TYPE = StanRowVector(cols, lower, upper)
 }

@@ -40,11 +40,13 @@ protected class CodeBuilder {
   def leave(f: Seq[StanStatement] => StanStatement): Unit = {
     require(stack.size > 1)
     val result = f(stack.remove(stack.size - 1))
+    result.export(this)
     stack.last += result
   }
 
   // Special handling for "else if" statements.
   def handleElseIf(cond: StanValue[StanInt]): Unit = {
+    cond.export(this)
     val inside = stack.remove(stack.size - 1)
     val ifStatement = stack.last.remove(stack.last.size - 1).asInstanceOf[StanIfStatement]
     stack.last += ifStatement.copy(ifStatement.conds :+ (cond, StanBlock(inside)))

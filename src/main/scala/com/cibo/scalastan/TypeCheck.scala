@@ -497,4 +497,5 @@ protected object SampleAllowed {
   implicit def sameType[T <: StanType] = new SampleAllowed[T, T]
   implicit def vectorized[T <: StanVectorLike, SUPPORT <: StanScalarType] = new SampleAllowed[T, SUPPORT]
   implicit def arrayVectorized[T <: StanScalarType, SUPPORT <: StanScalarType] = new SampleAllowed[StanArray[T], SUPPORT]
+  implicit def vectorVectorized[T <: StanVectorLike, SUPPORT <: StanVectorLike] = new SampleAllowed[StanArray[T], SUPPORT]
 }

@@ -19,7 +19,8 @@ import scala.util.Try
 case class StanResults private (
   parameterChains: Map[String, Vector[Vector[String]]],
   inverseMassMatrixDiagonals: Vector[Vector[Double]],
-  model: CompiledModel
+  model: CompiledModel,
+  method: RunMethod.Method
 ) {
 
   require(parameterChains.nonEmpty, "No results")
@@ -286,11 +287,21 @@ case class StanResults private (
     }
   }
 
-  def checkTreeDepth(maxDepth: Int = 10): Boolean = {
-    val count = treeDepth.map(_.count(_ > maxDepth)).sum
-    val p = (100 * count) / iterationsTotal
-    println(s"$count of $iterationsTotal iterations saturated the maximum tree depth of $maxDepth ($p%)")
-    count > 0
+  /** Get the number of iterations that saturated the maximum tree depth. */
+  def checkTreeDepth: Int = {
+    val maxDepth = method match {
+      case sample: RunMethod.Sample =>
+        sample.algorithm match {
+          case hmc: RunMethod.Hmc =>
+            hmc.engine match {
+              case nuts: RunMethod.Nuts => nuts.maxDepth
+              case _ => 0
+            }
+          case _ => 0
+        }
+      case _ => 0
+    }
+    treeDepth.map(_.count(_ > maxDepth)).sum
   }
 
   /** Get the number of iterations below the specified energy threshold. */

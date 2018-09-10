@@ -204,7 +204,7 @@ class CmdStanRunner(
 
     val parameterChains = results.flatMap(_.iterations).groupBy(_._1).mapValues(_.map(_._2))
     val inverseMassMatrixDiagonals = results.map(_.inverseMassMatrixDiagonals)
-    StanResults(parameterChains, inverseMassMatrixDiagonals, compiledModel)
+    StanResults(parameterChains, inverseMassMatrixDiagonals, compiledModel, method)
   }
 }
 

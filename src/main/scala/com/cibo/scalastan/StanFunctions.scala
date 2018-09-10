@@ -17,8 +17,8 @@ import scala.collection.mutable.ArrayBuffer
 protected trait StanFunctions {
 
   // Reject (5.10).
-  def reject(args: StanValue[_ <: StanType]*)(implicit code: StanProgramBuilder): Unit = {
-    code.append(StanValueStatement(StanCall(StanVoid(), "reject", args)))
+  def reject(arg: StanValue[_ <: StanType], args: StanValue[_ <: StanType]*)(implicit code: StanProgramBuilder): Unit = {
+    code.append(StanValueStatement(StanCall(StanVoid(), "reject", arg +: args)))
   }
 
   // Print (38.1).

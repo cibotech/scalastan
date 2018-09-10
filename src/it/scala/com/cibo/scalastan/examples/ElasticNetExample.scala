@@ -84,8 +84,8 @@ object ElasticNetExample extends App with ScalaStan {
   }
 
   // Ridge/lasso weights.
-  val lambda1 = data(real(lower = 0))
-  val lambda2 = data(real(lower = 0))
+  val lambda1 = data(real(lower = 0.0))
+  val lambda2 = data(real(lower = 0.0))
 
   // Inputs.
   val (n, p) = (data(int(lower = 0)), data(int(lower = 0)))

@@ -17,8 +17,9 @@ import com.cibo.scalastan.ast.{StanDataDeclaration, StanParameterDeclaration}
 import scala.util.Try
 
 case class StanResults private (
-  private val parameterChains: Map[String, Vector[Vector[String]]],
-  private val model: CompiledModel
+  parameterChains: Map[String, Vector[Vector[String]]],
+  inverseMassMatrixDiagonals: Vector[Vector[Double]],
+  model: CompiledModel
 ) {
 
   require(parameterChains.nonEmpty, "No results")

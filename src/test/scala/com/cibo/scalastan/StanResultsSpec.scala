@@ -49,7 +49,7 @@ class StanResultsSpec extends ScalaStanBaseSpec {
   val mappedData: Map[String, Vector[Vector[String]]] = Seq(testData1, testData2).flatten.groupBy(_._1).mapValues(
     grouped => Vector(grouped.map{ case(k, v) => v }.toVector)
   )
-  val results = StanResults(mappedData, model)
+  val results = StanResults(mappedData, Vector.empty, model)
 
   describe("parameters") {
     it("returns all parameters") {

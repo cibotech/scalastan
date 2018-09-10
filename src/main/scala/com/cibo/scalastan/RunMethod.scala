@@ -139,12 +139,14 @@ object RunMethod {
   case class Hmc(
     engine: Engine = Nuts(),
     metric: Metric = DiagE,
+    metricFile: String = "",
     stepsize: Int = 1,
     stepsizeJitter: Int = 0
   ) extends SampleAlgorithm("hmc") {
     def arguments: Seq[String] = build(
       ("engine", engine, Hmc().engine),
       ("metric", metric, Hmc().metric),
+      ("metric_file", metricFile, Hmc().metricFile),
       ("stepsize", stepsize, Hmc().stepsize),
       ("stepsize_jitter", stepsizeJitter, Hmc().stepsizeJitter)
     )

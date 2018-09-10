@@ -293,13 +293,10 @@ case class StanResults private (
     count > 0
   }
 
-  def checkEnergy(threshold: Double = 0.2): Boolean = {
-    val count = energy.map(_.count(_ < threshold)).sum
-    val p = (100 * count) / iterationsTotal
-    println(s"$count of $iterationsTotal iterations exceeded the energy threshold of $threshold ($p%)")
-    count > 0
-  }
+  /** Get the number of iterations below the specified energy threshold. */
+  def checkEnergy(threshold: Double = 0.2): Int = energy.map(_.count(_ < threshold)).sum
 
+  /** Get the total number of divergences after warmup. */
   def checkDivergence: Int = divergent.map(_.count(_ > 0.0)).sum
 
   /** Partition iterations into (divergent, non-divergent) samples. */

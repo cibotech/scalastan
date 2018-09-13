@@ -3,9 +3,7 @@ package com.cibo.scalastan.ast
 import com.cibo.scalastan._
 import scala.language.existentials
 
-class StanValueSpec extends ScalaStanBaseSpec {
-
-  private implicit val ss = new ScalaStan {}
+class StanValueSpec extends ScalaStanBaseSpec with ScalaStan {
 
   describe("+") {
     describe("ints") {
@@ -133,16 +131,14 @@ class StanValueSpec extends ScalaStanBaseSpec {
 
   describe("implicit conversion") {
     it("can convert int to real") {
-      new ScalaStan {
-        val model = new Model {
-          local(real()) := 1
-        }
-        checkCode(model, "v# = 1;")
+      val model = new Model {
+        local(real()) := 1
       }
+      checkCode(model, "v# = 1;")
     }
 
     it("can not convert real to int") {
-      "new ScalaStan { new Model { local(int()) := 1.0 } }" shouldNot compile
+      "new Model { local(int()) := 1.0 }" shouldNot compile
     }
   }
 
@@ -182,34 +178,28 @@ class StanValueSpec extends ScalaStanBaseSpec {
     }
 
     it("can assign to a slice of a matrix") {
-      new ScalaStan {
-        val model = new Model {
-          val d = local(matrix(1, 2))
-          val rv = local(rowVector(2))
-          d(1) := rv
-        }
-        checkCode(model, "d[1] = rv;")
+      val model = new Model {
+        val d = local(matrix(1, 2))
+        val rv = local(rowVector(2))
+        d(1) := rv
       }
+      checkCode(model, "d[1] = rv;")
     }
 
     it("can set vector") {
-      new ScalaStan {
-        val model = new Model {
-          val a = local(vector(5))
-          a(2) := 2
-        }
-        checkCode(model, "vector[5] a; a[2] = 2;")
+      val model = new Model {
+        val a = local(vector(5))
+        a(2) := 2
       }
+      checkCode(model, "vector[5] a; a[2] = 2;")
     }
 
     it("can set matrix") {
-      new ScalaStan {
-        val model = new Model {
-          val a = local(matrix(5, 6))
-          a(2, 3) := 4
-        }
-        checkCode(model, "matrix[5,6] a; a[2,3] = 4;")
+      val model = new Model {
+        val a = local(matrix(5, 6))
+        a(2, 3) := 4
       }
+      checkCode(model, "matrix[5,6] a; a[2,3] = 4;")
     }
   }
 
@@ -222,12 +212,10 @@ class StanValueSpec extends ScalaStanBaseSpec {
 
     it("can not set vector") {
       """
-      new ScalaStan {
-        val n = data(int())
-        val p = parameter(vector(n))
-        new Model {
-          p(1) := 2
-        }
+      val n = data(int())
+      val p = parameter(vector(n))
+      new Model {
+        p(1) := 2
       }
       """ shouldNot compile
     }
@@ -257,6 +245,18 @@ class StanValueSpec extends ScalaStanBaseSpec {
       val v = StanDataDeclaration[StanVector](StanVector(n), "v")
       val expression = (v + 1.0).apply(2)
       expression.emit shouldBe "(v + 1.0)[2]"
+    }
+  }
+
+  describe("ternary operator") {
+    it("emits the right thing") {
+      val model = new Model {
+        val cond = local(int())
+        val left = local(real())
+        val right = local(real())
+        target += when(cond, left, right)
+      }
+      checkCode(model, "target += (cond ? left : right)")
     }
   }
 }

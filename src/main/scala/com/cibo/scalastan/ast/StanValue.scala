@@ -392,6 +392,25 @@ case class StanTranspose[T <: StanType, R <: StanType](
   def emit: String = s"${value.emit}'"
 }
 
+case class StanTernaryOperator[C <: StanType, T <: StanType](
+  cond: StanValue[C],
+  left: StanValue[T],
+  right: StanValue[T],
+  id: Int = StanNode.getNextId
+) extends StanValue[T] {
+  val returnType: T = left.returnType
+  def inputs: Seq[StanDeclaration[_ <: StanType]] = cond.inputs ++ left.inputs ++ right.inputs
+  def outputs: Seq[StanDeclaration[_ <: StanType]] = Seq.empty
+  def children: Seq[StanValue[_ <: StanType]] = Seq[StanValue[_ <: StanType]](cond, left, right)
+  def isDerivedFromData: Boolean = cond.isDerivedFromData && left.isDerivedFromData && right.isDerivedFromData
+  def export(builder: StanProgramBuilder): Unit = {
+    cond.export(builder)
+    left.export(builder)
+    right.export(builder)
+  }
+  def emit: String = s"(${cond.emit} ? ${left.emit} : ${right.emit})"
+}
+
 case class StanConstant[T <: StanType](
   returnType: T,
   value: T#SCALA_TYPE,

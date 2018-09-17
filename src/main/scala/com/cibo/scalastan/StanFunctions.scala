@@ -594,4 +594,26 @@ protected trait StanFunctions {
     )
   }
 
+  /** Rectangular map (section 9.3). This is available as of CmdStan 2.18.0. */
+  def map_rect(
+    f: ScalaStan#Function[StanVector],
+    phi: StanValue[StanVector],
+    theta: StanValue[StanArray[StanVector]],
+    x_r: StanValue[StanArray[StanArray[StanReal]]],
+    x_i: StanValue[StanArray[StanArray[StanInt]]]
+  )(implicit code: CodeBuilder): StanValue[StanVector] = {
+    f.export(code)
+    StanCall(
+      StanVector(theta.returnType.dim),
+      "map_rect",
+      Seq(
+        StanLiteral(f.result.emit),
+        phi,
+        theta,
+        x_r,
+        x_i
+      )
+    )
+  }
+
 }

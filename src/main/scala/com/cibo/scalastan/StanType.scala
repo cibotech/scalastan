@@ -44,6 +44,9 @@ sealed trait StanType {
   // Get the type constructor for the element type.
   def element: ELEMENT_TYPE
 
+  // Emit the name of this type (without bounds).
+  def baseTypeName: String
+
   // Emit the name and bounds for this type.
   def typeName: String
 
@@ -122,10 +125,10 @@ sealed trait StanType {
   final def emitFunctionDeclaration: String = {
     val dims = emitDims
     if (dims.nonEmpty) {
-      val dimString = dims.mkString(",")
-      s"$typeName[$dimString]"
+      val dimString = "," * (dims.length - 1)
+      s"$baseTypeName[$dimString]"
     } else {
-      typeName
+      baseTypeName
     }
   }
 
@@ -203,7 +206,8 @@ case class StanVoid(
   def realType: REAL_TYPE = StanReal()
   def next: StanVoid = this
   def element: StanVoid = this
-  def typeName: String = "void"
+  def baseTypeName: String = "void"
+  def typeName: String = baseTypeName
   def getData(data: Unit): Seq[String] = Seq.empty
   def getDims(data: Unit): Seq[Int] = Seq.empty
   def parse(
@@ -227,7 +231,8 @@ case class StanString() extends StanType {
   def realType: REAL_TYPE = StanReal()
   def next: NEXT_TYPE = StanVoid()
   def element: StanString = this
-  def typeName: String = "string"
+  def baseTypeName: String = "string"
+  def typeName: String = baseTypeName
   def getData(data: String): Seq[String] = Seq(s""""$data"""")
   def getDims(data: String): Seq[Int] = Seq.empty
   def parse(
@@ -239,7 +244,8 @@ case class StanString() extends StanType {
 }
 
 abstract class StanDiscreteType extends StanScalarType {
-  def typeName: String = s"int$emitBounds"
+  def baseTypeName: String = "int"
+  def typeName: String = s"$baseTypeName$emitBounds"
 }
 
 case class StanInt(
@@ -317,6 +323,7 @@ case class StanArray[CONTAINED <: StanType](
 
   override def emitDims: Seq[String] = dim.emit +: inner.emitDims
   override def getIndices: Seq[StanValue[StanInt]] = dim +: inner.getIndices
+  def baseTypeName: String = inner.baseTypeName
   def typeName: String = inner.typeName
   def getData(data: SCALA_TYPE): Seq[String] =
     data.map(d => inner.getData(d.asInstanceOf[inner.SCALA_TYPE])).transpose.flatten
@@ -383,7 +390,8 @@ case class StanReal(
   type SCALA_TYPE = Double
   def unconstrained: StanReal = copy(lower = None, upper = None)
   def element: StanReal = this
-  def typeName: String = s"real$emitBounds"
+  def baseTypeName: String = "real"
+  def typeName: String = s"$baseTypeName$emitBounds"
   def getData(data: Double): Seq[String] = Seq(data.toString)
   def getDims(data: Double): Seq[Int] = Seq.empty
   def parse(
@@ -436,6 +444,8 @@ trait StanVectorLike extends StanVectorOrMatrix {
     }.toVector
   }
 
+  def typeName: String = s"$baseTypeName$emitBounds[${dim.emit}]"
+
   final def next: NEXT_TYPE = StanReal(lower, upper)
 }
 
@@ -456,7 +466,7 @@ case class StanVector(
 ) extends StanVectorLike {
   protected type THIS_TYPE = StanVector
   def unconstrained: THIS_TYPE = copy(lower = None, upper = None)
-  def typeName: String = s"${constraint.name}$emitBounds[${dim.emit}]"
+  def baseTypeName: String = constraint.name
 }
 
 case class StanRowVector(
@@ -466,7 +476,7 @@ case class StanRowVector(
 ) extends StanVectorLike {
   protected type THIS_TYPE = StanRowVector
   def unconstrained: THIS_TYPE = copy(lower = None, upper = None)
-  def typeName: String = s"row_vector$emitBounds[${dim.emit}]"
+  def baseTypeName: String = "row_vector"
 }
 
 sealed abstract class MatrixConstraint(val name: String, val dims: Int) {
@@ -505,7 +515,8 @@ case class StanMatrix(
   def realType: REAL_TYPE = this
   def element: ELEMENT_TYPE = StanReal()
 
-  def typeName: String = s"${constraint.name}$emitBounds${constraint.emitSizes(rows, cols)}"
+  def baseTypeName: String = constraint.name
+  def typeName: String = s"$baseTypeName$emitBounds${constraint.emitSizes(rows, cols)}"
   def getData(data: Seq[Seq[Double]]): Seq[String] = data.transpose.flatMap(_.map(_.toString))
   def getDims(data: Seq[Seq[Double]]): Seq[Int] = {
     if (data.nonEmpty) {

@@ -19,7 +19,8 @@ import scala.util.Try
 case class StanResults private (
   parameterChains: Map[String, Vector[Vector[String]]],
   inverseMassMatrixDiagonals: Vector[Vector[Double]],
-  model: CompiledModel
+  model: CompiledModel,
+  method: RunMethod.Method
 ) {
 
   require(parameterChains.nonEmpty, "No results")
@@ -35,13 +36,15 @@ case class StanResults private (
   lazy val bestIndex: Int = parameterChains(lpName)(bestChain).zipWithIndex.maxBy(_._1.toDouble)._2
 
   private def extract(name: String): Seq[Seq[Double]] = parameterChains(name).map(_.map(_.toDouble))
+  private def extractOption(name: String): Seq[Seq[Double]] =
+    parameterChains.getOrElse(name, Seq.empty).map(_.map(_.toDouble))
 
   lazy val logPosterior: Seq[Seq[Double]] = extract(lpName)
-  lazy val divergent: Seq[Seq[Double]] = extract(divergentName)
-  lazy val treeDepth: Seq[Seq[Double]] = extract(treeDepthName)
-  lazy val energy: Seq[Seq[Double]] = extract(energyName)
-  lazy val acceptStat: Seq[Seq[Double]] = extract(acceptName)
-  lazy val stepSize: Seq[Seq[Double]] = extract(stepSizeName)
+  lazy val divergent: Seq[Seq[Double]] = extractOption(divergentName)
+  lazy val treeDepth: Seq[Seq[Double]] = extractOption(treeDepthName)
+  lazy val energy: Seq[Seq[Double]] = extractOption(energyName)
+  lazy val acceptStat: Seq[Seq[Double]] = extractOption(acceptName)
+  lazy val stepSize: Seq[Seq[Double]] = extractOption(stepSizeName)
 
   val chainCount: Int = parameterChains.head._2.size
   val iterationsPerChain: Int = parameterChains.head._2.head.size
@@ -284,27 +287,28 @@ case class StanResults private (
     }
   }
 
-  def checkTreeDepth(maxDepth: Int = 10): Boolean = {
-    val count = treeDepth.map(_.count(_ > maxDepth)).sum
-    val p = (100 * count) / iterationsTotal
-    println(s"$count of $iterationsTotal iterations saturated the maximum tree depth of $maxDepth ($p%)")
-    count > 0
+  /** Get the number of iterations that saturated the maximum tree depth. */
+  def checkTreeDepth: Int = {
+    val maxDepth = method match {
+      case sample: RunMethod.Sample =>
+        sample.algorithm match {
+          case hmc: RunMethod.Hmc =>
+            hmc.engine match {
+              case nuts: RunMethod.Nuts => nuts.maxDepth
+              case _ => 0
+            }
+          case _ => 0
+        }
+      case _ => 0
+    }
+    treeDepth.map(_.count(_ > maxDepth)).sum
   }
 
-  def checkEnergy(threshold: Double = 0.2): Boolean = {
-    val count = energy.map(_.count(_ < threshold)).sum
-    val p = (100 * count) / iterationsTotal
-    println(s"$count of $iterationsTotal iterations exceeded the energy threshold of $threshold ($p%)")
-    count > 0
-  }
+  /** Get the number of iterations below the specified energy threshold. */
+  def checkEnergy(threshold: Double = 0.2): Int = energy.map(_.count(_ < threshold)).sum
 
-  private lazy val divergentCount: Int = divergent.map(_.count(_ > 0.0)).sum
-  private lazy val percentDiverged: Int = (100 * divergentCount) / iterationsTotal
-
-  def checkDivergence(): Int = {
-    println(s"$divergentCount of $iterationsTotal iterations ended up with a divergence ($percentDiverged%)")
-    divergentCount
-  }
+  /** Get the total number of divergences after warmup. */
+  def checkDivergence: Int = divergent.map(_.count(_ > 0.0)).sum
 
   /** Partition iterations into (divergent, non-divergent) samples. */
   def partitionByDivergence[T <: StanType, R](

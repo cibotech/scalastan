@@ -27,7 +27,7 @@ abstract class StanValue[T <: StanType] extends StanNode with Implicits {
   def outputs: Seq[StanDeclaration[_ <: StanType]]
   def children: Seq[StanValue[_ <: StanType]]
 
-  def export(builder: CodeBuilder): Unit
+  def export(builder: StanProgramBuilder): Unit
 
   // Check if this value is derived from data only.
   def isDerivedFromData: Boolean
@@ -107,7 +107,7 @@ abstract class StanValue[T <: StanType] extends StanNode with Implicits {
     StanBinaryOperator(StanBinaryOperator.ElementWiseDivide, ev.newType(returnType, right.returnType), this, right)
 
   def ~[R <: StanType](dist: StanDistribution[T, R])(
-    implicit code: CodeBuilder,
+    implicit code: StanProgramBuilder,
     ev: SampleAllowed[T, R]
   ): Unit = {
     code.append(StanSampleStatement[T, R](this, dist))
@@ -116,7 +116,7 @@ abstract class StanValue[T <: StanType] extends StanNode with Implicits {
   def t[R <: StanType](implicit e: TransposeAllowed[T, R]): StanValue[R] = StanTranspose(e.newType(returnType), this)
 
   def :=[R <: StanType](right: StanValue[R])(
-    implicit code: CodeBuilder,
+    implicit code: StanProgramBuilder,
     ev1: AssignmentAllowed[DECL_TYPE],
     ev2: CanConvert[R, T]
   ): StanAssignment = {
@@ -165,7 +165,7 @@ abstract class StanValue[T <: StanType] extends StanNode with Implicits {
 trait Incrementable[T <: StanType] { self: StanValue[T] =>
   def +=[B <: StanType](right: StanValue[B])(
     implicit ev: AdditionAllowed[T, T, B],
-    code: CodeBuilder
+    code: StanProgramBuilder
   ): Unit = {
     code.append(StanAssignment(this, right, StanAssignment.Add))
   }
@@ -173,19 +173,19 @@ trait Incrementable[T <: StanType] { self: StanValue[T] =>
 
 trait Updatable[T <: StanType] extends Incrementable[T] { self: StanValue[T] =>
   def -=[B <: StanType](right: StanValue[B])(
-    implicit ev: AdditionAllowed[T, T, B], code: CodeBuilder
+    implicit ev: AdditionAllowed[T, T, B], code: StanProgramBuilder
   ): Unit = {
     code.append(StanAssignment(this, right, StanAssignment.Subtract))
   }
 
   def *=[B <: StanType](right: StanValue[B])(
-    implicit ev: MultiplicationAllowed[T, T, B], code: CodeBuilder
+    implicit ev: MultiplicationAllowed[T, T, B], code: StanProgramBuilder
   ): Unit = {
     code.append(StanAssignment(this, right, StanAssignment.Multiply))
   }
 
   def /=[B <: StanScalarType](right: StanValue[B])(
-    implicit code: CodeBuilder
+    implicit code: StanProgramBuilder
   ): Unit = {
     code.append(StanAssignment(this, right, StanAssignment.Divide))
   }
@@ -193,11 +193,11 @@ trait Updatable[T <: StanType] extends Incrementable[T] { self: StanValue[T] =>
 
 trait StanFunction {
   def name: String
-  private[scalastan] def export(builder: CodeBuilder): Unit
+  private[scalastan] def export(builder: StanProgramBuilder): Unit
 }
 
 case class BuiltinFunction(name: String) extends StanFunction {
-  private[scalastan] def export(bulder: CodeBuilder): Unit = ()
+  private[scalastan] def export(bulder: StanProgramBuilder): Unit = ()
 }
 
 case class StanCall[T <: StanType](
@@ -210,7 +210,7 @@ case class StanCall[T <: StanType](
   def outputs: Seq[StanDeclaration[_ <: StanType]] = Seq.empty
   def children: Seq[StanValue[_ <: StanType]] = args
   def isDerivedFromData: Boolean = args.forall(_.isDerivedFromData)
-  def export(builder: CodeBuilder): Unit = {
+  def export(builder: StanProgramBuilder): Unit = {
     args.foreach(_.export(builder))
     function.export(builder)
   }
@@ -242,7 +242,7 @@ case class StanGetTarget(
   def outputs: Seq[StanDeclaration[_ <: StanType]] = Seq.empty
   def children: Seq[StanValue[_ <: StanType]] = Seq.empty
   def isDerivedFromData: Boolean = false
-  def export(builder: CodeBuilder): Unit = ()
+  def export(builder: StanProgramBuilder): Unit = ()
   def emit: String = "target()"
 }
 
@@ -254,7 +254,7 @@ case class StanTargetValue(
   def outputs: Seq[StanDeclaration[_ <: StanType]] = Seq.empty
   def children: Seq[StanValue[_ <: StanType]] = Seq.empty
   def isDerivedFromData: Boolean = false
-  def export(builder: CodeBuilder): Unit = ()
+  def export(builder: StanProgramBuilder): Unit = ()
   def emit: String = "target"
   def apply(): StanGetTarget = StanGetTarget()
 }
@@ -271,7 +271,7 @@ case class StanDistributionNode[T <: StanType](
   def outputs: Seq[StanDeclaration[_ <: StanType]] = Seq.empty
   def children: Seq[StanValue[_ <: StanType]] = y +: args
   def isDerivedFromData: Boolean = false
-  def export(builder: CodeBuilder): Unit = {
+  def export(builder: StanProgramBuilder): Unit = {
     args.foreach(_.export(builder))
     y.export(builder)
   }
@@ -291,7 +291,7 @@ case class StanUnaryOperator[T <: StanType, R <: StanType](
   def outputs: Seq[StanDeclaration[_ <: StanType]] = Seq.empty
   def children: Seq[StanValue[_ <: StanType]] = Seq(right)
   def isDerivedFromData: Boolean = right.isDerivedFromData
-  def export(builder: CodeBuilder): Unit = right.export(builder)
+  def export(builder: StanProgramBuilder): Unit = right.export(builder)
   def emit: String = s"(${op.name}${right.emit})"
 }
 
@@ -312,7 +312,7 @@ case class StanBinaryOperator[T <: StanType, L <: StanType, R <: StanType](
   def outputs: Seq[StanDeclaration[_ <: StanType]] = Seq.empty
   def children: Seq[StanValue[_ <: StanType]] = Seq[StanValue[_ <: StanType]](left, right)
   def isDerivedFromData: Boolean = left.isDerivedFromData && right.isDerivedFromData
-  def export(builder: CodeBuilder): Unit = {
+  def export(builder: StanProgramBuilder): Unit = {
     left.export(builder)
     right.export(builder)
   }
@@ -351,7 +351,7 @@ case class StanIndexOperator[T <: StanType, N <: StanType, D <: StanDeclaration[
   def outputs: Seq[StanDeclaration[_ <: StanType]] = Seq.empty
   def children: Seq[StanValue[_ <: StanType]] = value +: indices
   def isDerivedFromData: Boolean = value.isDerivedFromData && indices.forall(_.isDerivedFromData)
-  def export(builder: CodeBuilder): Unit = {
+  def export(builder: StanProgramBuilder): Unit = {
     value.export(builder)
     indices.foreach(_.export(builder))
   }
@@ -370,7 +370,7 @@ case class StanSliceOperator[T <: StanType, D <: StanDeclaration[_]](
   def children: Seq[StanValue[_ <: StanType]] = Seq[StanValue[_ <: StanType]](value, slice.start, slice.end)
   def isDerivedFromData: Boolean =
     value.isDerivedFromData && slice.start.isDerivedFromData && slice.end.isDerivedFromData
-  def export(builder: CodeBuilder): Unit = {
+  def export(builder: StanProgramBuilder): Unit = {
     value.export(builder)
     slice.export(builder)
   }
@@ -386,7 +386,7 @@ case class StanTranspose[T <: StanType, R <: StanType](
   def outputs: Seq[StanDeclaration[_ <: StanType]] = Seq.empty
   def children: Seq[StanValue[_ <: StanType]] = Seq(value)
   def isDerivedFromData: Boolean = value.isDerivedFromData
-  def export(builder: CodeBuilder): Unit = {
+  def export(builder: StanProgramBuilder): Unit = {
     value.export(builder)
   }
   def emit: String = s"${value.emit}'"
@@ -401,7 +401,7 @@ case class StanConstant[T <: StanType](
   def outputs: Seq[StanDeclaration[_ <: StanType]] = Seq.empty
   def children: Seq[StanValue[_ <: StanType]] = Seq.empty
   def isDerivedFromData: Boolean = true
-  def export(builder: CodeBuilder): Unit = ()
+  def export(builder: StanProgramBuilder): Unit = ()
   def emit: String = value.toString
 }
 
@@ -414,7 +414,7 @@ case class StanArrayLiteral[N <: StanType, T <: StanArray[N]](
   def outputs: Seq[StanDeclaration[_ <: StanType]] = Seq.empty
   def children: Seq[StanValue[_ <: StanType]] = values
   def isDerivedFromData: Boolean = true
-  def export(builder: CodeBuilder): Unit = {
+  def export(builder: StanProgramBuilder): Unit = {
     values.foreach(_.export(builder))
   }
   def emit: String = values.map(_.emit).mkString("{", ",", "}")
@@ -429,7 +429,7 @@ case class StanStringLiteral(
   def outputs: Seq[StanDeclaration[_ <: StanType]] = Seq.empty
   def children: Seq[StanValue[_ <: StanType]] = Seq.empty
   def isDerivedFromData: Boolean = true
-  def export(builder: CodeBuilder): Unit = ()
+  def export(builder: StanProgramBuilder): Unit = ()
   def emit: String = s""""$value""""
 }
 
@@ -442,7 +442,7 @@ case class StanLiteral(
   def outputs: Seq[StanDeclaration[_ <: StanType]] = Seq.empty
   def children: Seq[StanValue[_ <: StanType]] = Seq.empty
   def isDerivedFromData: Boolean = true
-  def export(builder: CodeBuilder): Unit = ()
+  def export(builder: StanProgramBuilder): Unit = ()
   def emit: String = value.toString
 }
 
@@ -452,7 +452,7 @@ sealed trait StanUnknown[T <: StanType] extends StanValue[T] {
   def outputs: Seq[StanDeclaration[_ <: StanType]] = Seq.empty
   def children: Seq[StanValue[_ <: StanType]] = Seq.empty
   def isDerivedFromData: Boolean = true
-  def export(builder: CodeBuilder): Unit = ()
+  def export(builder: StanProgramBuilder): Unit = ()
   def emit: String = ""
 }
 

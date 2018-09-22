@@ -14,7 +14,7 @@ import com.cibo.scalastan.ast._
 
 import scala.collection.mutable.ArrayBuffer
 
-protected class CodeBuilder {
+class StanProgramBuilder {
 
   // Stack of statements.
   // New statements are appended to the last buffer.
@@ -65,7 +65,7 @@ protected class CodeBuilder {
     stack.last.insert(0, s)
   }
 
-  def append(other: CodeBuilder): Unit = {
+  def append(other: StanProgramBuilder): Unit = {
     other.dataValues.foreach(append)
     other.parameterValues.foreach(append)
     other.functions.foreach(append)

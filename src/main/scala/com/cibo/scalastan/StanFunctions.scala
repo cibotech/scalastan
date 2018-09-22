@@ -17,12 +17,12 @@ import scala.collection.mutable.ArrayBuffer
 protected trait StanFunctions {
 
   // Reject (5.10).
-  def reject(args: StanValue[_ <: StanType]*)(implicit code: CodeBuilder): Unit = {
-    code.append(StanValueStatement(StanCall(StanVoid(), "reject", args)))
+  def reject(arg: StanValue[_ <: StanType], args: StanValue[_ <: StanType]*)(implicit code: StanProgramBuilder): Unit = {
+    code.append(StanValueStatement(StanCall(StanVoid(), "reject", arg +: args)))
   }
 
   // Print (38.1).
-  def print(args: StanValue[_ <: StanType]*)(implicit code: CodeBuilder): Unit = {
+  def print(args: StanValue[_ <: StanType]*)(implicit code: StanProgramBuilder): Unit = {
     code.append(StanValueStatement(StanCall(StanVoid(), "print", args)))
   }
 
@@ -508,7 +508,7 @@ protected trait StanFunctions {
     theta: StanValue[StanArray[StanReal]],
     xr: StanValue[StanArray[StanReal]],
     xi: StanValue[StanArray[StanInt]]
-  )(implicit code: CodeBuilder): StanValue[StanArray[StanArray[StanReal]]] = {
+  )(implicit code: StanProgramBuilder): StanValue[StanArray[StanArray[StanReal]]] = {
     ode.export(code)
     StanCall(
       StanArray(initialState.returnType.dim, StanArray(times.returnType.dim, StanReal())),
@@ -527,7 +527,7 @@ protected trait StanFunctions {
     relTol: StanValue[RT],
     absTol: StanValue[AT],
     maxNumSteps: StanValue[StanInt]
-  )(implicit code: CodeBuilder): StanValue[StanArray[StanArray[StanReal]]] = {
+  )(implicit code: StanProgramBuilder): StanValue[StanArray[StanArray[StanReal]]] = {
     ode.export(code)
     StanCall(
       StanArray(initialState.returnType.dim, StanArray(times.returnType.dim, StanReal())),
@@ -555,7 +555,7 @@ protected trait StanFunctions {
     theta: StanValue[StanArray[StanReal]],
     xr: StanValue[StanArray[StanReal]],
     xi: StanValue[StanArray[StanInt]]
-  )(implicit code: CodeBuilder): StanValue[StanArray[StanArray[StanReal]]] = {
+  )(implicit code: StanProgramBuilder): StanValue[StanArray[StanArray[StanReal]]] = {
     ode.export(code)
     StanCall(
       StanArray(initialState.returnType.dim, StanArray(times.returnType.dim, StanReal())),
@@ -574,7 +574,7 @@ protected trait StanFunctions {
     relTol: StanValue[RT],
     absTol: StanValue[AT],
     maxNumSteps: StanValue[StanInt]
-  )(implicit code: CodeBuilder): StanValue[StanArray[StanArray[StanReal]]] = {
+  )(implicit code: StanProgramBuilder): StanValue[StanArray[StanArray[StanReal]]] = {
     ode.export(code)
     StanCall(
       StanArray(initialState.returnType.dim, StanArray(times.returnType.dim, StanReal())),
@@ -601,7 +601,7 @@ protected trait StanFunctions {
     theta: StanValue[StanArray[StanVector]],
     x_r: StanValue[StanArray[StanArray[StanReal]]],
     x_i: StanValue[StanArray[StanArray[StanInt]]]
-  )(implicit code: CodeBuilder): StanValue[StanVector] = {
+  )(implicit code: StanProgramBuilder): StanValue[StanVector] = {
     f.export(code)
     StanCall(
       StanVector(theta.returnType.dim),

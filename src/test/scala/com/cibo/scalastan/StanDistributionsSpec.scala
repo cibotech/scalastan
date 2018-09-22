@@ -61,5 +61,19 @@ class StanDistributionsSpec extends ScalaStanBaseSpec with ScalaStan {
       }
       checkCode(model, "y ~ multi_normal(mu, sigma);")
     }
+
+    it("should vectorize matrices") {
+      val k = data(int())
+      val j = data(int())
+      val n = data(int())
+      val y = data(matrix(n, k))
+      val mu = parameter(vector(k))
+      val beta = parameter(matrix(k, j))
+      val sigma = parameter(covMatrix(k))
+      val model = new Model {
+        y(1) ~ stan.multi_normal(mu, sigma)
+      }
+      checkCode(model, "y[1] ~ multi_normal(mu, sigma);")
+    }
   }
 }

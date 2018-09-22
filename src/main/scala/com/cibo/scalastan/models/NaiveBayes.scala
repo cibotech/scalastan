@@ -48,8 +48,8 @@ case class NaiveBayes(
   private val z = data(int(lower = 1, upper = k)(m))    // Topic for document m
   private val w = data(int(lower = 1, upper = v)(n))    // Word n
   private val doc = data(int(lower = 1, upper = m)(n))  // Document ID for word n
-  private val alpha = data(vector(k, lower = 0))        // Topic prior
-  private val beta = data(vector(v, lower = 0))         // Word prior
+  private val alpha = data(vector(k, lower = 0.0))      // Topic prior
+  private val beta = data(vector(v, lower = 0.0))       // Word prior
 
   val theta: ParameterDeclaration[StanVector] = parameter(simplex(k))             // Topic prevalence
   val phi: ParameterDeclaration[StanArray[StanVector]] = parameter(simplex(v)(k))  // Word distribution for topic k

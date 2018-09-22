@@ -68,7 +68,7 @@ protected object MultiplicationAllowed {
   }
 }
 
-@implicitNotFound("division not allowed for ${R} = ${A} * ${B}")
+@implicitNotFound("division not allowed for ${R} = ${A} / ${B}")
 protected sealed abstract class DivisionAllowed[R <: StanType, A <: StanType, B <: StanType] extends TypeCheck {
   def newType(left: A, right: B): R
 }
@@ -497,5 +497,7 @@ protected object SampleAllowed {
   implicit def sameType[T <: StanType] = new SampleAllowed[T, T]
   implicit def vectorized[T <: StanVectorLike, SUPPORT <: StanScalarType] = new SampleAllowed[T, SUPPORT]
   implicit def arrayVectorized[T <: StanScalarType, SUPPORT <: StanScalarType] = new SampleAllowed[StanArray[T], SUPPORT]
-  implicit def vectorVectorized[T <: StanVectorLike, SUPPORT <: StanVectorLike] = new SampleAllowed[StanArray[T], SUPPORT]
+  implicit def vectorVectorized1[T <: StanVectorLike, SUPPORT <: StanVectorLike] = new SampleAllowed[StanArray[T], SUPPORT]
+  implicit def vectorVectorized2 = new SampleAllowed[StanVector, StanRowVector]
+  implicit def vectorVectorized3 = new SampleAllowed[StanRowVector, StanVector]
 }

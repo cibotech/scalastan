@@ -1,6 +1,7 @@
 package com.cibo.scalastan.ast
 
 import com.cibo.scalastan._
+import scala.language.existentials
 
 class StanValueSpec extends ScalaStanBaseSpec {
 
@@ -10,59 +11,59 @@ class StanValueSpec extends ScalaStanBaseSpec {
     describe("ints") {
       it("can add int + const_int") {
         val r = StanConstant[StanInt](StanInt(), 1) + 3
-        r.emit shouldBe "(1) + (3)"
+        r.emit shouldBe "(1 + 3)"
       }
       it("can add const_int + int") {
         import com.cibo.scalastan.Implicits._
         val r = 2 + StanConstant[StanInt](StanInt(), 1)
-        r.emit shouldBe "(2) + (1)"
+        r.emit shouldBe "(2 + 1)"
       }
       it("can add int + int") {
         val r = StanConstant[StanInt](StanInt(), 1) + StanConstant[StanInt](StanInt(), 2)
-        r.emit shouldBe "(1) + (2)"
+        r.emit shouldBe "(1 + 2)"
       }
     }
 
     describe("ints and doubles") {
       it("can add double + const_int") {
         val r = StanConstant[StanReal](StanReal(), 1) + 3
-        r.emit shouldBe "(1.0) + (3)"
+        r.emit shouldBe "(1.0 + 3)"
       }
       it("can add const_int + double") {
         import com.cibo.scalastan.Implicits._
         val r = 2 + StanConstant[StanReal](StanReal(), 1)
-        r.emit shouldBe "(2) + (1.0)"
+        r.emit shouldBe "(2 + 1.0)"
       }
       it("can add int + double") {
         val r = StanConstant[StanInt](StanInt(), 1) + StanConstant[StanReal](StanReal(), 2)
-        r.emit shouldBe "(1) + (2.0)"
+        r.emit shouldBe "(1 + 2.0)"
       }
       it("can add double + int") {
         val r = StanConstant[StanReal](StanReal(), 1) + StanConstant[StanInt](StanInt(), 2)
-        r.emit shouldBe "(1.0) + (2)"
+        r.emit shouldBe "(1.0 + 2)"
       }
     }
 
     describe("doubles") {
       it("can add double + const_double") {
         val r = StanConstant[StanReal](StanReal(), 1) + 3.0
-        r.emit shouldBe "(1.0) + (3.0)"
+        r.emit shouldBe "(1.0 + 3.0)"
       }
       it("can add const_double + double") {
         import com.cibo.scalastan.Implicits._
         val r = 2.0 + StanConstant[StanReal](StanReal(), 1)
-        r.emit shouldBe "(2.0) + (1.0)"
+        r.emit shouldBe "(2.0 + 1.0)"
       }
       it("can add double + double") {
         val r = StanConstant[StanReal](StanReal(), 1) + StanConstant[StanReal](StanReal(), 2)
-        r.emit shouldBe "(1.0) + (2.0)"
+        r.emit shouldBe "(1.0 + 2.0)"
       }
     }
 
     describe("vectors and ints") {
       it("can add vector + const_int") {
         val r = StanLocalDeclaration[StanVector](StanVector(StanConstant[StanInt](StanInt(), 1)), "x") + 1
-        check(r.emit, "(x) + (1)")
+        check(r.emit, "(x + 1)")
       }
     }
   }
@@ -70,7 +71,7 @@ class StanValueSpec extends ScalaStanBaseSpec {
   describe("*") {
     it("can multiply doubles") {
       val r = StanConstant[StanReal](StanReal(), 1) * 3.0
-      r.emit shouldBe "(1.0) * (3.0)"
+      r.emit shouldBe "(1.0 * 3.0)"
     }
 
     it("can multiply matrices") {
@@ -79,7 +80,7 @@ class StanValueSpec extends ScalaStanBaseSpec {
         "mat"
       )
       val r = mat * mat
-      r.emit shouldBe "(mat) * (mat)"
+      r.emit shouldBe "(mat * mat)"
     }
   }
 
@@ -87,19 +88,19 @@ class StanValueSpec extends ScalaStanBaseSpec {
     it("can divide vectors") {
       val n = StanLocalDeclaration(StanInt(), "n")
       val r = StanLocalDeclaration(StanVector(n), "x") /:/ StanLocalDeclaration(StanVector(n), "y")
-      check(r.emit, "(x) ./ (y)")
+      check(r.emit, "(x ./ y)")
     }
 
     it("can divide scalar by vector") {
       val n = StanLocalDeclaration(StanInt(), "n")
       val r = n /:/ StanLocalDeclaration(StanVector(n), "x")
-      check(r.emit, "(n) ./ (x)")
+      check(r.emit, "(n ./ x)")
     }
 
     it("can divide matrix by scalar") {
       val n = StanLocalDeclaration(StanInt(), "n")
       val r = StanLocalDeclaration(StanMatrix(n, n), "x") /:/ n
-      check(r.emit, "(x) ./ (n)")
+      check(r.emit, "(x ./ n)")
     }
 
     it("can not divide scalar by scalar") {
@@ -111,22 +112,22 @@ class StanValueSpec extends ScalaStanBaseSpec {
   describe("^") {
     it("can pow ints") {
       val r = StanConstant[StanInt](StanInt(), 1) ^ StanConstant[StanInt](StanInt(), 2)
-      r.emit shouldBe "(1) ^ (2)"
+      r.emit shouldBe "(1 ^ 2)"
     }
     it("can pow real / int") {
       val r = StanConstant[StanReal](StanReal(), 1.0) ^ StanConstant[StanInt](StanInt(), 2)
-      r.emit shouldBe "(1.0) ^ (2)"
+      r.emit shouldBe "(1.0 ^ 2)"
     }
     it("can pow reals") {
       val r = StanConstant[StanReal](StanReal(), 1.0) ^ StanConstant[StanReal](StanReal(), 2.0)
-      r.emit shouldBe "(1.0) ^ (2.0)"
+      r.emit shouldBe "(1.0 ^ 2.0)"
     }
   }
 
   describe("unary -") {
     it("can negate ints") {
       val r = -StanConstant[StanInt](StanInt(), 1)
-      r.emit shouldBe "-(1)"
+      r.emit shouldBe "(-1)"
     }
   }
 
@@ -247,6 +248,15 @@ class StanValueSpec extends ScalaStanBaseSpec {
       val i = StanDataDeclaration[StanArray[StanInt]](StanArray(n, StanInt()), "i")
       val vec = StanDataDeclaration[StanArray[StanReal]](StanArray(n, StanReal()), "vec")
       vec(i).emit shouldBe "vec[i]"
+    }
+  }
+
+  describe("indexed expression") {
+    it("can index into an expression") {
+      val n = StanDataDeclaration[StanInt](StanInt(), "n")
+      val v = StanDataDeclaration[StanVector](StanVector(n), "v")
+      val expression = (v + 1.0).apply(2)
+      expression.emit shouldBe "(v + 1.0)[2]"
     }
   }
 }

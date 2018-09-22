@@ -90,7 +90,7 @@ trait ScalaStan extends Implicits with LazyLogging { ss =>
   ): StanReal = StanReal(StanUnknown.boundOpt(lower), StanUnknown.boundOpt(upper))
 
   def vector(
-    dim: StanValue[StanInt],
+    dim: StanValue[StanInt] = StanUnknownInt,
     lower: StanValue[StanReal] = StanUnknownReal,
     upper: StanValue[StanReal] = StanUnknownReal
   ): StanVector = StanVector(dim, StanUnknown.boundOpt(lower), StanUnknown.boundOpt(upper))

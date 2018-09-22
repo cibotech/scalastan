@@ -14,7 +14,7 @@ class LinearRegressionSpec extends ScalaStanBaseSpec {
       checkCode(model.model,
         """
            model {
-             y ~ normal(((x) * (beta)) + (beta0),sigma);
+             y ~ normal(((x * beta) + beta0),sigma);
              sigma ~ cauchy(0,1);
            }
         """

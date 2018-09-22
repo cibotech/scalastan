@@ -16,7 +16,7 @@ class CSESpec extends ScalaStanBaseSpec {
         val updated = model.transform(CSE())
       }
 
-      checkCode(Test.updated, "model { real z; real y; real x; x = (y) + (1); z = x; }")
+      checkCode(Test.updated, "model { real z; real y; real x; x = (y + 1); z = x; }")
     }
 
     it("re-orders multiplication") {
@@ -31,7 +31,7 @@ class CSESpec extends ScalaStanBaseSpec {
         val updated = model.transform(CSE())
       }
 
-      checkCode(Test.updated, "model { real z; real y; real x; x = (y) * (1); z = x; }")
+      checkCode(Test.updated, "model { real z; real y; real x; x = (y * 1); z = x; }")
     }
 
     it("does not re-order division") {
@@ -46,7 +46,7 @@ class CSESpec extends ScalaStanBaseSpec {
         val updated = model.transform(CSE())
       }
 
-      checkCode(Test.updated, "model { real z; real y; real x; x = (y) / (1); z = (1) / (y); }")
+      checkCode(Test.updated, "model { real z; real y; real x; x = (y / 1); z = (1 / y); }")
     }
   }
 }

@@ -34,7 +34,7 @@ class StrengthReductionSpec extends ScalaStanBaseSpec with ScalaStan {
         val c = local(real())
         x := a * b * c
       }
-      checkCode(model.transform(StrengthReduction()), "x = ((a) * (b)) * (c)")
+      checkCode(model.transform(StrengthReduction()), "x = ((a * b) * c)")
     }
   }
 

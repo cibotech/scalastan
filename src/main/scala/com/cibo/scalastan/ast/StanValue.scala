@@ -292,7 +292,7 @@ case class StanUnaryOperator[T <: StanType, R <: StanType](
   def children: Seq[StanValue[_ <: StanType]] = Seq(right)
   def isDerivedFromData: Boolean = right.isDerivedFromData
   def export(builder: CodeBuilder): Unit = right.export(builder)
-  def emit: String = s"${op.name}(${right.emit})"
+  def emit: String = s"(${op.name}${right.emit})"
 }
 
 object StanUnaryOperator {
@@ -306,7 +306,6 @@ case class StanBinaryOperator[T <: StanType, L <: StanType, R <: StanType](
   returnType: T,
   left: StanValue[L],
   right: StanValue[R],
-  parens: Boolean = true,
   id: Int = StanNode.getNextId
 ) extends StanValue[T] {
   def inputs: Seq[StanDeclaration[_ <: StanType]] = left.inputs ++ right.inputs
@@ -317,12 +316,7 @@ case class StanBinaryOperator[T <: StanType, L <: StanType, R <: StanType](
     left.export(builder)
     right.export(builder)
   }
-  def emit: String =
-    if (parens) {
-      s"(${left.emit}) ${op.name} (${right.emit})"
-    } else {
-      s"${left.emit} ${op.name} ${right.emit}"
-    }
+  def emit: String = s"(${left.emit} ${op.name} ${right.emit})"
 }
 
 object StanBinaryOperator {
@@ -395,7 +389,7 @@ case class StanTranspose[T <: StanType, R <: StanType](
   def export(builder: CodeBuilder): Unit = {
     value.export(builder)
   }
-  def emit: String = s"(${value.emit})'"
+  def emit: String = s"${value.emit}'"
 }
 
 case class StanConstant[T <: StanType](

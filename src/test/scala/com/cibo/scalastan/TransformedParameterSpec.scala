@@ -60,7 +60,7 @@ class TransformedParameterSpec extends ScalaStanBaseSpec with ScalaStan {
         result := 0.1
       }
       val model = new Model { local(real()) := pt }
-      checkCode(model, "transformed parameters { real<lower=(1) / (d)> pt; { pt = 0.1; } }")
+      checkCode(model, "transformed parameters { real<lower=(1 / d)> pt; { pt = 0.1; } }")
     }
 
     it("should preserve transformed parameters used in conditionals") {

@@ -174,6 +174,10 @@ trait ScalaStan extends Implicits with LazyLogging { ss =>
       }
     }
 
+    def when[T <: StanType](cond: StanValue[StanInt], ifTrue: StanValue[T], ifFalse: StanValue[T]): StanValue[T] = {
+      StanTernaryOperator(cond, ifTrue, ifFalse)
+    }
+
     def range(start: StanValue[StanInt], end: StanValue[StanInt]): StanValueRange = StanValueRange(start, end)
 
     def loop(cond: StanValue[StanInt])(body: => Unit): Unit = {

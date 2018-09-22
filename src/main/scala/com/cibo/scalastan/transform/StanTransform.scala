@@ -202,6 +202,7 @@ abstract class StanTransform[STATE](implicit ss: ScalaStan) {
     case in: StanIndexOperator[_, T, _]  => handleIndexOperator(in)
     case sl: StanSliceOperator[T, _]     => handleSliceOperator(sl)
     case tr: StanTranspose[_, T]         => handleTranspose(tr)
+    case to: StanTernaryOperator[_, T]   => handleTernaryOperator(to)
     case vr: StanDeclaration[T]          => handleVariable(vr)
     case cn: StanConstant[T]             => handleConstant(cn)
     case ar: StanArrayLiteral[_, _]      => handleArray(ar)
@@ -260,6 +261,14 @@ abstract class StanTransform[STATE](implicit ss: ScalaStan) {
 
   def handleTranspose[T <: StanType, R <: StanType](tr: StanTranspose[T, R]): State[StanValue[R]] = {
     handleExpression(tr.value).map(newValue => tr.copy(value = newValue))
+  }
+
+  def handleTernaryOperator[C <: StanType, T <: StanType](to: StanTernaryOperator[C, T]): State[StanValue[T]] = {
+    for {
+      newCond <- handleExpression(to.cond)
+      newLeft <- handleExpression(to.left)
+      newRight <- handleExpression(to.right)
+    } yield to.copy(cond = newCond, left = newLeft, right = newRight)
   }
 
   def handleConstant[T <: StanType](cn: StanConstant[T]): State[StanValue[T]] = State.pure(cn)

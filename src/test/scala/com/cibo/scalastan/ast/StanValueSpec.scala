@@ -228,6 +228,22 @@ class StanValueSpec extends ScalaStanBaseSpec with ScalaStan {
       val d = StanLocalDeclaration(StanVector(i1), "x").apply(StanValueRange(i1, i2))
       d.emit shouldBe "x[1:2]"
     }
+
+    it("cannot slice a scalar") {
+      val x = StanLocalDeclaration(StanReal(), "x")
+      "x(StanValueRange(1, 2))" shouldNot typeCheck
+    }
+
+    it("can have multiple slices") {
+      val x = StanLocalDeclaration(StanMatrix(5, 5), "x")
+      val slice = x(StanValueRange(1, 2), StanValueRange(3, 4))
+      slice.emit shouldBe "x[1:2,3:4]"
+    }
+
+    it("cannot have multiple slices for a vector") {
+      val x = StanLocalDeclaration(StanVector(5), "x")
+      "x(StanValueRange(1, 2), StanValueRange(3, 4))" shouldNot typeCheck
+    }
   }
 
   describe("multiple indexes") {

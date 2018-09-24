@@ -298,6 +298,13 @@ protected object IsVectorLikeOrArrayVectorLike {
   implicit def isArray[T <: StanVectorLike] = new IsVectorLikeOrArrayVectorLike[StanArray[T]]
 }
 
+@implicitNotFound("${T} not a matrix")
+protected sealed class IsMatrix[T <: StanType] extends TypeCheck
+
+protected object IsMatrix {
+  implicit val isMatrix = new IsMatrix[StanMatrix]
+}
+
 @implicitNotFound("${T} must be 0 or 1 dimensional")
 protected sealed class Is0or1Dimensional[T <: StanType] extends TypeCheck
 

@@ -44,7 +44,10 @@ case class CSE()(implicit val ss: ScalaStan) extends StanTransform[CSEState] {
     case (i1: StanIndexOperator[_, _, _], i2: StanIndexOperator[_, _, _]) if i1.indices.length == i2.indices.length =>
       sameValue(i1.value, i2.value) && i1.indices.zip(i2.indices).forall(i => sameValue(i._1, i._2))
     case (s1: StanSliceOperator[_, _], s2: StanSliceOperator[_, _])                                                 =>
-      sameValue(s1.value, s2.value) && sameValue(s1.slice.start, s2.slice.start) && sameValue(s1.slice.end, s2.slice.end)
+      sameValue(s1.value, s2.value) && s1.slices.length == s2.slices.length &&
+        s1.slices.zip(s2.slices).forall {
+          case (a, b) => sameValue(a.start, b.start) && sameValue(a.end, b.end)
+        }
     case (d1: StanDeclaration[_], d2: StanDeclaration[_])                                                           =>
       d1.name == d2.name
     case (c1: StanConstant[_], c2: StanConstant[_])                                                                 =>

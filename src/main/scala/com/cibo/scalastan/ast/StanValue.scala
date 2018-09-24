@@ -159,7 +159,14 @@ abstract class StanValue[T <: StanType] extends StanNode with Implicits {
       this, Seq(index1, index2, index3, index4))
   }
 
-  def apply(slice: StanValueRange): StanSliceOperator[T, DECL_TYPE] = StanSliceOperator(this, slice)
+  def apply(
+    slice: StanValueRange
+  )(implicit ev: IsCompoundType[T]): StanSliceOperator[T, DECL_TYPE] = StanSliceOperator(this, Seq(slice))
+
+  def apply(
+    slice1: StanValueRange,
+    slice2: StanValueRange
+  )(implicit ev: IsMatrix[T]): StanSliceOperator[T, DECL_TYPE] = StanSliceOperator(this, Seq(slice1, slice2))
 }
 
 trait Incrementable[T <: StanType] { self: StanValue[T] =>
@@ -360,21 +367,21 @@ case class StanIndexOperator[T <: StanType, N <: StanType, D <: StanDeclaration[
 
 case class StanSliceOperator[T <: StanType, D <: StanDeclaration[_]](
   value: StanValue[T],
-  slice: StanValueRange,
+  slices: Seq[StanValueRange],
   id: Int = StanNode.getNextId
 ) extends StanValue[T] {
   type DECL_TYPE = D
   val returnType: T = value.returnType.asInstanceOf[T]
-  def inputs: Seq[StanDeclaration[_ <: StanType]] = value.inputs ++ slice.start.inputs ++ slice.end.inputs
+  def inputs: Seq[StanDeclaration[_ <: StanType]] = value.inputs ++ slices.flatMap(s => s.start.inputs ++ s.end.inputs)
   def outputs: Seq[StanDeclaration[_ <: StanType]] = Seq.empty
-  def children: Seq[StanValue[_ <: StanType]] = Seq[StanValue[_ <: StanType]](value, slice.start, slice.end)
+  def children: Seq[StanValue[_ <: StanType]] = slices.flatMap(s => s.start.children ++ s.end.children) :+ value
   def isDerivedFromData: Boolean =
-    value.isDerivedFromData && slice.start.isDerivedFromData && slice.end.isDerivedFromData
+    value.isDerivedFromData && slices.forall(s => s.start.isDerivedFromData && s.end.isDerivedFromData)
   def export(builder: StanProgramBuilder): Unit = {
     value.export(builder)
-    slice.export(builder)
+    slices.foreach(_.export(builder))
   }
-  def emit: String = s"${value.emit}[${slice.start.emit}:${slice.end.emit}]"
+  def emit: String = value.emit + slices.map(s => s"${s.start.emit}:${s.end.emit}").mkString("[", ",", "]")
 }
 
 case class StanTranspose[T <: StanType, R <: StanType](

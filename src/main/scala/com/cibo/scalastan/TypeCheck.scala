@@ -52,10 +52,10 @@ protected object MultiplicationAllowed {
     def newType(left: V, right: S): V = left
   }
   implicit val matVecMultiplication = new MultiplicationAllowed[StanVector, StanMatrix, StanVector] {
-    def newType(left: StanMatrix, right: StanVector): StanVector = StanVector(left.cols)
+    def newType(left: StanMatrix, right: StanVector): StanVector = StanVector(left.rows)
   }
   implicit val rvMatMultiplication = new MultiplicationAllowed[StanRowVector, StanRowVector, StanMatrix] {
-    def newType(left: StanRowVector, right: StanMatrix): StanRowVector = StanRowVector(right.rows)
+    def newType(left: StanRowVector, right: StanMatrix): StanRowVector = StanRowVector(right.cols)
   }
   implicit val rvVecMultiplication = new MultiplicationAllowed[StanReal, StanRowVector, StanVector] {
     def newType(left: StanRowVector, right: StanVector): StanReal = StanReal()

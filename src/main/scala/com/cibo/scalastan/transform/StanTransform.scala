@@ -122,8 +122,8 @@ abstract class StanTransform[STATE](implicit ss: ScalaStan) {
     case s: StanSliceOperator[T, _]    =>
       for {
         newValue <- handleExpression(s.value)
-        newSlice <- handleRange(s.slice)
-      } yield s.copy(value = newValue, slice = newSlice)
+        newSlices <- State.traverse(s.slices)(handleRange)
+      } yield s.copy(value = newValue, slices = newSlices)
     case _                             => State.pure(v)
   }
 
@@ -255,8 +255,8 @@ abstract class StanTransform[STATE](implicit ss: ScalaStan) {
   ): State[StanValue[T]] = {
     for {
       newValue <- handleExpression(op.value)
-      newSlice <- handleRange(op.slice)
-    } yield op.copy(value = newValue, slice = newSlice)
+      newSlices <- State.traverse(op.slices)(handleRange)
+    } yield op.copy(value = newValue, slices = newSlices)
   }
 
   def handleTranspose[T <: StanType, R <: StanType](tr: StanTranspose[T, R]): State[StanValue[R]] = {

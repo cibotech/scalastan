@@ -32,10 +32,12 @@ case class SplitExpressions()(implicit val ss: ScalaStan) extends StanTransform[
         val newIndex = StanIndexOperator(i.returnType, i.value, newIndices.map(_._1))
         (newIndex, newIndices.flatMap(_._2))
       case s: StanSliceOperator[T, _]    =>
-        val newStart = splitExpression(s.slice.start)
-        val newEnd = splitExpression(s.slice.end)
-        val newSlice = StanSliceOperator(s.value, StanValueRange(newStart._1, newEnd._1))
-        (newSlice, newStart._2 ++ newEnd._2)
+        val newSlices = s.slices.map { slice =>
+          val newStart = splitExpression(slice.start)
+          val newEnd = splitExpression(slice.end)
+          StanValueRange(newStart._1, newEnd._1) -> (newStart._2 ++ newEnd._2)
+        }
+        (StanSliceOperator(s.value, newSlices.map(_._1)), newSlices.flatMap(_._2))
       case x                             => (x, Seq.empty)
     }
   }
@@ -141,11 +143,14 @@ case class SplitExpressions()(implicit val ss: ScalaStan) extends StanTransform[
     case s: StanSliceOperator[T, _] =>
       val temp = StanLocalDeclaration(s.returnType, ss.newName, derivedFromData = s.isDerivedFromData)
       val decl = StanInlineDeclaration(temp)
-      val newStart = splitExpression(s.slice.start)
-      val newEnd = splitExpression(s.slice.end)
-      val newSlice = StanSliceOperator(s.value, StanValueRange(newStart._1, newEnd._1))
-      val statement = StanAssignment(temp, newSlice)
-      (newSlice, newStart._2 ++ newEnd._2 :+ decl :+ statement)
+      val newSlices = s.slices.map { slice =>
+        val newStart = splitExpression(slice.start)
+        val newEnd = splitExpression(slice.end)
+        StanValueRange(newStart._1, newEnd._1) -> (newStart._2 ++ newEnd._2)
+      }
+      val newValue = StanSliceOperator(s.value, newSlices.map(_._1))
+      val statement = StanAssignment(temp, newValue)
+      (newValue, newSlices.flatMap(_._2) :+ decl :+ statement)
     case op: StanBinaryOperator[T, _, _]             =>
       val temp = StanLocalDeclaration(op.returnType, ss.newName, derivedFromData = op.isDerivedFromData)
       val decl = StanInlineDeclaration(temp)

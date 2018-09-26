@@ -355,7 +355,7 @@ protected trait StanDistributions {
   )(
     implicit ev: Vectorized2[N, S]
   ): StanContinuousDistribution[R, StanReal] =
-    StanContinuousDistribution("scaled_inv_chi_suqare", StanReal(), args(nu, sigma))
+    StanContinuousDistribution("scaled_inv_chi_square", StanReal(), args(nu, sigma))
 
   def skew_normal[X <: StanType: ContinuousType, O <: StanType: ContinuousType, A <: StanType: ContinuousType, R <: StanType](
     xi: StanValue[X],

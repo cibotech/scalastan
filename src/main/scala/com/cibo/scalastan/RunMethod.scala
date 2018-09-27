@@ -140,7 +140,7 @@ object RunMethod {
     engine: Engine = Nuts(),
     metric: Metric = DiagE,
     metricFile: String = "",
-    stepsize: Int = 1,
+    stepsize: Double = 1.0,
     stepsizeJitter: Int = 0
   ) extends SampleAlgorithm("hmc") {
     def arguments: Seq[String] = build(

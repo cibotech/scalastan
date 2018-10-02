@@ -19,6 +19,9 @@ trait StanModel extends StanCodeBlock with StanContext { self =>
   // so that we can track them and generate them when the model is generated.
   private val generatedQuantities: ArrayBuffer[GeneratedQuantity[_]] = new ArrayBuffer[GeneratedQuantity[_]]()
 
+  // Code loaded from a file or string.
+  private var rawCode: Option[String] = None
+
   def data[T <: StanType](typeConstructor: T)(implicit name: sourcecode.Name): StanDataDeclaration[T] = {
     StanDataDeclaration[T](typeConstructor, fixName(name.value))
   }
@@ -204,7 +207,12 @@ trait StanModel extends StanCodeBlock with StanContext { self =>
   // Log probability function.
   final protected def target: StanTargetValue = StanTargetValue()
 
-  def emit(writer: PrintWriter): Unit = TransformedModel(this).emit(writer)
+  def emit(writer: PrintWriter): Unit = {
+    rawCode match {
+      case Some(raw) => writer.print(raw)
+      case None      => TransformedModel(this).emit(writer)
+    }
+  }
 
   private[scalastan] def program: StanProgram = {
     generatedQuantities.foreach(_code.append)
@@ -227,7 +235,12 @@ trait StanModel extends StanCodeBlock with StanContext { self =>
       transforms.foldLeft(model.program) { (prev, t) => t.run(prev) }
     }
 
-    override final def emit(writer: PrintWriter): Unit = program.emit(writer)
+    override final def emit(writer: PrintWriter): Unit = {
+      model.rawCode match {
+        case Some(raw) => model.emit(writer)
+        case None      => program.emit(writer)
+      }
+    }
 
     override final def compile(implicit compiler: StanCompiler): CompiledModel = compiler.compile(this)
   }
@@ -235,6 +248,15 @@ trait StanModel extends StanCodeBlock with StanContext { self =>
   def transform(t: StanTransform[_]): StanModel = TransformedModel(this).transform(t)
 
   def compile(implicit compiler: StanCompiler): CompiledModel = TransformedModel(this).compile(compiler)
+
+  /** Create a model from Stan code. */
+  def loadFromString(code: String): Unit = {
+    require(rawCode.isEmpty, "Code loaded multiple times")
+    rawCode = Some(code)
+  }
+
+  /** Create a model from a Stan file. */
+  def loadFromFile(path: String): Unit = loadFromString(scala.io.Source.fromFile(path).getLines.mkString("\n"))
 
   implicit def dataTransform2Value[T <: StanType](
     transform: StanModel#TransformedData[T]
@@ -250,21 +272,5 @@ trait StanModel extends StanCodeBlock with StanContext { self =>
 }
 
 object StanModel {
-
-  case class BlackBoxModel private (
-    private val model: String
-  ) extends StanModel {
-
-    override def emit(pw: PrintWriter): Unit = pw.write(model)
-
-    override final def compile(implicit compiler: StanCompiler): CompiledModel = compiler.compile(this)
-  }
-
-  /** Create a model from Stan code. */
-  def loadFromString(model: String): StanModel = BlackBoxModel(model)
-
-  /** Create a model from a Stan file. */
-  def loadFromFile(path: String): StanModel = BlackBoxModel(scala.io.Source.fromFile(path).getLines.mkString("\n"))
-
   implicit def compile(model: StanModel)(implicit compiler: StanCompiler): CompiledModel = model.compile(compiler)
 }

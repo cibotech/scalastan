@@ -52,7 +52,7 @@ case class SoftKMeans(
     }
   }
 
-  def compile(implicit compiler: StanCompiler): CompiledModel = model.compile
+  override def compile(implicit compiler: StanCompiler): CompiledModel = model.compile
     .withData(k, clusterCount)
     .withData(y, observations)
 

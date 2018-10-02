@@ -10,11 +10,11 @@
 
 package com.cibo.scalastan.transform
 
-import com.cibo.scalastan.ScalaStan
+import com.cibo.scalastan.StanContext
 import com.cibo.scalastan.ast.{StanBlock, StanInlineDeclaration, StanProgram, StanStatement}
 
 // Remove unused inline declarations.
-case class RemoveUnusedDecls()(implicit ss: ScalaStan) extends StanTransform[Set[Int]] {
+case class RemoveUnusedDecls()(implicit context: StanContext) extends StanTransform[Set[Int]] {
 
   def initialState: Set[Int] = Set.empty
 

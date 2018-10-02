@@ -10,13 +10,13 @@
 
 package com.cibo.scalastan.transform
 
-import com.cibo.scalastan.{ScalaStan, StanType}
+import com.cibo.scalastan.{StanContext, StanType}
 import com.cibo.scalastan.ast.{StanDeclaration, StanStatement, StanValue}
 
 case class SubstituteVariables(
   substitutions: Map[(Int, StanDeclaration[_]), StanDeclaration[_]]
 )(
-  implicit ss: ScalaStan
+  implicit context: StanContext
 ) extends StanTransform[Int] {
 
   override def initialState: Int = -1

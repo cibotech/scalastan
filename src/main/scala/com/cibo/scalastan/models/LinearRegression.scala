@@ -89,7 +89,7 @@ case class LinearRegression(
   val beta: StanParameterDeclaration[StanVector] = model.beta
   val sigma: StanParameterDeclaration[StanReal] = model.sigma
 
-  def compile(implicit compiler: StanCompiler): CompiledModel = model.compile
+  override def compile(implicit compiler: StanCompiler): CompiledModel = model.compile
     .withData(model.x, xs)
     .withData(model.y, ys)
 

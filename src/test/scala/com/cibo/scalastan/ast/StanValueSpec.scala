@@ -3,7 +3,7 @@ package com.cibo.scalastan.ast
 import com.cibo.scalastan._
 import scala.language.existentials
 
-class StanValueSpec extends ScalaStanBaseSpec with ScalaStan {
+class StanValueSpec extends ScalaStanBaseSpec {
 
   describe("+") {
     describe("ints") {
@@ -131,14 +131,14 @@ class StanValueSpec extends ScalaStanBaseSpec with ScalaStan {
 
   describe("implicit conversion") {
     it("can convert int to real") {
-      val model = new Model {
+      val model = new StanModel {
         local(real()) := 1
       }
       checkCode(model, "v# = 1;")
     }
 
     it("can not convert real to int") {
-      "new Model { local(int()) := 1.0 }" shouldNot compile
+      "new StanModel { local(int()) := 1.0 }" shouldNot compile
     }
   }
 
@@ -178,7 +178,7 @@ class StanValueSpec extends ScalaStanBaseSpec with ScalaStan {
     }
 
     it("can assign to a slice of a matrix") {
-      val model = new Model {
+      val model = new StanModel {
         val d = local(matrix(1, 2))
         val rv = local(rowVector(2))
         d(1) := rv
@@ -187,7 +187,7 @@ class StanValueSpec extends ScalaStanBaseSpec with ScalaStan {
     }
 
     it("can set vector") {
-      val model = new Model {
+      val model = new StanModel {
         val a = local(vector(5))
         a(2) := 2
       }
@@ -195,7 +195,7 @@ class StanValueSpec extends ScalaStanBaseSpec with ScalaStan {
     }
 
     it("can set matrix") {
-      val model = new Model {
+      val model = new StanModel {
         val a = local(matrix(5, 6))
         a(2, 3) := 4
       }
@@ -223,6 +223,7 @@ class StanValueSpec extends ScalaStanBaseSpec with ScalaStan {
 
   describe("slice") {
     it("can be read") {
+      implicit val context = new StanModel {}
       val i1 = StanConstant[StanInt](StanInt(), 1)
       val i2 = StanConstant[StanInt](StanInt(), 2)
       val d = StanLocalDeclaration(StanVector(i1), "x").apply(StanValueRange(i1, i2))
@@ -235,6 +236,7 @@ class StanValueSpec extends ScalaStanBaseSpec with ScalaStan {
     }
 
     it("can have multiple slices") {
+      implicit val context = new StanModel {}
       val x = StanLocalDeclaration(StanMatrix(5, 5), "x")
       val slice = x(StanValueRange(1, 2), StanValueRange(3, 4))
       slice.emit shouldBe "x[1:2,3:4]"
@@ -266,7 +268,7 @@ class StanValueSpec extends ScalaStanBaseSpec with ScalaStan {
 
   describe("ternary operator") {
     it("emits the right thing") {
-      val model = new Model {
+      val model = new StanModel {
         val cond = local(int())
         val left = local(real())
         val right = local(real())

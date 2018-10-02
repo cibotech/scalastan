@@ -10,10 +10,10 @@
 
 package com.cibo.scalastan.transform
 
-import com.cibo.scalastan.{ScalaStan, StanType}
+import com.cibo.scalastan.{StanContext, StanType}
 import com.cibo.scalastan.ast._
 
-abstract class StanTransform[STATE](implicit ss: ScalaStan) {
+abstract class StanTransform[STATE](implicit model: StanContext) {
 
   case class State[+T](run: STATE => (T, STATE)) {
     def flatMap[B](f: T => State[B]): State[B] = State { s =>

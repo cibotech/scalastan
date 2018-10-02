@@ -10,11 +10,11 @@
 
 package com.cibo.scalastan.transform
 
-import com.cibo.scalastan.ScalaStan
+import com.cibo.scalastan.StanContext
 import com.cibo.scalastan.ast._
 
 // Make sure all "break" and "continue" statements are in loops.
-class LoopChecker(implicit val ss: ScalaStan) extends StanTransform[Int] {
+class LoopChecker(implicit context: StanContext) extends StanTransform[Int] {
 
   def initialState: Int = 0
 

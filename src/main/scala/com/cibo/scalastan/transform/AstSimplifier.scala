@@ -9,11 +9,11 @@
  */
 
 package com.cibo.scalastan.transform
-import com.cibo.scalastan.ScalaStan
+import com.cibo.scalastan.StanContext
 import com.cibo.scalastan.ast.{StanBlock, StanForLoop, StanIfStatement, StanStatement}
 
 // Simplify the AST (remove empty blocks, etc.).
-case class AstSimplifier()(implicit val ss: ScalaStan) extends StanTransform[Unit] {
+case class AstSimplifier()(implicit val context: StanContext) extends StanTransform[Unit] {
 
   def initialState: Unit = ()
 

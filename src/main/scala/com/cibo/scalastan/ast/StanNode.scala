@@ -37,10 +37,10 @@ case class StanValueRange(
   start: StanValue[StanInt],
   end: StanValue[StanInt],
   id: Int = StanNode.getNextId
-)(implicit ss: ScalaStan) extends StanNode {
+)(implicit context: StanContext) extends StanNode {
 
-  private[scalastan] def inputs: Seq[StanDeclaration[_ <: StanType]] = start.inputs ++ end.inputs
-  private[scalastan] def outputs: Seq[StanDeclaration[_ <: StanType]] = Seq.empty
+  def inputs: Seq[StanDeclaration[_ <: StanType]] = start.inputs ++ end.inputs
+  def outputs: Seq[StanDeclaration[_ <: StanType]] = Seq.empty
 
   private[scalastan] def export(builder: StanProgramBuilder): Unit = {
     start.export(builder)
@@ -50,7 +50,7 @@ case class StanValueRange(
   // This foreach will get called automatically when a for comprehension is used with ValueRange.
   def foreach(f: StanValue[StanInt] => Unit)(implicit ev: TemporaryValue[StanInt], builder: StanProgramBuilder): Unit = {
     val temp = ev.create()
-    val decl = StanLocalDeclaration[StanInt](temp, ss.newName)
+    val decl = StanLocalDeclaration[StanInt](temp, context.newName)
     builder.enter()
     f(decl)
     builder.leave(children => StanForLoop(decl, this, StanBlock(children)))

@@ -112,7 +112,7 @@ object CmdStanCompiler extends StanCompiler with LazyLogging {
     }
   }
 
-  def generate(model: ScalaStan#Model, maxCacheSize: Int): String = {
+  def generate(model: StanModel, maxCacheSize: Int): String = {
 
     val writer = new StringWriter()
     model.emit(new PrintWriter(writer))
@@ -137,14 +137,14 @@ object CmdStanCompiler extends StanCompiler with LazyLogging {
     modelHash
   }
 
-  def compile(ss: ScalaStan, model: ScalaStan#Model): CompiledModel = {
+  def compile(model: StanModel): CompiledModel = {
     val stanPath = stanHome.getOrElse {
       throw new IllegalStateException("Could not locate Stan.")
     }
     logger.info(s"found stan in $stanPath")
 
     model.synchronized {
-      val modelHash = generate(model, ss.maxCacheSize)
+      val modelHash = generate(model, model.maxCacheSize)
       val dir = modelDir(modelHash)
       if (new File(s"${dir.getPath}/$modelExecutable").canExecute) {
         logger.info(s"found existing executable: ${dir.getPath}/$modelExecutable")

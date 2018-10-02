@@ -10,7 +10,7 @@
 
 package com.cibo.scalastan.transform
 
-import com.cibo.scalastan.{ScalaStan, StanType}
+import com.cibo.scalastan.{StanContext, StanType}
 import com.cibo.scalastan.analysis.{ReachingDefs, UseDefinitions}
 import com.cibo.scalastan.ast._
 
@@ -20,7 +20,7 @@ case class CopyPropagationState(
 )
 
 // Propagate copies to eliminate unnecessary temporaries.
-case class CopyPropagation()(implicit val ss: ScalaStan) extends StanTransform[CopyPropagationState] {
+case class CopyPropagation()(implicit val context: StanContext) extends StanTransform[CopyPropagationState] {
 
   def initialState: CopyPropagationState = CopyPropagationState()
 

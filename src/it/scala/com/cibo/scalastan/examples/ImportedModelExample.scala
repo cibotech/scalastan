@@ -8,7 +8,7 @@ object ImportedModelExample extends App with ScalaStan {
   val x = data(vector(n))
 
   val mu = parameter(real())
-  val sigma = parameter(real(lower = 0))
+  val sigma = parameter(real(lower = 0.0))
 
   val model = Model.loadFromString(
     s"""

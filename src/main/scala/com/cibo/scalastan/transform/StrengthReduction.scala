@@ -11,9 +11,9 @@
 package com.cibo.scalastan.transform
 
 import com.cibo.scalastan.ast.{StanBinaryOperator, StanCall, StanValue}
-import com.cibo.scalastan.{ScalaStan, StanInt, StanReal, StanType}
+import com.cibo.scalastan._
 
-case class StrengthReduction()(implicit ss: ScalaStan) extends StanTransform[Unit] {
+case class StrengthReduction()(implicit context: StanContext) extends StanTransform[Unit] {
 
   def initialState: Unit = ()
 

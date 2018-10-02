@@ -98,7 +98,7 @@ case class Horseshoe(
     y ~ stan.normal(f, sigma)
   }
 
-  def compile(implicit compiler: StanCompiler): CompiledModel = model.compile
+  override def compile(implicit compiler: StanCompiler): CompiledModel = model.compile
     .withData(scaleIntercept, scaleInterceptPrior)
     .withData(nuGlobal, nuGlobalPrior)
     .withData(nuLocal, nuLocalPrior)

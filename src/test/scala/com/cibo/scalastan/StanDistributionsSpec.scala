@@ -1,10 +1,10 @@
 package com.cibo.scalastan
 
-class StanDistributionsSpec extends ScalaStanBaseSpec with ScalaStan {
+class StanDistributionsSpec extends ScalaStanBaseSpec {
   describe("poisson") {
     it("should work with integers") {
-      val x = data(int())
-      val model = new Model {
+      val model = new StanModel {
+        val x = data(int())
         x ~ stan.poisson(1.0)
       }
       checkCode(model, "model { x ~ poisson(1.0); }")
@@ -22,10 +22,10 @@ class StanDistributionsSpec extends ScalaStanBaseSpec with ScalaStan {
 
   describe("inv_wishart") {
     it("should work") {
-      val nu = parameter(real())
-      val sigma = parameter(matrix(5, 5))
-      val y = data(matrix(5, 5))
-      val model = new Model {
+      val model = new StanModel {
+        val nu = parameter(real())
+        val sigma = parameter(matrix(5, 5))
+        val y = data(matrix(5, 5))
         y ~ stan.inv_wishart(nu, sigma)
       }
       checkCode(model, "model { y ~ inv_wishart(nu, sigma); }")
@@ -34,8 +34,8 @@ class StanDistributionsSpec extends ScalaStanBaseSpec with ScalaStan {
 
   describe("lkj_corr_cholesky") {
     it("should work") {
-      val y = data(matrix(5, 5))
-      val model = new Model {
+      val model = new StanModel {
+        val y = data(matrix(5, 5))
         y ~ stan.lkj_corr_cholesky(5, 2)
       }
       checkCode(model, "model { y ~ lkj_corr_cholesky(2); }")
@@ -44,14 +44,14 @@ class StanDistributionsSpec extends ScalaStanBaseSpec with ScalaStan {
 
   describe("multi_normal") {
     it("should vectorize") {
-      val k = data(int())
-      val j = data(int())
-      val n = data(int())
-      val x = data(vector(n)(j))
-      val y = data(vector(n)(k))
-      val beta = parameter(matrix(k, j))
-      val sigma = parameter(covMatrix(k))
-      val model = new Model {
+      val model = new StanModel {
+        val k = data(int())
+        val j = data(int())
+        val n = data(int())
+        val x = data(vector(n)(j))
+        val y = data(vector(n)(k))
+        val beta = parameter(matrix(k, j))
+        val sigma = parameter(covMatrix(k))
         val mu = local(vector(k)(n))
         for (n <- range(1, n)) {
           mu(n) := beta * x(n)
@@ -63,14 +63,14 @@ class StanDistributionsSpec extends ScalaStanBaseSpec with ScalaStan {
     }
 
     it("should vectorize matrices") {
-      val k = data(int())
-      val j = data(int())
-      val n = data(int())
-      val y = data(matrix(n, k))
-      val mu = parameter(vector(k))
-      val beta = parameter(matrix(k, j))
-      val sigma = parameter(covMatrix(k))
-      val model = new Model {
+      val model = new StanModel {
+        val k = data(int())
+        val j = data(int())
+        val n = data(int())
+        val y = data(matrix(n, k))
+        val mu = parameter(vector(k))
+        val beta = parameter(matrix(k, j))
+        val sigma = parameter(covMatrix(k))
         y(1) ~ stan.multi_normal(mu, sigma)
       }
       checkCode(model, "y[1] ~ multi_normal(mu, sigma);")

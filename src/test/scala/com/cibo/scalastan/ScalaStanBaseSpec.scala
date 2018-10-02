@@ -41,7 +41,7 @@ trait ScalaStanBaseSpec extends FunSpec with Matchers {
   }
 
   implicit object MockCompiler extends StanCompiler {
-    def compile(ss: ScalaStan, model: ScalaStan#Model): CompiledModel = CompiledModel(
+    def compile(model: StanModel): CompiledModel = CompiledModel(
       model = model,
       runner = MockRunner()
     )
@@ -65,7 +65,7 @@ trait ScalaStanBaseSpec extends FunSpec with Matchers {
 
   // Compare the code output of the model with a template.
   // Spaces are ignored and "#" in the template matches any integer.
-  def checkCode(model: ScalaStan#Model, template: String): Unit = {
+  def checkCode(model: StanModel, template: String): Unit = {
     val sw = new StringWriter()
     model.emit(new PrintWriter(sw))
     sw.close()

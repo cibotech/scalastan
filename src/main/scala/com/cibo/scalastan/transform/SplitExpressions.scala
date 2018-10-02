@@ -11,12 +11,11 @@
 package com.cibo.scalastan.transform
 
 import scala.language.existentials
-
-import com.cibo.scalastan.{ScalaStan, StanType}
+import com.cibo.scalastan.{StanContext, StanType}
 import com.cibo.scalastan.ast._
 
 // Break apart expressions into one operator per statement.
-case class SplitExpressions()(implicit val ss: ScalaStan) extends StanTransform[Unit] {
+case class SplitExpressions()(implicit val context: StanContext) extends StanTransform[Unit] {
 
   def initialState: Unit = ()
 
@@ -53,7 +52,7 @@ case class SplitExpressions()(implicit val ss: ScalaStan) extends StanTransform[
         val newStatement = StanAssignment(lhsValue, rhsValue, a.op)
         State.pure(StanBlock(lhsStatements ++ rhsStatements :+ newStatement))
       case _ =>
-        val temp = StanLocalDeclaration(rhsValue.returnType, ss.newName, derivedFromData = rhsValue.isDerivedFromData)
+        val temp = StanLocalDeclaration(rhsValue.returnType, context.newName, derivedFromData = rhsValue.isDerivedFromData)
         val decl = StanInlineDeclaration(temp)
         val load = StanAssignment(temp, rhsValue)
         val store = StanAssignment(lhsValue, temp)
@@ -134,14 +133,14 @@ case class SplitExpressions()(implicit val ss: ScalaStan) extends StanTransform[
 
   def splitExpression[T <: StanType](expr: StanValue[T]): (StanValue[T], Seq[StanStatement]) = expr match {
     case i: StanIndexOperator[_, T, _] =>
-      val temp = StanLocalDeclaration(i.returnType, ss.newName, derivedFromData = i.isDerivedFromData)
+      val temp = StanLocalDeclaration(i.returnType, context.newName, derivedFromData = i.isDerivedFromData)
       val decl = StanInlineDeclaration(temp)
       val newIndices = i.indices.map(x => splitExpression(x))
       val newIndex = StanIndexOperator(i.returnType, i.value, newIndices.map(_._1))
       val statement = StanAssignment(temp, newIndex)
       (temp, newIndices.flatMap(_._2) :+ decl :+ statement)
     case s: StanSliceOperator[T, _] =>
-      val temp = StanLocalDeclaration(s.returnType, ss.newName, derivedFromData = s.isDerivedFromData)
+      val temp = StanLocalDeclaration(s.returnType, context.newName, derivedFromData = s.isDerivedFromData)
       val decl = StanInlineDeclaration(temp)
       val newSlices = s.slices.map { slice =>
         val newStart = splitExpression(slice.start)
@@ -152,7 +151,7 @@ case class SplitExpressions()(implicit val ss: ScalaStan) extends StanTransform[
       val statement = StanAssignment(temp, newValue)
       (newValue, newSlices.flatMap(_._2) :+ decl :+ statement)
     case op: StanBinaryOperator[T, _, _]             =>
-      val temp = StanLocalDeclaration(op.returnType, ss.newName, derivedFromData = op.isDerivedFromData)
+      val temp = StanLocalDeclaration(op.returnType, context.newName, derivedFromData = op.isDerivedFromData)
       val decl = StanInlineDeclaration(temp)
       val (leftValue, leftStatements) = splitExpression(op.left)
       val (rightValue, rightStatements) = splitExpression(op.right)
@@ -160,7 +159,7 @@ case class SplitExpressions()(implicit val ss: ScalaStan) extends StanTransform[
       val statements = leftStatements ++ rightStatements :+ decl :+ statement
       (temp, statements)
     case op: StanUnaryOperator[_, T] =>
-      val temp = StanLocalDeclaration(op.returnType, ss.newName, derivedFromData = op.isDerivedFromData)
+      val temp = StanLocalDeclaration(op.returnType, context.newName, derivedFromData = op.isDerivedFromData)
       val decl = StanInlineDeclaration(temp)
       val (rightValue, rightStatements) = splitExpression(op.right)
       val statement = StanAssignment(temp, op.copy(right = rightValue))

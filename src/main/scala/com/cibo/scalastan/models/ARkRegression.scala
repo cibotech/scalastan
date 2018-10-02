@@ -87,7 +87,7 @@ case class ARkRegression(
   private lazy val sortedYs = sortedIndices.map(ys.apply)
   private lazy val groupCount = groupingFactor.max
 
-  def compile(implicit compiler: StanCompiler): CompiledModel = model.compile
+  override def compile(implicit compiler: StanCompiler): CompiledModel = model.compile
     .withData(x, sortedXs)
     .withData(y, sortedYs)
     .withData(group, sortedGroups)

@@ -11,7 +11,7 @@
 package com.cibo.scalastan.transform
 
 import com.cibo.scalastan.analysis.AvailableExpressions
-import com.cibo.scalastan.{ScalaStan, StanType}
+import com.cibo.scalastan.{ScalaStan, StanContext, StanType}
 import com.cibo.scalastan.ast._
 
 case class CSEState(
@@ -21,7 +21,7 @@ case class CSEState(
 )
 
 // Common subexpression elimination.
-case class CSE()(implicit val ss: ScalaStan) extends StanTransform[CSEState] {
+case class CSE()(implicit val context: StanContext) extends StanTransform[CSEState] {
 
   def initialState: CSEState = CSEState()
 

@@ -69,7 +69,7 @@ case class NaiveBayes(
 
   private def defaultWordPrior: Seq[Double] = Seq.fill[Double](wordCount)(1.0 / wordCount)
 
-  def compile(implicit compiler: StanCompiler): CompiledModel = model.compile
+  override def compile(implicit compiler: StanCompiler): CompiledModel = model.compile
     .withData(k, topicCount)
     .withData(v, wordCount)
     .withData(m, documentCount)

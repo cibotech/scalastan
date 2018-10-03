@@ -13,7 +13,7 @@ package com.cibo.scalastan.transform
 import com.cibo.scalastan.{StanContext, StanType}
 import com.cibo.scalastan.ast._
 
-abstract class StanTransform[STATE](implicit model: StanContext) {
+trait StanTransform[STATE] {
 
   case class State[+T](run: STATE => (T, STATE)) {
     def flatMap[B](f: T => State[B]): State[B] = State { s =>
@@ -46,9 +46,11 @@ abstract class StanTransform[STATE](implicit model: StanContext) {
 
   def initialState: STATE
 
-  def run(program: StanProgram): StanProgram = handleProgram(program).run(initialState)._1
+  def run(program: StanProgram)(implicit context: StanContext): StanProgram = {
+    handleProgram(program).run(initialState)._1
+  }
 
-  def handleProgram(program: StanProgram): State[StanProgram] = {
+  def handleProgram(program: StanProgram)(implicit context: StanContext): State[StanProgram] = {
     for {
       newFuncs <- State.traverse(program.functions)(handleFunction)
       newTransData <- State.traverse(program.transformedData)(handleTransformedData)
@@ -64,27 +66,33 @@ abstract class StanTransform[STATE](implicit model: StanContext) {
     )
   }
 
-  def handleFunction(function: StanFunctionDeclaration): State[StanFunctionDeclaration] = {
+  def handleFunction(
+    function: StanFunctionDeclaration
+  )(implicit context: StanContext): State[StanFunctionDeclaration] = {
     handleRoot(function.code).map(newCode => function.copy(code = newCode))
   }
 
-  def handleTransformedData(transform: StanTransformedData): State[StanTransformedData] = {
+  def handleTransformedData(
+    transform: StanTransformedData
+  )(implicit context: StanContext): State[StanTransformedData] = {
     handleRoot(transform.code).map(newCode => transform.copy(code = newCode))
   }
 
   def handleTransformedParameter(
     transform: StanTransformedParameter
-  ): State[StanTransformedParameter] = handleRoot(transform.code).map(newCode => transform.copy(code = newCode))
+  )(implicit context: StanContext): State[StanTransformedParameter] = {
+    handleRoot(transform.code).map(newCode => transform.copy(code = newCode))
+  }
 
-  def handleGeneratedQuantity(g: StanGeneratedQuantity): State[StanGeneratedQuantity] = {
+  def handleGeneratedQuantity(g: StanGeneratedQuantity)(implicit context: StanContext): State[StanGeneratedQuantity] = {
     handleRoot(g.code).map(newCode => g.copy(code = newCode))
   }
 
-  def handleModel(statement: StanStatement): State[StanStatement] = handleRoot(statement)
+  def handleModel(statement: StanStatement)(implicit context: StanContext): State[StanStatement] = handleRoot(statement)
 
-  def handleRoot(statement: StanStatement): State[StanStatement] = dispatch(statement)
+  def handleRoot(statement: StanStatement)(implicit context: StanContext): State[StanStatement] = dispatch(statement)
 
-  def dispatch(statement: StanStatement): State[StanStatement] = statement match {
+  def dispatch(statement: StanStatement)(implicit context: StanContext): State[StanStatement] = statement match {
     case t: StanBlock                 => handleBlock(t)
     case v: StanValueStatement        => handleValue(v)
     case a: StanAssignment            => handleAssignment(a)
@@ -98,14 +106,14 @@ abstract class StanTransform[STATE](implicit model: StanContext) {
     case d: StanInlineDeclaration     => handleDecl(d)
   }
 
-  def dispatchOption(statementOpt: Option[StanStatement]): State[Option[StanStatement]] = {
+  def dispatchOption(statementOpt: Option[StanStatement])(implicit context: StanContext): State[Option[StanStatement]] = {
     statementOpt match {
       case Some(statement) => dispatch(statement).map(x => Some(x))
       case None            => State.pure(None)
     }
   }
 
-  def handleRange(v: StanValueRange): State[StanValueRange] = {
+  def handleRange(v: StanValueRange)(implicit context: StanContext): State[StanValueRange] = {
     for {
       newStart <- handleExpression(v.start)
       newEnd <- handleExpression(v.end)
@@ -113,7 +121,7 @@ abstract class StanTransform[STATE](implicit model: StanContext) {
   }
 
   // Process the LHS of an assignment or sample.
-  private def handleLHS[T <: StanType](v: StanValue[T]): State[StanValue[T]] = v match {
+  private def handleLHS[T <: StanType](v: StanValue[T])(implicit context: StanContext): State[StanValue[T]] = v match {
     case i: StanIndexOperator[_, T, _] =>
       for {
         newValue <- handleExpression(i.value)
@@ -127,62 +135,64 @@ abstract class StanTransform[STATE](implicit model: StanContext) {
     case _                             => State.pure(v)
   }
 
-  def handleBlock(b: StanBlock): State[StanStatement] = {
+  def handleBlock(b: StanBlock)(implicit context: StanContext): State[StanStatement] = {
     State.traverse(b.children)(dispatch).map { newChildren =>
       b.copy(children = newChildren)
     }
   }
 
-  def handleValue(v: StanValueStatement): State[StanStatement] = State.pure(v)
+  def handleValue(v: StanValueStatement)(implicit context: StanContext): State[StanStatement] = State.pure(v)
 
-  def handleAssignment(a: StanAssignment): State[StanStatement] = {
+  def handleAssignment(a: StanAssignment)(implicit context: StanContext): State[StanStatement] = {
     for {
       newLhs <- handleExpression(a.lhs)
       newRhs <- handleExpression(a.rhs)
     } yield a.copy(lhs = newLhs, rhs = newRhs)
   }
 
-  def handleFor(f: StanForLoop): State[StanStatement] = {
+  def handleFor(f: StanForLoop)(implicit context: StanContext): State[StanStatement] = {
     for {
       newRange <- handleRange(f.range)
       newBody <- dispatch(f.body)
     } yield f.copy(range = newRange, body = newBody)
   }
 
-  def handleWhile(w: StanWhileLoop): State[StanStatement] = {
+  def handleWhile(w: StanWhileLoop)(implicit context: StanContext): State[StanStatement] = {
     for {
       newCond <- handleExpression(w.cond)
       newBody <- dispatch(w.body)
     } yield w.copy(cond = newCond, body = newBody)
   }
 
-  def handleIf(i: StanIfStatement): State[StanStatement] = {
+  def handleIf(i: StanIfStatement)(implicit context: StanContext): State[StanStatement] = {
     for {
       newConds <- State.traverse(i.conds)(c => dispatch(c._2).map(x => c._1 -> x))
       newOtherwise <- dispatchOption(i.otherwise)
     } yield i.copy(conds = newConds, otherwise = newOtherwise)
   }
 
-  def handleBreak(b: StanBreakStatement): State[StanStatement] = State.pure(b)
+  def handleBreak(b: StanBreakStatement)(implicit context: StanContext): State[StanStatement] = State.pure(b)
 
-  def handleContinue(c: StanContinueStatement): State[StanStatement] = State.pure(c)
+  def handleContinue(c: StanContinueStatement)(implicit context: StanContext): State[StanStatement] = State.pure(c)
 
-  def handleSample[T <: StanType, R <: StanType](s: StanSampleStatement[T, R]): State[StanStatement] = {
+  def handleSample[T <: StanType, R <: StanType](
+    s: StanSampleStatement[T, R]
+  )(implicit context: StanContext): State[StanStatement] = {
     for {
       newLhs <- handleLHS(s.left)
       newRhs <- handleDistribution(s.right)
     } yield s.copy(left = newLhs, right = newRhs)
   }
 
-  def handleReturn(r: StanReturnStatement): State[StanStatement] = {
+  def handleReturn(r: StanReturnStatement)(implicit context: StanContext): State[StanStatement] = {
     handleExpression(r.result).map(newResult => r.copy(result = newResult))
   }
 
-  def handleDecl(d: StanInlineDeclaration): State[StanStatement] = State.pure(d)
+  def handleDecl(d: StanInlineDeclaration)(implicit context: StanContext): State[StanStatement] = State.pure(d)
 
   private def handleDistribution[T <: StanType, R <: StanType](
     dist: StanDistribution[T, R]
-  ): State[StanDistribution[T, R]] = {
+  )(implicit context: StanContext): State[StanDistribution[T, R]] = {
     State.traverse(dist.args)(handleExpression(_)).map { newArgs =>
       dist match {
         case c: StanContinuousDistribution[T, R]          => c.copy(args = newArgs)
@@ -192,7 +202,9 @@ abstract class StanTransform[STATE](implicit model: StanContext) {
     }
   }
 
-  def handleExpression[T <: StanType](expr: StanValue[T]): State[StanValue[T]] = expr match {
+  def handleExpression[T <: StanType](
+    expr: StanValue[T]
+  )(implicit context: StanContext): State[StanValue[T]] = expr match {
     case call: StanCall[T] => handleCall(call)
     case gt: StanGetTarget => handleGetTarget(gt)
     case tv: StanTargetValue => handleTargetValue(tv)
@@ -211,30 +223,34 @@ abstract class StanTransform[STATE](implicit model: StanContext) {
     case un: StanUnknown[T]              => handleUnknown(un)
   }
 
-  def handleCall[T <: StanType](call: StanCall[T]): State[StanValue[T]] = {
+  def handleCall[T <: StanType](call: StanCall[T])(implicit context: StanContext): State[StanValue[T]] = {
     State.traverse(call.args)(handleExpression(_)).map(newArgs => call.copy(args = newArgs))
   }
 
-  def handleGetTarget[T <: StanType](gt: StanGetTarget): State[StanValue[T]] =
+  def handleGetTarget[T <: StanType](gt: StanGetTarget)(implicit context: StanContext): State[StanValue[T]] =
     State.pure(gt.asInstanceOf[StanValue[T]])
 
-  def handleTargetValue[T <: StanType](tv: StanTargetValue): State[StanValue[T]] =
+  def handleTargetValue[T <: StanType](tv: StanTargetValue)(implicit context: StanContext): State[StanValue[T]] =
     State.pure(tv.asInstanceOf[StanValue[T]])
 
-  def handleDistributionNode[T <: StanType](d: StanDistributionNode[_ <: StanType]): State[StanValue[T]] = {
+  def handleDistributionNode[T <: StanType](
+    d: StanDistributionNode[_ <: StanType]
+  )(implicit context: StanContext): State[StanValue[T]] = {
     for {
       newY <- handleExpression(d.y)
       newArgs <- State.traverse(d.args)(handleExpression(_))
     } yield d.copy(y = newY, args = newArgs).asInstanceOf[StanValue[T]]
   }
 
-  def handleUnaryOperator[T <: StanType, R <: StanType](op: StanUnaryOperator[T, R]): State[StanValue[R]] = {
+  def handleUnaryOperator[T <: StanType, R <: StanType](
+    op: StanUnaryOperator[T, R]
+  )(implicit context: StanContext): State[StanValue[R]] = {
     handleExpression(op.right).map(newRight => op.copy(right = newRight))
   }
 
   def handleBinaryOperator[T <: StanType, L <: StanType, R <: StanType](
     op: StanBinaryOperator[T, L, R]
-  ): State[StanValue[T]] = {
+  )(implicit context: StanContext): State[StanValue[T]] = {
     for {
       newLeft <- handleExpression(op.left)
       newRight <- handleExpression(op.right)
@@ -243,7 +259,7 @@ abstract class StanTransform[STATE](implicit model: StanContext) {
 
   def handleIndexOperator[T <: StanType, N <: StanType, D <: StanDeclaration[_]](
     op: StanIndexOperator[T, N, D]
-  ): State[StanValue[N]] = {
+  )(implicit context: StanContext): State[StanValue[N]] = {
     for {
       newValue <- handleExpression(op.value)
       newIndices <- State.traverse(op.indices)(handleExpression(_))
@@ -252,18 +268,22 @@ abstract class StanTransform[STATE](implicit model: StanContext) {
 
   def handleSliceOperator[T <: StanType, D <: StanDeclaration[_]](
     op: StanSliceOperator[T, D]
-  ): State[StanValue[T]] = {
+  )(implicit context: StanContext): State[StanValue[T]] = {
     for {
       newValue <- handleExpression(op.value)
       newSlices <- State.traverse(op.slices)(handleRange)
     } yield op.copy(value = newValue, slices = newSlices)
   }
 
-  def handleTranspose[T <: StanType, R <: StanType](tr: StanTranspose[T, R]): State[StanValue[R]] = {
+  def handleTranspose[T <: StanType, R <: StanType](
+    tr: StanTranspose[T, R]
+  )(implicit context: StanContext): State[StanValue[R]] = {
     handleExpression(tr.value).map(newValue => tr.copy(value = newValue))
   }
 
-  def handleTernaryOperator[C <: StanType, T <: StanType](to: StanTernaryOperator[C, T]): State[StanValue[T]] = {
+  def handleTernaryOperator[C <: StanType, T <: StanType](
+    to: StanTernaryOperator[C, T]
+  )(implicit context: StanContext): State[StanValue[T]] = {
     for {
       newCond <- handleExpression(to.cond)
       newLeft <- handleExpression(to.left)
@@ -271,22 +291,33 @@ abstract class StanTransform[STATE](implicit model: StanContext) {
     } yield to.copy(cond = newCond, left = newLeft, right = newRight)
   }
 
-  def handleConstant[T <: StanType](cn: StanConstant[T]): State[StanValue[T]] = State.pure(cn)
+  def handleConstant[T <: StanType](cn: StanConstant[T])(implicit context: StanContext): State[StanValue[T]] = {
+    State.pure(cn)
+  }
 
-  def handleArray[R <: StanType, N <: StanType](ar: StanArrayLiteral[N, _]): State[StanValue[R]] = {
+  def handleArray[R <: StanType, N <: StanType](
+    ar: StanArrayLiteral[N, _]
+  )(implicit context: StanContext): State[StanValue[R]] = {
     State.traverse(ar.values)(handleExpression).map { newValues =>
       ar.copy(values = newValues).asInstanceOf[StanValue[R]]
     }
   }
 
-  def handleString[T <: StanType](st: StanStringLiteral): State[StanValue[T]] =
+  def handleString[T <: StanType](st: StanStringLiteral)(implicit context: StanContext): State[StanValue[T]] = {
     State.pure(st.asInstanceOf[StanValue[T]])
+  }
 
-  def handleLiteral[T <: StanType](l: StanLiteral): State[StanValue[T]] = State.pure(l.asInstanceOf[StanValue[T]])
+  def handleLiteral[T <: StanType](l: StanLiteral)(implicit context: StanContext): State[StanValue[T]] = {
+    State.pure(l.asInstanceOf[StanValue[T]])
+  }
 
-  def handleUnknown[T <: StanType](un: StanUnknown[T]): State[StanValue[T]] = State.pure(un.asInstanceOf[StanValue[T]])
+  def handleUnknown[T <: StanType](un: StanUnknown[T])(implicit context: StanContext): State[StanValue[T]] = {
+    State.pure(un.asInstanceOf[StanValue[T]])
+  }
 
-  def handleVariable[T <: StanType](decl: StanDeclaration[T]): State[StanValue[T]] = State.pure(decl)
+  def handleVariable[T <: StanType](decl: StanDeclaration[T])(implicit context: StanContext): State[StanValue[T]] = {
+    State.pure(decl)
+  }
 
   def allInputs(statement: StanStatement): Seq[StanDeclaration[_]] = {
     statement.inputs ++ statement.children.flatMap(allInputs)

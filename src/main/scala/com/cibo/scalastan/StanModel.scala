@@ -6,7 +6,7 @@ import scala.language.implicitConversions
 
 import com.cibo.scalastan.ast._
 import com.cibo.scalastan.run.StanCompiler
-import com.cibo.scalastan.transform.{LoopChecker, StanTransform}
+import com.cibo.scalastan.transform.StanTransform
 import scala.collection.mutable.ArrayBuffer
 
 trait StanModel extends StanCodeBlock with StanContext { self =>
@@ -207,14 +207,12 @@ trait StanModel extends StanCodeBlock with StanContext { self =>
   // Log probability function.
   final protected def target: StanTargetValue = StanTargetValue()
 
-  def emit(writer: PrintWriter): Unit = {
-    rawCode match {
-      case Some(raw) => writer.print(raw)
-      case None      => TransformedModel(this).emit(writer)
-    }
+  def emit(writer: PrintWriter): Unit = rawCode match {
+    case Some(code) => writer.println(code)
+    case None => TransformedModel(this).emit(writer)
   }
 
-  private[scalastan] def program: StanProgram = {
+  def program: StanProgram = {
     generatedQuantities.foreach(_code.append)
     _code.program
   }
@@ -225,27 +223,7 @@ trait StanModel extends StanCodeBlock with StanContext { self =>
     pw.flush()
   }
 
-  case class TransformedModel private (
-    model: StanModel,
-    transforms: Seq[StanTransform[_]] = Seq(new LoopChecker)
-  ) extends StanModel {
-    override final def transform(t: StanTransform[_]): TransformedModel = TransformedModel(model, transforms :+ t)
-
-    override private[scalastan] final def program: StanProgram = {
-      transforms.foldLeft(model.program) { (prev, t) => t.run(prev) }
-    }
-
-    override final def emit(writer: PrintWriter): Unit = {
-      model.rawCode match {
-        case Some(raw) => model.emit(writer)
-        case None      => program.emit(writer)
-      }
-    }
-
-    override final def compile(implicit compiler: StanCompiler): CompiledModel = compiler.compile(this)
-  }
-
-  def transform(t: StanTransform[_]): StanModel = TransformedModel(this).transform(t)
+  def transform(t: StanTransform[_]): TransformedModel = TransformedModel(this).transform(t)
 
   def compile(implicit compiler: StanCompiler): CompiledModel = TransformedModel(this).compile(compiler)
 

@@ -10,59 +10,60 @@
 
 package com.cibo.scalastan.examples
 
-import com.cibo.scalastan.ScalaStan
+import com.cibo.scalastan.StanModel
 import com.cibo.scalastan.data.RDataSource
 
-object DogsExample extends App with ScalaStan {
+object DogsExample extends App {
 
   // Dogs example from "Applied Regression Modeling", Gelman and Hill 2007.
   // Translated from the Stan example model from https://github.com/stan-dev/example-models
 
-  val nDogs = data(int(lower = 0))
-  val nTrials = data(int(lower = 0))
-  val y = data(int(lower = 0, upper = 1)(nDogs, nTrials))
+  val model = new StanModel {
+    val nDogs = data(int(lower = 0))
+    val nTrials = data(int(lower = 0))
+    val y = data(int(lower = 0, upper = 1)(nDogs, nTrials))
 
-  val beta = parameter(vector(3))
+    val beta = parameter(vector(3))
 
-  val nAvoid = new TransformedParameter(matrix(nDogs, nTrials)) {
-    for (j <- range(1, nDogs)) {
-      result(j, 1) := 0
-      for (t <- range(2, nTrials)) {
-        result(j, t) := result(j, t - 1) + 1 - y(j, t - 1)
+    val nAvoid = new TransformedParameter(matrix(nDogs, nTrials)) {
+      for (j <- range(1, nDogs)) {
+        result(j, 1) := 0
+        for (t <- range(2, nTrials)) {
+          result(j, t) := result(j, t - 1) + 1 - y(j, t - 1)
+        }
       }
     }
-  }
 
-  val nShock = new TransformedParameter(matrix(nDogs, nTrials)) {
-    for (j <- range(1, nDogs)) {
-      result(j, 1) := 0
-      for (t <- range(2, nTrials)) {
-        result(j, t) := result(j, t - 1) + y(j, t - 1)
+    val nShock = new TransformedParameter(matrix(nDogs, nTrials)) {
+      for (j <- range(1, nDogs)) {
+        result(j, 1) := 0
+        for (t <- range(2, nTrials)) {
+          result(j, t) := result(j, t - 1) + y(j, t - 1)
+        }
       }
     }
-  }
 
-  val p = new TransformedParameter(matrix(nDogs, nTrials)) {
-    for (j <- range(1, nDogs)) {
-      for (t <- range(1, nTrials)) {
-        result(j, t) := beta(1) + beta(2) * nAvoid(j, t) + beta(3) * nShock(j, t)
+    val p = new TransformedParameter(matrix(nDogs, nTrials)) {
+      for (j <- range(1, nDogs)) {
+        for (t <- range(1, nTrials)) {
+          result(j, t) := beta(1) + beta(2) * nAvoid(j, t) + beta(3) * nShock(j, t)
+        }
       }
     }
-  }
 
-  val model = new Model {
     beta ~ stan.normal(0.0, 100.0)
     for (i <- range(1, nDogs)) {
       for (j <- range(1, nTrials)) {
         y(i, j) ~ stan.bernoulli_logit(p(i, j))
       }
     }
+
+    transform(com.cibo.scalastan.transform.Optimize())
   }
 
   val rData = RDataSource.fromFile("dogs.R")
   val results = model
-    .transform(com.cibo.scalastan.transform.Optimize())
-    .withData(rData(y, "y"))
+    .withData(rData(model.y, "y"))
     .run()
 
   results.summary(System.out)

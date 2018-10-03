@@ -15,18 +15,18 @@ import com.cibo.scalastan.ast.{StanDeclaration, StanStatement, StanValue}
 
 case class SubstituteVariables(
   substitutions: Map[(Int, StanDeclaration[_]), StanDeclaration[_]]
-)(
-  implicit context: StanContext
 ) extends StanTransform[Int] {
 
   override def initialState: Int = -1
 
-  override def dispatch(statement: StanStatement): State[StanStatement] = for {
+  override def dispatch(statement: StanStatement)(implicit context: StanContext): State[StanStatement] = for {
     _ <- State.put(statement.id)
     newStatement <- super.dispatch(statement)
   } yield newStatement
 
-  override def handleVariable[T <: StanType](decl: StanDeclaration[T]): State[StanValue[T]] = for {
+  override def handleVariable[T <: StanType](
+    decl: StanDeclaration[T]
+  )(implicit context: StanContext): State[StanValue[T]] = for {
     currentStatement <- State.get
   } yield substitutions.getOrElse((currentStatement, decl), decl).asInstanceOf[StanValue[T]]
 }

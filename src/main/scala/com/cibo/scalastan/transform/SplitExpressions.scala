@@ -15,16 +15,18 @@ import com.cibo.scalastan.{StanContext, StanType}
 import com.cibo.scalastan.ast._
 
 // Break apart expressions into one operator per statement.
-case class SplitExpressions()(implicit val context: StanContext) extends StanTransform[Unit] {
+case class SplitExpressions() extends StanTransform[Unit] {
 
   def initialState: Unit = ()
 
-  override def run(program: StanProgram): StanProgram = {
+  override def run(program: StanProgram)(implicit context: StanContext): StanProgram = {
     val updated = super.run(program)
     AstSimplifier().run(updated)
   }
 
-  private def handleLHS[T <: StanType](expr: StanValue[T]): (StanValue[T], Seq[StanStatement]) = {
+  private def handleLHS[T <: StanType](
+    expr: StanValue[T]
+  )(implicit context: StanContext): (StanValue[T], Seq[StanStatement]) = {
     expr match {
       case i: StanIndexOperator[_, T, _] =>
         val newIndices = i.indices.map(x => splitExpression(x))
@@ -41,7 +43,7 @@ case class SplitExpressions()(implicit val context: StanContext) extends StanTra
     }
   }
 
-  override def handleAssignment(a: StanAssignment): State[StanStatement] = {
+  override def handleAssignment(a: StanAssignment)(implicit context: StanContext): State[StanStatement] = {
     val (lhsValue, lhsStatements) = handleLHS(a.lhs)
     val (rhsValue, rhsStatements) = splitExpression(a.rhs)
     (lhsValue, rhsValue) match {
@@ -60,12 +62,14 @@ case class SplitExpressions()(implicit val context: StanContext) extends StanTra
     }
   }
 
-  override def handleReturn(r: StanReturnStatement): State[StanStatement] = {
+  override def handleReturn(r: StanReturnStatement)(implicit context: StanContext): State[StanStatement] = {
     val (value, statements) = splitExpression(r.result)
     State.pure(StanBlock(statements :+ StanReturnStatement(value)))
   }
 
-  override def handleSample[T <: StanType, R <: StanType](s: StanSampleStatement[T, R]): State[StanStatement] = {
+  override def handleSample[T <: StanType, R <: StanType](
+    s: StanSampleStatement[T, R]
+  )(implicit context: StanContext): State[StanStatement] = {
     val (lhsValue, lhsStatements) = handleLHS(s.left)
     val (rhsValue, rhsStatements) = handleDistribution(s.right)
     State.pure {
@@ -75,7 +79,7 @@ case class SplitExpressions()(implicit val context: StanContext) extends StanTra
     }
   }
 
-  override def handleIf(i: StanIfStatement): State[StanStatement] = for {
+  override def handleIf(i: StanIfStatement)(implicit context: StanContext): State[StanStatement] = for {
     conds <- State.traverse(i.conds)(c => dispatch(c._2).map(x => c._1 -> x))
     newOtherwise <- dispatchOption(i.otherwise)
   } yield {
@@ -92,7 +96,7 @@ case class SplitExpressions()(implicit val context: StanContext) extends StanTra
     )
   }
 
-  override def handleFor(f: StanForLoop): State[StanStatement] = {
+  override def handleFor(f: StanForLoop)(implicit context: StanContext): State[StanStatement] = {
     val (start, startStatements) = splitExpression(f.range.start)
     val (end, endStatements) = splitExpression(f.range.end)
     dispatch(f.body).map { newBody =>
@@ -105,7 +109,7 @@ case class SplitExpressions()(implicit val context: StanContext) extends StanTra
     }
   }
 
-  override def handleWhile(w: StanWhileLoop): State[StanStatement] = {
+  override def handleWhile(w: StanWhileLoop)(implicit context: StanContext): State[StanStatement] = {
     val (cond, condStatements) = splitExpression(w.cond)
     dispatch(w.body).map { newBody =>
       StanBlock(
@@ -116,7 +120,7 @@ case class SplitExpressions()(implicit val context: StanContext) extends StanTra
 
   private def handleDistribution[T <: StanType, R <: StanType](
     dist: StanDistribution[T, R]
-  ): (StanDistribution[T, R], Seq[StanStatement]) = {
+  )(implicit context: StanContext): (StanDistribution[T, R], Seq[StanStatement]) = {
     val newArgs = dist.args.map(a => splitExpression(a))
     val newDist: StanDistribution[T, R] = dist match {
       case c: StanContinuousDistribution[T, R]          => c.copy(args = newArgs.map(_._1))
@@ -126,12 +130,16 @@ case class SplitExpressions()(implicit val context: StanContext) extends StanTra
     (newDist, newArgs.flatMap(_._2))
   }
 
-  override def handleExpression[T <: StanType](expr: StanValue[T]): State[StanValue[T]] = {
+  override def handleExpression[T <: StanType](
+    expr: StanValue[T]
+  )(implicit context: StanContext): State[StanValue[T]] = {
     // If we get here, we missed the implementation of something.
     throw new NotImplementedError("handleExpression should not be called")
   }
 
-  def splitExpression[T <: StanType](expr: StanValue[T]): (StanValue[T], Seq[StanStatement]) = expr match {
+  def splitExpression[T <: StanType](
+    expr: StanValue[T]
+  )(implicit context: StanContext): (StanValue[T], Seq[StanStatement]) = expr match {
     case i: StanIndexOperator[_, T, _] =>
       val temp = StanLocalDeclaration(i.returnType, context.newName, derivedFromData = i.isDerivedFromData)
       val decl = StanInlineDeclaration(temp)

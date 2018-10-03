@@ -20,18 +20,18 @@ case class CopyPropagationState(
 )
 
 // Propagate copies to eliminate unnecessary temporaries.
-case class CopyPropagation()(implicit val context: StanContext) extends StanTransform[CopyPropagationState] {
+case class CopyPropagation() extends StanTransform[CopyPropagationState] {
 
   def initialState: CopyPropagationState = CopyPropagationState()
 
-  override def handleProgram(program: StanProgram): State[StanProgram] = {
+  override def handleProgram(program: StanProgram)(implicit context: StanContext): State[StanProgram] = {
     for {
       newProgram <- super.handleProgram(program)
       substitutions <- State.get.map(_.substitutions)
     } yield RemoveUnusedDecls().run(SubstituteVariables(substitutions).run(newProgram))
   }
 
-  override def handleRoot(r: StanStatement): State[StanStatement] = for {
+  override def handleRoot(r: StanStatement)(implicit context: StanContext): State[StanStatement] = for {
     _ <- State.modify(_.copy(root = Some(r)))
     newRoot <- dispatch(r)
   } yield newRoot
@@ -50,7 +50,9 @@ case class CopyPropagation()(implicit val context: StanContext) extends StanTran
     }
   }
 
-  override def handleAssignment(a: StanAssignment): State[StanStatement] = (a.lhs, a.rhs) match {
+  override def handleAssignment(
+    a: StanAssignment
+  )(implicit context: StanContext): State[StanStatement] = (a.lhs, a.rhs) match {
     case (lhs: StanDeclaration[_], rhs: StanDeclaration[_]) if a.op == StanAssignment.Assign =>
 
       // This assignment is a candidate for removal by replacing the LHS with the RHS in the program.

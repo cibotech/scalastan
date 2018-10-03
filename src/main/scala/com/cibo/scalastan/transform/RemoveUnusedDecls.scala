@@ -14,7 +14,7 @@ import com.cibo.scalastan.StanContext
 import com.cibo.scalastan.ast.{StanBlock, StanInlineDeclaration, StanProgram, StanStatement}
 
 // Remove unused inline declarations.
-case class RemoveUnusedDecls()(implicit context: StanContext) extends StanTransform[Set[Int]] {
+case class RemoveUnusedDecls() extends StanTransform[Set[Int]] {
 
   def initialState: Set[Int] = Set.empty
 
@@ -24,12 +24,12 @@ case class RemoveUnusedDecls()(implicit context: StanContext) extends StanTransf
     }.toSet
   }
 
-  override def handleRoot(root: StanStatement): State[StanStatement] = for {
+  override def handleRoot(root: StanStatement)(implicit context: StanContext): State[StanStatement] = for {
     _ <- State.put(createState(root))
     newRoot <- super.handleRoot(root)
   } yield newRoot
 
-  override def handleDecl(d: StanInlineDeclaration): State[StanStatement] = for {
+  override def handleDecl(d: StanInlineDeclaration)(implicit context: StanContext): State[StanStatement] = for {
     usedDecls <- State.get
   } yield if (usedDecls.contains(d.decl.id)) d else StanBlock()
 }

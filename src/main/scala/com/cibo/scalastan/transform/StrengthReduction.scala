@@ -13,7 +13,7 @@ package com.cibo.scalastan.transform
 import com.cibo.scalastan.ast.{StanBinaryOperator, StanCall, StanValue}
 import com.cibo.scalastan._
 
-case class StrengthReduction()(implicit context: StanContext) extends StanTransform[Unit] {
+case class StrengthReduction() extends StanTransform[Unit] {
 
   def initialState: Unit = ()
 
@@ -67,7 +67,7 @@ case class StrengthReduction()(implicit context: StanContext) extends StanTransf
 
   // Convert: log(exp(a) + exp(b)) -> log_sum_exp(a, b)
   // and log(sum(exp(x))) -> log_sum_exp(x)
-  private def reduceLog[T <: StanType](call: StanCall[T]): State[StanValue[T]] = {
+  private def reduceLog[T <: StanType](call: StanCall[T])(implicit context: StanContext): State[StanValue[T]] = {
     require(call.args.length == 1, s"expected 1 argument for log, got ${call.args.length}")
     for {
       newArg <- handleExpression(call.args.head)
@@ -84,7 +84,9 @@ case class StrengthReduction()(implicit context: StanContext) extends StanTransf
     }
   }
 
-  override def handleCall[T <: StanType](call: StanCall[T]): State[StanValue[T]] = call.function.name match {
+  override def handleCall[T <: StanType](
+    call: StanCall[T]
+  )(implicit context: StanContext): State[StanValue[T]] = call.function.name match {
     case "log" => reduceLog(call)
     case _     => super.handleCall(call)
   }
@@ -105,7 +107,7 @@ case class StrengthReduction()(implicit context: StanContext) extends StanTransf
 
   override def handleBinaryOperator[T <: StanType, L <: StanType, R <: StanType](
     op: StanBinaryOperator[T, L, R]
-  ): State[StanValue[T]] = {
+  )(implicit context: StanContext): State[StanValue[T]] = {
     for {
       left <- handleExpression(op.left)
       right <- handleExpression(op.right)

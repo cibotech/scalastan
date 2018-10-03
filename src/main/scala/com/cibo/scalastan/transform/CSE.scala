@@ -21,7 +21,7 @@ case class CSEState(
 )
 
 // Common subexpression elimination.
-case class CSE()(implicit val context: StanContext) extends StanTransform[CSEState] {
+case class CSE() extends StanTransform[CSEState] {
 
   def initialState: CSEState = CSEState()
 
@@ -63,7 +63,7 @@ case class CSE()(implicit val context: StanContext) extends StanTransform[CSESta
     case _ => false
   }
 
-  override def handleRoot(statement: StanStatement): State[StanStatement] = for {
+  override def handleRoot(statement: StanStatement)(implicit context: StanContext): State[StanStatement] = for {
     _ <- State.modify(_.copy(root = Some(statement)))
     _ <- State.modify(_.copy(mapping = StanProgram.getStatements(statement).map(s => s.id -> s).toMap))
     _ <- State.modify(_.copy(eliminated = Set.empty))
@@ -80,7 +80,7 @@ case class CSE()(implicit val context: StanContext) extends StanTransform[CSESta
     }
   }
 
-  override def handleAssignment(a: StanAssignment): State[StanStatement] = for {
+  override def handleAssignment(a: StanAssignment)(implicit context: StanContext): State[StanStatement] = for {
     state <- State.get
     ae = AvailableExpressions(state.root.get).solve.lookup(a) -- state.eliminated
     mapping = state.mapping

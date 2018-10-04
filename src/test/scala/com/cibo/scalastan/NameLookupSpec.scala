@@ -3,13 +3,13 @@ package com.cibo.scalastan
 import org.scalatest.{FunSpec, Matchers}
 import scala.language.reflectiveCalls
 
-object StanObjectTop extends ScalaStan {
+object StanObjectTop extends StanModel {
   val x = parameter(real())
 }
 
 class NameLookupSpec extends FunSpec with Matchers {
 
-  object StanObjectInClass extends ScalaStan {
+  object StanObjectInClass extends StanModel {
     val y = parameter(real())
   }
 
@@ -23,7 +23,7 @@ class NameLookupSpec extends FunSpec with Matchers {
     }
 
     it("finds names in an anonymous class") {
-      val anon = new ScalaStan {
+      val anon = new StanModel {
         val z = parameter(real())
       }
       anon.z.name shouldBe "z"
@@ -32,7 +32,7 @@ class NameLookupSpec extends FunSpec with Matchers {
     it("finds names in an object in an anonymous class") {
       class T
       val anon = new T {
-        object Test extends ScalaStan {
+        object Test extends StanModel {
           val t = parameter(real())
         }
       }
@@ -40,12 +40,11 @@ class NameLookupSpec extends FunSpec with Matchers {
     }
 
     it("finds names in functions") {
-      new ScalaStan {
+      new StanModel {
         def func(): Unit = {
           val a = parameter(real())
           a.name shouldBe "a"
         }
-
         func()
       }
     }

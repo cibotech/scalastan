@@ -4,7 +4,7 @@ import com.cibo.scalastan.{RunMethod, StanModel}
 
 object BernoulliExample extends App {
 
-  val model = new StanModel {
+  object model extends StanModel {
     val N = data(int(lower = 0))
     val y = data(int(lower = 0, upper = 1)(N))
     val theta = parameter(real(lower = 0.0, upper = 1.0))

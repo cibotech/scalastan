@@ -10,27 +10,27 @@
 
 package com.cibo.scalastan.examples
 
-import com.cibo.scalastan.ScalaStan
+import com.cibo.scalastan.StanModel
 
-object NormalExample extends App with ScalaStan {
+object NormalExample extends App {
 
-  val N = data(int(lower = 0))
-  val y = data(vector(N))
+  object model extends StanModel {
+    val N = data(int(lower = 0))
+    val y = data(vector(N))
 
-  val sigma = parameter(real(lower = 0.0))
-  val mu = parameter(real())
+    val sigma = parameter(real(lower = 0.0))
+    val mu = parameter(real())
 
-  val model = new Model {
     y ~ stan.normal(mu, sigma)
   }
 
   val dataset = Vector(1.0, -2.0, 3.0, 0.0, 0.5, -1.0)
   val results = model
-    .withData(y, dataset)
+    .withData(model.y, dataset)
     .run()
-  val muMean: Double = results.mean(mu)
+  val muMean: Double = results.mean(model.mu)
   println(s"mu = $muMean")
-  println(s"sigma = ${results.mean(sigma)}, ${results.sd(sigma)}, ${results.quantile(sigma, 0.5)}")
+  println(s"sigma = ${results.mean(model.sigma)}, ${results.sd(model.sigma)}, ${results.quantile(model.sigma, 0.5)}")
 
 }
 

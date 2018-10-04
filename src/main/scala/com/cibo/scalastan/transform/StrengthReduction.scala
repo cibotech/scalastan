@@ -27,7 +27,7 @@ case class StrengthReduction() extends StanTransform[Unit] {
     op: StanBinaryOperator.Operator,
     exp: StanValue[T]
   ): Option[(StanValue[L], StanValue[R])] = exp match {
-    case b: StanBinaryOperator[_, L, R] if b.op == op && isScalar(b.left) && isScalar(b.right) =>
+    case b: StanBinaryOperator[_, L, R] @unchecked if b.op == op && isScalar(b.left) && isScalar(b.right) =>
       Some((b.left, b.right))
     case _ => None
   }

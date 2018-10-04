@@ -12,13 +12,14 @@ package com.cibo.scalastan.examples
 
 import com.cibo.scalastan.StanModel
 import com.cibo.scalastan.data.RDataSource
+import com.cibo.scalastan.transform.Optimize
 
 object DogsExample extends App {
 
   // Dogs example from "Applied Regression Modeling", Gelman and Hill 2007.
   // Translated from the Stan example model from https://github.com/stan-dev/example-models
 
-  val model = new StanModel {
+  object model extends StanModel {
     val nDogs = data(int(lower = 0))
     val nTrials = data(int(lower = 0))
     val y = data(int(lower = 0, upper = 1)(nDogs, nTrials))
@@ -58,11 +59,10 @@ object DogsExample extends App {
       }
     }
 
-    transform(com.cibo.scalastan.transform.Optimize())
   }
 
   val rData = RDataSource.fromFile("dogs.R")
-  val results = model
+  val results = model.transform(Optimize())
     .withData(rData(model.y, "y"))
     .run()
 

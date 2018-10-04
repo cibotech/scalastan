@@ -4,7 +4,7 @@ import com.cibo.scalastan.StanModel
 
 object ImportedModelExample extends App {
 
-  val model = new StanModel {
+  object model extends StanModel {
     val n = data(int(lower = 0))
     val x = data(vector(n))
 

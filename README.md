@@ -23,7 +23,7 @@ libraryDependencies += "com.cibo" %% "scalastan" % "<version>"
 
 Project Structure
 =================
- - `com.cibo.scalastan` contains the ScalaStan DSL (most importantly, the `ScalaStan` trait).
+ - `com.cibo.scalastan` contains the ScalaStan DSL (most importantly, the `StanModel` trait).
  - `com.cibo.scalastan.analysis` contains analyses for ScalaStan models.
  - `com.cibo.scalastan.ast` contains the ScalaStan abstract syntax tree.
  - `com.cibo.scalastan.data` contains parsers for various data sources (R, for example).
@@ -38,9 +38,9 @@ Here's a simple example of linear regression:
 ```scala
 import com.cibo.scalastan.StanModel
 
-object MyModel extends App {
+object MyApp extends App {
 
-  val model = new StanModel {
+  object MyModel extends StanModel {
     val n = data(int(lower = 0))
     val x = data(vector(n))
     val y = data(vector(n))
@@ -55,9 +55,9 @@ object MyModel extends App {
 
   val xs: Seq[Double] = ???
   val ys: Seq[Double] = ???
-  val results = model
-    .withData(model.x, xs)
-    .withData(model.y, ys)
+  val results = MyModel
+    .withData(MyModel.x, xs)
+    .withData(MyModel.y, ys)
     .run(chains = 5)
 
   results.summary(System.out)
@@ -363,11 +363,11 @@ External Stan Code
 It is possible to use ScalaStan to generate regular Stan code using the `emit` function on the model.
 For example:
 ```scala
-    val myModel = new StanModel {
+    object MyModel extends StanModel {
       // ...
     }
     val writer = new java.io.PrintWriter("myModel.stan")
-    myModel.emit(writer)
+    MyModel.emit(writer)
     writer.close()
 ```
 
@@ -376,7 +376,7 @@ and parameters must be set up in ScalaStan, then the `loadFromFile` (or `loadFro
 `Model` can be used to load the model.  Once loaded, the model can be used just as a model implemented
 directly in ScalaStan. For example:
 ```scala
-  val model = new StanModel {
+  object MyModel extends StanModel {
     val n = data(int(lower = 0))
     val x = data(vector(n))
     val mu = parameter(real())

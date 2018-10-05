@@ -11,6 +11,14 @@ class StanModelSpec extends ScalaStanBaseSpec {
       }
       checkCode(model, "data { int d; }")
     }
+
+    it("renames keywords") {
+      object model extends StanModel {
+        val mean = data(int())
+        local(int()) := mean
+      }
+      checkCode(model, "data { int ss_v#; }")
+    }
   }
 
   describe("parameter") {

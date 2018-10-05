@@ -1,6 +1,8 @@
 package com.cibo.scalastan
 
-trait StanContext {
+import com.typesafe.scalalogging.LazyLogging
+
+trait StanContext extends LazyLogging {
 
   implicit val _context: StanContext = this
 
@@ -13,13 +15,80 @@ trait StanContext {
     }
   }
 
+  private def listMembers(obj: Any): Seq[String] = {
+    import scala.reflect.runtime.universe._
+    val mirror = runtimeMirror(obj.getClass.getClassLoader)
+    mirror.reflect(obj).symbol.info.decls.filter { d =>
+      d.isPublic && !d.isConstructor && d.info.paramLists.head.nonEmpty
+    }.map(_.name.toString).toSeq
+  }
+
+  // Stan keywords (section 4.2).
+  private val keywords: Set[String] = Set(
+    // Stan keywords (that aren't also C++ keywords).
+    "in", "repeat", "until", "then",
+
+    // Stan types (that aren't also C++ keywords).
+    "real", "vector", "simplex", "unit_vector", "ordered", "positive_ordered", "row_vector", "matrix",
+    "cholesky_factor_corr", "cholesky_factor_cov", "corr_matrix", "cov_matrix",
+
+    // Stan block identifiers.
+    "functions", "model", "data", "parameters", "quantities", "transformed", "generated",
+
+    // Reserved words from the Stan implementation.
+    "var", "fvar", "STAN_MAJOR", "STAN_MINOR", "STAN_PATCH", "STAN_MATH_MAJOR", "STAN_MATH_MINOR", "STAN_MATH_PATH",
+
+
+    // C++ keywords.
+    "alignas", "alignof", "and", "and_eq", "asm", "auto", "bitand", "bitor", "bool", "break", "case", "catch",
+    "char", "char16_t", "char32_t", "class", "compl", "const", "constexpr", "const_cast", "continue", "decltype",
+    "default", "delete", "do", "double", "dynamic_cast", "else", "enum", "explicit", "export", "extern", "false",
+    "float", "for", "friend", "goto", "if", "inline", "int", "long", "mutable", "namespace", "new", "noexcept",
+    "not", "not_eq", "nullptr", "operator", "or", "or_eq", "private", "protected", "public", "register",
+    "reinterpret_cast", "return", "short", "signed", "sizeof", "static", "static_assert", "static_cast", "struct",
+    "switch", "template", "this", "thread_local", "throw", "true", "try", "typedef", "typeid", "typename", "union",
+    "unsigned", "using", "virtual", "void", "volatile", "wchar_t", "while", "xor", "xor_eq"
+  )
+
+  // Distribution functions.
+  private val distributionSuffixes: Seq[String] = Seq(
+    "_lpdf", "_lpmf", "_lcdf", "_lccdf", "_cdf", "_ccdf", "_log", "_cdf_log", "_ccdf_log"
+  )
+  private lazy val distributions: Seq[String] = {
+    val obj = new StanDistributions {}
+    listMembers(obj)
+  }
+  private lazy val distributionFunctions: Set[String] = {
+    distributions.flatMap { dist =>
+      distributionSuffixes.map { suffix =>
+        s"$dist$suffix"
+      }
+    }.toSet
+  }
+
+  // Stan Functions
+  private lazy val functions: Set[String] = {
+    val obj = new StanFunctions {}
+    listMembers(obj).toSet
+  }
+
+  private lazy val reservedNames: Set[String] = keywords ++ distributionFunctions ++ functions
+
+  private def validName(name: String): Boolean = {
+    val pattern = raw"[A-Za-z][A-Za-z0-9_]*".r
+    name match {
+      case pattern(_*) => !name.startsWith("ss_v") && !reservedNames.contains(name)
+      case _ => false
+    }
+  }
+
   def newName: String = s"ss_v$nextId"
 
   def fixName(name: String): String = {
-    val pattern = raw"[A-Za-z][A-Za-z0-9_]*".r
-    name match {
-      case pattern(_*) if !name.startsWith("ss_v") => name
-      case _                                       => newName
+    if (validName(name)) name else {
+      val n = newName
+      logger.debug(s"'$name' not a valid variable name, using '$n'")
+      n
     }
   }
 

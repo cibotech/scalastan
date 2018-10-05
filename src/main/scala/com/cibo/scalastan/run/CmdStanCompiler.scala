@@ -118,7 +118,7 @@ object CmdStanCompiler extends StanCompiler with LazyLogging {
     model.emit(new PrintWriter(writer))
     writer.close()
     val str = writer.toString
-    logger.info(s"code:\n$str")
+    logger.debug(s"code:\n$str")
 
     val modelHash = SHA.hash(str)
     cleanOldModels(modelHash, maxCacheSize)

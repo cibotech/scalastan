@@ -68,7 +68,7 @@ class CmdStanRunner(
 
   case class ChainResult(
     iterations: Map[String, Vector[String]],
-    inverseMassMatrixDiagonals: Vector[Double]
+    massMatrix: Vector[Vector[Double]]
   )
 
   def initialValueFileName(hash: String): String = s"$modelDir/$initialValuePrefix-$hash.R"
@@ -123,11 +123,21 @@ class CmdStanRunner(
     case _                      => None
   }
 
-  private def loadInverseMassMatrixDiagonals(rawLines: Vector[String]): Vector[Double] = {
-    val diagonalHeader = "# Diagonal elements of inverse mass matrix:"
-    val i = rawLines.indexWhere(_.startsWith(diagonalHeader))
+  private def loadMassMatrix(rawLines: Vector[String]): Vector[Vector[Double]] = {
+    val massMatrixHeader = "inverse mass matrix:"
+    val i = rawLines.indexWhere(_.endsWith(massMatrixHeader))
     if (i > 0 && i + 1 < rawLines.length) {
-      rawLines(i + 1).drop(1).split(',').map(_.toDouble).toVector
+      val denseHeader = "# Elements"
+      if (rawLines(i).startsWith(denseHeader)) {
+        // Dense matrix.
+        val first = rawLines(i + 1).drop(1).split(',').map(_.toDouble).toVector
+        first +: rawLines.slice(i + 2, i + 1 + first.length).map { line =>
+          line.drop(1).split(',').map(_.toDouble).toVector
+        }
+      } else {
+        // Diagonals
+        Vector(rawLines(i + 1).drop(1).split(',').map(_.toDouble).toVector)
+      }
     } else {
       Vector.empty
     }
@@ -141,7 +151,7 @@ class CmdStanRunner(
       if (lines.nonEmpty) {
         val header = lines.head.split(',').toVector
         val columns = lines.tail.map(_.split(',').toVector).transpose
-        ChainResult(header.zip(columns).toMap, loadInverseMassMatrixDiagonals(rawLines))
+        ChainResult(header.zip(columns).toMap, loadMassMatrix(rawLines))
       } else {
         ChainResult(Map.empty, Vector.empty)
       }
@@ -203,8 +213,8 @@ class CmdStanRunner(
     }.seq
 
     val parameterChains = results.flatMap(_.iterations).groupBy(_._1).mapValues(_.map(_._2))
-    val inverseMassMatrixDiagonals = results.map(_.inverseMassMatrixDiagonals)
-    StanResults(parameterChains, inverseMassMatrixDiagonals, compiledModel, method)
+    val massMatrices = results.map(_.massMatrix)
+    StanResults(parameterChains, massMatrices, compiledModel, method)
   }
 }
 

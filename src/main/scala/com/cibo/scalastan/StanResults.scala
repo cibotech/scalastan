@@ -18,7 +18,7 @@ import scala.util.Try
 
 case class StanResults(
   parameterChains: Map[String, Vector[Vector[String]]],
-  inverseMassMatrixDiagonals: Vector[Vector[Double]],
+  massMatrix: Vector[Vector[Vector[Double]]],
   model: CompiledModel,
   method: RunMethod.Method
 ) {

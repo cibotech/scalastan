@@ -28,6 +28,7 @@ Project Structure
  - `com.cibo.scalastan.ast` contains the ScalaStan abstract syntax tree.
  - `com.cibo.scalastan.data` contains parsers for various data sources (R, for example).
  - `com.cibo.scalastan.models` contains reusable ScalaStan models.
+ - `com.cibo.scalastan.run` contains the classes to handle compiling and running a model.
  - `com.cibo.scalastan.transform` contains ScalaStan transformations (optimizations, etc.).
  - Examples can be found in the `com.cibo.scalastan.examples` package in the integration test (`it`) source directory.  Run an example using the command `sbt it:run` and choosing from the available examples.
 
@@ -131,16 +132,19 @@ val y = parameter(real())
 
 The types for parameters are the same as those for data, however, Stan does not allow integral parameters.
 
-The Model
----------
-The model is expressed by extending the `StanModel` class. The body of this class supports a DSL to describe the model.
+Local Declarations
+------------------
 
-#### Local Declarations
 Local values can be declared using the `local` function, which behaves like the `data` and `parameter` functions,
 but is only available within the `StanModel` DSL, for example:
 ```scala
 val z = local(real())
 ```
+
+The Model
+---------
+The `StanModel` trait supports a DSL to describe the model, which can be expressed directly in the body
+of the subclass.
 
 #### Operators
 Most arithmetic operators behave as one would expect (and identically to Stan), for example `+`, `-`, `*`, `/`,
@@ -195,6 +199,16 @@ when(x > 1) {
 }
 ```
 
+### Ternary Operator
+Conditionals in ScalaStan/Stan are not expressions, so there is a ternary operator to
+support conditionals as part of an expression. The ternary operator is supported as an overload
+of `when`:
+```scala
+y := when(x > 0, 1, 2)
+```
+
+This will evaluate the condition `x > 0` and return `1` if true and `2` if false.
+
 #### Distributions
 The built-in Stan distributions are available in ScalaStan from the `stan` object.
 
@@ -228,6 +242,9 @@ val xPlusOne = new TransformedParameter(vector(n)) {
 ```
 
 The transformed parameter can now be referenced instead of the actual parameter in the model.
+Note that a transformed parameter can be referenced in the output, however, if the transformed
+parameter is not used within the model, ScalaStan will not emit it. In this case, one should use
+a generated quantity instead.
 
 User-Defined Functions
 ----------------------

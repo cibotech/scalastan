@@ -16,7 +16,7 @@ import com.cibo.scalastan.ast.{StanDataDeclaration, StanParameterDeclaration}
 
 import scala.util.Try
 
-case class StanResults private (
+case class StanResults(
   parameterChains: Map[String, Vector[Vector[String]]],
   inverseMassMatrixDiagonals: Vector[Vector[Double]],
   model: CompiledModel,

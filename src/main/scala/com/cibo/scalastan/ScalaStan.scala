@@ -16,9 +16,6 @@ import com.typesafe.scalalogging.LazyLogging
 @deprecated("Use StanModel", "2018-10-02")
 trait ScalaStan extends StanModel with LazyLogging { ss =>
 
-  type ParameterDeclaration[T <: StanType] = StanParameterDeclaration[T]
-  type DataDeclaration[T <: StanType] = StanDataDeclaration[T]
-
   trait Model extends StanModel {
     override implicit val _context: StanContext = ss._context
   }

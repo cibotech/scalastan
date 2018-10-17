@@ -11,6 +11,9 @@ import scala.collection.mutable.ArrayBuffer
 
 trait StanModel extends StanCodeBlock with StanContext { self =>
 
+  type ParameterDeclaration[T <: StanType] = StanParameterDeclaration[T]
+  type DataDeclaration[T <: StanType] = StanDataDeclaration[T]
+
   // Maximum number of models to cache.
   val maxCacheSize: Int = 100
 

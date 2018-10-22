@@ -74,7 +74,7 @@ case class StanParameterDeclaration[T <: StanType](
   override def inputs: Seq[StanDeclaration[_ <: StanType]] = Seq(this)
   override def outputs: Seq[StanDeclaration[_ <: StanType]] = Seq(this)
 
-  private[scalastan] def root: StanParameterDeclaration[_ <: StanType] = rootOpt.getOrElse(this)
+  def root: StanParameterDeclaration[_ <: StanType] = rootOpt.getOrElse(this)
 
   def get(index: Int)(implicit ev: IsCompoundType[T]): StanParameterDeclaration[T#NEXT_TYPE] = {
     val newName = s"$name[$index]"
@@ -109,7 +109,7 @@ case class StanParameterDeclaration[T <: StanType](
   }
 }
 
-case class StanLocalDeclaration[T <: StanType] private[scalastan] (
+case class StanLocalDeclaration[T <: StanType](
   returnType: T,
   name: String,
   derivedFromData: Boolean = false,

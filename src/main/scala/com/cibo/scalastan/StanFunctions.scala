@@ -14,7 +14,7 @@ import com.cibo.scalastan.ast._
 
 import scala.collection.mutable.ArrayBuffer
 
-protected trait StanFunctions {
+trait StanFunctions {
 
   // Reject (5.10).
   def reject(arg: StanValue[_ <: StanType], args: StanValue[_ <: StanType]*)(implicit code: StanProgramBuilder): Unit = {

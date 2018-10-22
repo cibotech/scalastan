@@ -10,9 +10,9 @@
 
 package com.cibo.scalastan
 
-import com.cibo.scalastan.ast.{StanContinuousDistribution, StanDiscreteDistributionWithCdf, StanDiscreteDistributionWithoutCdf, StanValue}
+import com.cibo.scalastan.ast._
 
-protected trait StanDistributions {
+trait StanDistributions {
 
   private def args(args: StanValue[_ <: StanType]*): Seq[StanValue[_ <: StanType]] = args
 

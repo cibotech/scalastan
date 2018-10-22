@@ -25,7 +25,7 @@ case class StanProgram(
   model: StanStatement = StanBlock(Seq.empty)
 ) {
 
-  private[scalastan] def emit(writer: PrintWriter): Unit = {
+  def emit(writer: PrintWriter): Unit = {
     if (functions.nonEmpty) {
       writer.println("functions {")
       functions.foreach(f => f.emit(writer))

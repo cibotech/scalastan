@@ -55,16 +55,16 @@ case class StanValueRange(
     builder.leave(children => StanForLoop(decl, this, StanBlock(children)))
   }
 
-  private[scalastan] def emit: String = s"${start.emit}:${end.emit}"
+  def emit: String = s"${start.emit}:${end.emit}"
 }
 
-case class StanFunctionDeclaration private[scalastan] (
+case class StanFunctionDeclaration(
   returnValue: StanLocalDeclaration[_ <: StanType],
   inputs: Seq[StanLocalDeclaration[_ <: StanType]],
   code: StanStatement,
   id: Int = StanNode.getNextId
 ) extends StanNode {
-  private[scalastan] def emit(writer: PrintWriter): Unit = {
+  def emit(writer: PrintWriter): Unit = {
     val params = inputs.map(_.emitFunctionDeclaration).mkString(",")
     writer.println(s"  ${returnValue.returnType.emitFunctionDeclaration} ${returnValue.emit}($params) {")
     code.emitDeclarations(writer, 2)
@@ -73,12 +73,12 @@ case class StanFunctionDeclaration private[scalastan] (
   }
 }
 
-case class StanTransformedParameter private[scalastan] (
+case class StanTransformedParameter(
   result: StanParameterDeclaration[_ <: StanType],
   code: StanStatement,
   id: Int = StanNode.getNextId
 ) extends StanNode {
-  private[scalastan] def emit(writer: PrintWriter): Unit = {
+  def emit(writer: PrintWriter): Unit = {
     writer.println("  {")
     code.emitDeclarations(writer, 2)
     code.emit(writer, 2)
@@ -86,12 +86,12 @@ case class StanTransformedParameter private[scalastan] (
   }
 }
 
-case class StanTransformedData private[scalastan] (
+case class StanTransformedData(
   result: StanLocalDeclaration[_ <: StanType],
   code: StanStatement,
   id: Int = StanNode.getNextId
 ) extends StanNode {
-  private[scalastan] def emit(writer: PrintWriter): Unit = {
+  def emit(writer: PrintWriter): Unit = {
     writer.println("  {")
     code.emitDeclarations(writer, 2)
     code.emit(writer, 2)
@@ -99,12 +99,12 @@ case class StanTransformedData private[scalastan] (
   }
 }
 
-case class StanGeneratedQuantity private[scalastan] (
+case class StanGeneratedQuantity(
   result: StanParameterDeclaration[_ <: StanType],
   code: StanStatement,
   id: Int = StanNode.getNextId
 ) extends StanNode {
-  private[scalastan] def emit(writer: PrintWriter): Unit = {
+  def emit(writer: PrintWriter): Unit = {
     writer.println("  {")
     code.emitDeclarations(writer, 2)
     code.emit(writer, 2)

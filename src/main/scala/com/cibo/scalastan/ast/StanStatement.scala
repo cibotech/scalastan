@@ -31,7 +31,7 @@ sealed abstract class StanStatement extends StanNode {
 }
 
 // Container for Stan statements (a basic block).
-case class StanBlock private[scalastan] (
+case class StanBlock(
   children: Seq[StanStatement] = Seq.empty,
   id: Int = StanNode.getNextId
 ) extends StanStatement {
@@ -64,7 +64,7 @@ case class StanValueStatement(
 }
 
 // Assignment.
-case class StanAssignment private[scalastan] (
+case class StanAssignment(
   lhs: StanValue[_ <: StanType],
   rhs: StanValue[_ <: StanType],
   op: StanAssignment.Operator = StanAssignment.Assign,
@@ -111,7 +111,7 @@ object StanAssignment {
 }
 
 sealed abstract class StanLoop extends StanStatement {
-  private[scalastan] val body: StanStatement
+  val body: StanStatement
 }
 
 // "for" loop
@@ -213,7 +213,7 @@ case class StanBreakStatement(
 }
 
 // "continue" statement
-case class StanContinueStatement private[scalastan] (
+case class StanContinueStatement(
   id: Int = StanNode.getNextId
 ) extends StanStatement {
   def inputs: Seq[StanDeclaration[_ <: StanType]] = Seq.empty
@@ -226,9 +226,9 @@ case class StanContinueStatement private[scalastan] (
 }
 
 // Sample from a distribution: "var ~ dist()"
-case class StanSampleStatement[T <: StanType, R <: StanType] private[scalastan] (
+case class StanSampleStatement[T <: StanType, SUPPORT <: StanType](
   left: StanValue[T],
-  right: StanDistribution[T, R],
+  right: StanDistribution[T, SUPPORT],
   id: Int = StanNode.getNextId
 ) extends StanStatement {
   def inputs: Seq[StanDeclaration[_ <: StanType]] = left.inputs ++ right.inputs
@@ -244,7 +244,7 @@ case class StanSampleStatement[T <: StanType, R <: StanType] private[scalastan] 
 }
 
 // A return (or output) statement.
-case class StanReturnStatement private[scalastan] (
+case class StanReturnStatement(
   result: StanValue[_ <: StanType],
   id: Int = StanNode.getNextId
 ) extends StanStatement {
@@ -258,7 +258,7 @@ case class StanReturnStatement private[scalastan] (
 }
 
 // Local variable declaration.
-case class StanInlineDeclaration private[scalastan] (
+case class StanInlineDeclaration(
   decl: StanLocalDeclaration[_ <: StanType],
   id: Int = StanNode.getNextId
 ) extends StanStatement {

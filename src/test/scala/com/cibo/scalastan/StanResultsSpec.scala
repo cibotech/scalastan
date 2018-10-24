@@ -4,46 +4,45 @@ import java.io._
 
 class StanResultsSpec extends ScalaStanBaseSpec {
 
-  private object TestScalaStan extends ScalaStan {
+  private object TestModel extends StanModel {
     val n = data(int())
     val v1 = parameter(real())
     val v2 = parameter(vector(n))
     val v3 = parameter(vector(n)(n))
-    val model = new Model {
-      v1 ~ stan.normal(0, n)
-      v2 ~ stan.normal(0, 1)
-      v3(1) ~ stan.normal(0, 1)
-    }
+
+    v1 ~ stan.normal(0, n)
+    v2 ~ stan.normal(0, 1)
+    v3(1) ~ stan.normal(0, 1)
   }
 
-  private val model = CompiledModel(TestScalaStan.model, MockRunner())
+  private val model = CompiledModel(TestModel, MockRunner())
 
   private val testData1 = Map[String, Int](
     "lp__" -> 1,
-    TestScalaStan.v1.emit -> 1,
-    s"${TestScalaStan.v2.emit}.1" -> 2,
-    s"${TestScalaStan.v2.emit}.2" -> 3,
-    s"${TestScalaStan.v2.emit}.3" -> 4,
-    s"${TestScalaStan.v3.emit}.1.1" -> 311,
-    s"${TestScalaStan.v3.emit}.1.2" -> 312,
-    s"${TestScalaStan.v3.emit}.2.1" -> 321,
-    s"${TestScalaStan.v3.emit}.2.2" -> 322,
-    s"${TestScalaStan.v3.emit}.3.1" -> 331,
-    s"${TestScalaStan.v3.emit}.3.2" -> 332
+    TestModel.v1.emit -> 1,
+    s"${TestModel.v2.emit}.1" -> 2,
+    s"${TestModel.v2.emit}.2" -> 3,
+    s"${TestModel.v2.emit}.3" -> 4,
+    s"${TestModel.v3.emit}.1.1" -> 311,
+    s"${TestModel.v3.emit}.1.2" -> 312,
+    s"${TestModel.v3.emit}.2.1" -> 321,
+    s"${TestModel.v3.emit}.2.2" -> 322,
+    s"${TestModel.v3.emit}.3.1" -> 331,
+    s"${TestModel.v3.emit}.3.2" -> 332
   ).mapValues(_.toString)
 
   private val testData2 = Map[String, Int](
     "lp__" -> 2,
-    TestScalaStan.v1.emit -> 0,
-    s"${TestScalaStan.v2.emit}.1" -> 1,
-    s"${TestScalaStan.v2.emit}.2" -> 2,
-    s"${TestScalaStan.v2.emit}.3" -> 3,
-    s"${TestScalaStan.v3.emit}.1.1" -> 311,
-    s"${TestScalaStan.v3.emit}.1.2" -> 312,
-    s"${TestScalaStan.v3.emit}.2.1" -> 321,
-    s"${TestScalaStan.v3.emit}.2.2" -> 322,
-    s"${TestScalaStan.v3.emit}.3.1" -> 331,
-    s"${TestScalaStan.v3.emit}.3.2" -> 332
+    TestModel.v1.emit -> 0,
+    s"${TestModel.v2.emit}.1" -> 1,
+    s"${TestModel.v2.emit}.2" -> 2,
+    s"${TestModel.v2.emit}.3" -> 3,
+    s"${TestModel.v3.emit}.1.1" -> 311,
+    s"${TestModel.v3.emit}.1.2" -> 312,
+    s"${TestModel.v3.emit}.2.1" -> 321,
+    s"${TestModel.v3.emit}.2.2" -> 322,
+    s"${TestModel.v3.emit}.3.1" -> 331,
+    s"${TestModel.v3.emit}.3.2" -> 332
   ).mapValues(_.toString)
 
   val mappedData: Map[String, Vector[Vector[String]]] = Seq(testData1, testData2).flatten.groupBy(_._1).mapValues(
@@ -59,19 +58,19 @@ class StanResultsSpec extends ScalaStanBaseSpec {
 
   describe("elements") {
     it("returns all the elements of a parameter") {
-      results.elements(TestScalaStan.v3).size shouldBe 6
+      results.elements(TestModel.v3).size shouldBe 6
     }
 
     it("returns the right thing for an array") {
-      results.elements(TestScalaStan.v2).map(_.name) shouldBe Vector(
-        TestScalaStan.v2.get(1).name,
-        TestScalaStan.v2.get(2).name,
-        TestScalaStan.v2.get(3).name
+      results.elements(TestModel.v2).map(_.name) shouldBe Vector(
+        TestModel.v2.get(1).name,
+        TestModel.v2.get(2).name,
+        TestModel.v2.get(3).name
       )
     }
 
     it("returns the right value for a scalar") {
-      results.elements(TestScalaStan.v1).map(_.name) shouldBe Seq(TestScalaStan.v1.name)
+      results.elements(TestModel.v1).map(_.name) shouldBe Seq(TestModel.v1.name)
     }
   }
 
@@ -83,15 +82,15 @@ class StanResultsSpec extends ScalaStanBaseSpec {
 
   describe("samples") {
     it("returns all scalar samples") {
-      results.samples(TestScalaStan.v1) shouldBe Seq(Seq(1, 0))
+      results.samples(TestModel.v1) shouldBe Seq(Seq(1, 0))
     }
 
     it("returns all vector samples") {
-      results.samples(TestScalaStan.v2) shouldBe Seq(Seq(Seq(2.0, 3.0, 4.0), Seq(1.0, 2.0, 3.0)))
+      results.samples(TestModel.v2) shouldBe Seq(Seq(Seq(2.0, 3.0, 4.0), Seq(1.0, 2.0, 3.0)))
     }
 
     it("returns all array of vector samples") {
-      results.samples(TestScalaStan.v3) shouldBe Seq(
+      results.samples(TestModel.v3) shouldBe Seq(
         Seq(
           Seq(
             Seq(311, 312),
@@ -115,7 +114,7 @@ class StanResultsSpec extends ScalaStanBaseSpec {
 
   describe("best") {
     it("returns the best scalar sample") {
-      results.best(TestScalaStan.v1) shouldBe 0
+      results.best(TestModel.v1) shouldBe 0
     }
 
     it("returns the best lp") {
@@ -125,15 +124,15 @@ class StanResultsSpec extends ScalaStanBaseSpec {
 
   describe("mean") {
     it("returns the mean scalar") {
-      results.mean(TestScalaStan.v1) shouldBe 0.5 // Note that this will always convert to double
+      results.mean(TestModel.v1) shouldBe 0.5 // Note that this will always convert to double
     }
 
     it("returns the mean vector") {
-      results.mean(TestScalaStan.v2) shouldBe Vector(1.5, 2.5, 3.5)
+      results.mean(TestModel.v2) shouldBe Vector(1.5, 2.5, 3.5)
     }
 
     it("returns the mean array of vectors") {
-      results.mean(TestScalaStan.v3) shouldBe Vector(Vector(311.0, 312.0), Vector(321.0, 322.0), Vector(331.0, 332.0))
+      results.mean(TestModel.v3) shouldBe Vector(Vector(311.0, 312.0), Vector(321.0, 322.0), Vector(331.0, 332.0))
     }
 
     it("returns the mean lp") {
@@ -143,7 +142,7 @@ class StanResultsSpec extends ScalaStanBaseSpec {
 
   describe("variance") {
     it("returns the variance") {
-      results.variance(TestScalaStan.v1) shouldBe 0.5
+      results.variance(TestModel.v1) shouldBe 0.5
     }
 
     it("returns the variance of lp") {
@@ -153,7 +152,7 @@ class StanResultsSpec extends ScalaStanBaseSpec {
 
   describe("sd") {
     it("returns the standard deviation") {
-      results.sd(TestScalaStan.v1) shouldBe math.sqrt(0.5)
+      results.sd(TestModel.v1) shouldBe math.sqrt(0.5)
     }
 
     it("returns the sd of lp") {
@@ -163,7 +162,7 @@ class StanResultsSpec extends ScalaStanBaseSpec {
 
   describe("min") {
     it("returns the min") {
-      results.min(TestScalaStan.v1) shouldBe 0
+      results.min(TestModel.v1) shouldBe 0
     }
 
     it("returns the min lp") {
@@ -173,7 +172,7 @@ class StanResultsSpec extends ScalaStanBaseSpec {
 
   describe("max") {
     it("returns the max") {
-      results.max(TestScalaStan.v1) shouldBe 1
+      results.max(TestModel.v1) shouldBe 1
     }
 
     it("returns the max lp") {
@@ -183,11 +182,11 @@ class StanResultsSpec extends ScalaStanBaseSpec {
 
   describe("quantile") {
     it("returns 5%") {
-      results.quantile(TestScalaStan.v1, 0.05) shouldBe 0
+      results.quantile(TestModel.v1, 0.05) shouldBe 0
     }
 
     it("returns 95%") {
-      results.quantile(TestScalaStan.v1, 0.95) shouldBe 1
+      results.quantile(TestModel.v1, 0.95) shouldBe 1
     }
 
     it("returns the 5% lp") {
@@ -197,13 +196,13 @@ class StanResultsSpec extends ScalaStanBaseSpec {
 
   describe("effectiveSampleSize") {
     it("should return the effective sample size") {
-      results.effectiveSampleSize(TestScalaStan.v1) shouldBe 2
+      results.effectiveSampleSize(TestModel.v1) shouldBe 2
     }
   }
 
   describe("mcse") {
     it("returns the mcse") {
-      results.mcse(TestScalaStan.v1) shouldBe 0.5
+      results.mcse(TestModel.v1) shouldBe 0.5
     }
 
     it("returns the mcse lp") {
@@ -225,7 +224,7 @@ class StanResultsSpec extends ScalaStanBaseSpec {
       pw.close()
       val summary = sw.toString.split("\n").toSeq
 
-      Seq("lp__", s"${TestScalaStan.v1.emit}", s"${TestScalaStan.v2.emit}", s"${TestScalaStan.v3.emit}").foreach { name =>
+      Seq("lp__", s"${TestModel.v1.emit}", s"${TestModel.v2.emit}", s"${TestModel.v3.emit}").foreach { name =>
         withClue(s"$name in $summary") {
           summary.exists(_.startsWith(name)) shouldBe true
         }
@@ -235,11 +234,11 @@ class StanResultsSpec extends ScalaStanBaseSpec {
     it("should filter") {
       val sw = new StringWriter
       val pw = new PrintWriter(sw)
-      results.summary(pw, TestScalaStan.v1)
+      results.summary(pw, TestModel.v1)
       pw.close()
       val summary = sw.toString.split("\n").toSeq
 
-      Seq("lp__", s"${TestScalaStan.v1.emit}").foreach { name =>
+      Seq("lp__", s"${TestModel.v1.emit}").foreach { name =>
         withClue(s"$name in $summary") {
           summary.exists(_.startsWith(name)) shouldBe true
         }

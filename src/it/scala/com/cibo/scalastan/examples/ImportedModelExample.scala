@@ -1,17 +1,18 @@
 package com.cibo.scalastan.examples
 
-import com.cibo.scalastan.ScalaStan
+import com.cibo.scalastan.StanModel
 
-object ImportedModelExample extends App with ScalaStan {
+object ImportedModelExample extends App {
 
-  val n = data(int(lower = 0))
-  val x = data(vector(n))
+  object model extends StanModel {
+    val n = data(int(lower = 0))
+    val x = data(vector(n))
 
-  val mu = parameter(real())
-  val sigma = parameter(real(lower = 0))
+    val mu = parameter(real())
+    val sigma = parameter(real(lower = 0.0))
 
-  val model = Model.loadFromString(
-    s"""
+    loadFromString(
+      s"""
         data {
           int<lower=0> n;
           vector[n] x;
@@ -24,12 +25,17 @@ object ImportedModelExample extends App with ScalaStan {
           x ~ normal(mu, sigma);
         }
     """
-  )
+    )
+  }
 
   val xs = Seq(1.0, 0.5, 1.5, 0.75)
-  val results = model.withData(x, xs).withData(n, xs.length).run()
-  results.summary(System.out, mu, sigma)
 
+  val results = model
+    .withData(model.x, xs)
+    .withData(model.n, xs.length)
+    .run()
+
+  results.summary(System.out, model.mu, model.sigma)
 }
 
 class ImportedModelExampleSpec extends AppRunnerSpec(ImportedModelExample)

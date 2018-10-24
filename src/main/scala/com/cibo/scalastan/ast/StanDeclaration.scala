@@ -22,7 +22,7 @@ sealed abstract class StanDeclaration[T <: StanType] extends StanValue[T] {
 
   def size(implicit ev: T <:< StanCompoundType): StanValue[StanInt] = dims.head
 
-  def range(implicit ev: T <:< StanCompoundType, ss: ScalaStan): StanValueRange = StanValueRange(1, size)
+  def range(implicit ev: T <:< StanCompoundType, context: StanContext): StanValueRange = StanValueRange(1, size)
 
   def dims: Seq[StanValue[StanInt]] = returnType.getIndices
 
@@ -53,7 +53,7 @@ case class StanParameterDeclaration[T <: StanType](
   name: String,
   rootOpt: Option[StanParameterDeclaration[_ <: StanType]] = None,
   indices: Seq[Int] = Seq.empty,
-  owner: Option[ScalaStan#TransformBase[_, _]] = None,
+  owner: Option[StanTransformBase[_, _]] = None,
   id: Int = StanNode.getNextId
 ) extends StanDeclaration[T] with Updatable[T] {
   require(returnType.isDerivedFromData,
@@ -113,7 +113,7 @@ case class StanLocalDeclaration[T <: StanType] private[scalastan] (
   returnType: T,
   name: String,
   derivedFromData: Boolean = false,
-  owner: Option[ScalaStan#TransformBase[_, _]] = None,
+  owner: Option[StanTransformBase[_, _]] = None,
   id: Int = StanNode.getNextId
 ) extends StanDeclaration[T] with Updatable[T] {
   val value: StanValue[_ <: StanType] = this

@@ -1,28 +1,28 @@
 package com.cibo.scalastan.examples
 
-import com.cibo.scalastan.ScalaStan
+import com.cibo.scalastan.StanModel
 
-object MapRectExample extends App with ScalaStan {
+object MapRectExample extends App {
 
-  val n = data(int(lower = 0))
-  val x = data(real()(n, 2))
+  object model extends StanModel {
+    val n = data(int(lower = 0))
+    val x = data(real()(n, 2))
 
-  val alpha = parameter(real())
-  val beta = parameter(real())
-  val sigma = parameter(real(lower = 0.0))
+    val alpha = parameter(real())
+    val beta = parameter(real())
+    val sigma = parameter(real(lower = 0.0))
 
-  val func = new Function(vector()) {
-    val phi = input(vector())
-    val theta = input(vector())
-    val x_r = input(real()())
-    val x_i = input(int()())
+    val func = new Function(vector()) {
+      val phi = input(vector())
+      val theta = input(vector())
+      val x_r = input(real()())
+      val x_i = input(int()())
 
-    val r = local(vector(1))
-    r(1) := stan.normal(phi(1) + phi(2) * x_r(1), phi(3)).lpdf(x_r(2))
-    output(r)
-  }
+      val r = local(vector(1))
+      r(1) := stan.normal(phi(1) + phi(2) * x_r(1), phi(3)).lpdf(x_r(2))
+      output(r)
+    }
 
-  val model = new Model {
     val phi = local(vector(3))
     phi(1) := alpha
     phi(2) := beta
@@ -34,8 +34,8 @@ object MapRectExample extends App with ScalaStan {
     target += stan.sum(stan.map_rect(func, phi, theta, x, xi))
   }
 
-  val compiledModel =model
-    .withData(x,
+  val compiledModel = model
+    .withData(model.x,
       Seq(
         Seq(1.0, 2.5),
         Seq(3.0, 5.1),

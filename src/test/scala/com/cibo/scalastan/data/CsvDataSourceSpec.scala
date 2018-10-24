@@ -7,7 +7,7 @@ class CsvDataSourceSpec extends ScalaStanBaseSpec {
 
   describe("CsvDataSource") {
     it("parses simple CSV") {
-      new ScalaStan {
+      new StanModel {
         val data = "one,two\n0.5,1.0\n1.5,2.5\n"
         val src = CsvDataSource.fromString(data)
         val n = data(int())
@@ -20,7 +20,7 @@ class CsvDataSourceSpec extends ScalaStanBaseSpec {
     }
 
     it("parses CSV with quoted headers") {
-      new ScalaStan {
+      new StanModel {
         val data = "\"one\", \"two\"\n0.5,1.0\n1.5,2.5\n"
         val src = CsvDataSource.fromString(data)
         val n = data(int())
@@ -33,7 +33,7 @@ class CsvDataSourceSpec extends ScalaStanBaseSpec {
     }
 
     it("parses int arrays") {
-      new ScalaStan {
+      new StanModel {
         val data = "one\n1\n2\n"
         val src = CsvDataSource.fromString(data)
         val n = data(int())
@@ -44,7 +44,7 @@ class CsvDataSourceSpec extends ScalaStanBaseSpec {
     }
 
     it("parses real arrays") {
-      new ScalaStan {
+      new StanModel {
         val data = "one\n1.5\n2.5\n"
         val src = CsvDataSource.fromString(data)
         val n = data(int())

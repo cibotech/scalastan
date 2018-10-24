@@ -14,10 +14,10 @@ import com.cibo.scalastan._
 import com.cibo.scalastan.ast.{StanDataDeclaration, StanParameterDeclaration, StanValue}
 import com.cibo.scalastan.run.StanCompiler
 
-object LinearRegression extends ScalaStan {
+object LinearRegression {
 
   // Common linear regression declarations.
-  trait RegressionDeclarations extends Model {
+  trait RegressionDeclarations extends StanModel {
     val n: StanDataDeclaration[StanInt] = data(int(lower = 0))
     val p: StanDataDeclaration[StanInt] = data(int(lower = 0))
     val x: StanDataDeclaration[StanMatrix] = data(matrix(n, p))
@@ -77,25 +77,19 @@ object LinearRegression extends ScalaStan {
 case class LinearRegression(
   xs: Seq[Seq[Double]],   // Inputs
   ys: Seq[Double]         // Outputs
-) extends ScalaStan {
+) extends LinearRegression.BayesianRegression {
 
   require(xs.length == ys.length, "Length of inputs must match the length of the outputs")
 
-  val model: LinearRegression.BayesianRegression = new LinearRegression.BayesianRegression {
-    sigma ~ stan.cauchy(0, 1)
-  }
+  sigma ~ stan.cauchy(0, 1)
 
-  val beta0: StanParameterDeclaration[StanReal] = model.beta0
-  val beta: StanParameterDeclaration[StanVector] = model.beta
-  val sigma: StanParameterDeclaration[StanReal] = model.sigma
-
-  def compile(implicit compiler: StanCompiler): CompiledModel = model.compile
-    .withData(model.x, xs)
-    .withData(model.y, ys)
+  override def compile(implicit compiler: StanCompiler): CompiledModel = super.compile
+    .withData(x, xs)
+    .withData(y, ys)
 
   def predict(data: Seq[Seq[Double]], results: StanResults): Seq[Double] = {
-    val bestBeta0 = results.best(model.beta0)
-    val bestBeta = results.best(model.beta)
+    val bestBeta0 = results.best(beta0)
+    val bestBeta = results.best(beta)
     data.map { ds =>
       require(ds.length == bestBeta.length)
       bestBeta0 + ds.zip(bestBeta).map { case (d, b) => d * b }.sum

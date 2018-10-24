@@ -23,40 +23,42 @@ libraryDependencies += "com.cibo" %% "scalastan" % "<version>"
 
 Project Structure
 =================
- - `com.cibo.scalastan` contains the ScalaStan DSL (most importantly, the `ScalaStan` trait).
+ - `com.cibo.scalastan` contains the ScalaStan DSL (most importantly, the `StanModel` trait).
  - `com.cibo.scalastan.analysis` contains analyses for ScalaStan models.
  - `com.cibo.scalastan.ast` contains the ScalaStan abstract syntax tree.
  - `com.cibo.scalastan.data` contains parsers for various data sources (R, for example).
  - `com.cibo.scalastan.models` contains reusable ScalaStan models.
+ - `com.cibo.scalastan.run` contains the classes to handle compiling and running a model.
  - `com.cibo.scalastan.transform` contains ScalaStan transformations (optimizations, etc.).
  - Examples can be found in the `com.cibo.scalastan.examples` package in the integration test (`it`) source directory.  Run an example using the command `sbt it:run` and choosing from the available examples.
 
 Usage
 =====
-The ScalaStan DSL is accessed by extending the `com.cibo.scalastan.ScalaStan` trait.
+The ScalaStan DSL is accessed by extending the `com.cibo.scalastan.StanModel` trait.
 Here's a simple example of linear regression:
 ```scala
-import com.cibo.scalastan.ScalaStan
+import com.cibo.scalastan.StanModel
 
-object MyModel extends App with ScalaStan {
-  val n = data(int(lower = 0))
-  val x = data(vector(n))
-  val y = data(vector(n))
+object MyApp extends App {
 
-  val b = parameter(real())
-  val m = parameter(real())
-  val sigma = parameter(real(lower = 0))
+  object MyModel extends StanModel {
+    val n = data(int(lower = 0))
+    val x = data(vector(n))
+    val y = data(vector(n))
 
-  val model = new Model {
+    val b = parameter(real())
+    val m = parameter(real())
+    val sigma = parameter(real(lower = 0.0))
+
     sigma ~ stan.cauchy(0, 1)
     y ~ stan.normal(m * x + b, sigma)
   }
 
   val xs: Seq[Double] = ???
   val ys: Seq[Double] = ???
-  val results = model
-    .withData(x, xs)
-    .withData(y, ys)
+  val results = MyModel
+    .withData(MyModel.x, xs)
+    .withData(MyModel.y, ys)
     .run(chains = 5)
 
   results.summary(System.out)
@@ -130,16 +132,19 @@ val y = parameter(real())
 
 The types for parameters are the same as those for data, however, Stan does not allow integral parameters.
 
-The Model
----------
-The model is encoded by extending the `Model` class. The body of this class supports a DSL to describe the model.
+Local Declarations
+------------------
 
-#### Local Declarations
 Local values can be declared using the `local` function, which behaves like the `data` and `parameter` functions,
-but is only available within the `Model` DSL (and other code DSLs), for example:
+but is only available within the `StanModel` DSL, for example:
 ```scala
 val z = local(real())
 ```
+
+The Model
+---------
+The `StanModel` trait supports a DSL to describe the model, which can be expressed directly in the body
+of the subclass.
 
 #### Operators
 Most arithmetic operators behave as one would expect (and identically to Stan), for example `+`, `-`, `*`, `/`,
@@ -194,6 +199,16 @@ when(x > 1) {
 }
 ```
 
+### Ternary Operator
+Conditionals in ScalaStan/Stan are not expressions, so there is a ternary operator to
+support conditionals as part of an expression. The ternary operator is supported as an overload
+of `when`:
+```scala
+y := when(x > 0, 1, 2)
+```
+
+This will evaluate the condition `x > 0` and return `1` if true and `2` if false.
+
 #### Distributions
 The built-in Stan distributions are available in ScalaStan from the `stan` object.
 
@@ -215,9 +230,9 @@ Transformed Data and Parameters
 -----------------------------
 Transformed versions of data and parameters can be declared via the `transformed data` and `transformed parameters`
 sections in Stan. In ScalaStan, this is accomplished by extending the `TransformedData` or `TransformedParameter`
-classes.  These classes take a parameter that is the type of the transformed value.  The body of the class
-provides a DSL to encode the transformation using the same constructs as the model.  Inside this DSL, the
-value is accessed using `result`.
+classes from within a `StanModel`.  These classes take a parameter that is the type of the transformed value.
+The body of the class provides a DSL to encode the transformation using the same constructs as the model.
+Inside this DSL, the value is accessed using `result`.
 
 Here is a simple data transform to add `1` to all elements of an array:
 ```scala
@@ -227,13 +242,17 @@ val xPlusOne = new TransformedParameter(vector(n)) {
 ```
 
 The transformed parameter can now be referenced instead of the actual parameter in the model.
+Note that a transformed parameter can be referenced in the output, however, if the transformed
+parameter is not used within the model, ScalaStan will not emit it. In this case, one should use
+a generated quantity instead.
 
 User-Defined Functions
 ----------------------
-User-defined functions are created by extending the `Function` class. This class takes an optional parameter to
-determine the return type (it is assumed to return `void` if not specified).  The body of the class provides
-a DSL for implementing the function.  Inputs to the function are specified using the `input` function,
-which works much like the `local` function, but creates an input parameter instead of a local variable.
+User-defined functions are created by extending the `Function` class from within a `StanModel`.
+This class takes an optional parameter to determine the return type (it is assumed to return `void`
+if not specified).  The body of the class provides a DSL for implementing the function.  Inputs to
+the function are specified using the `input` function, which works much like the `local` function,
+but creates an input parameter instead of a local variable.
 The `output` function sets the return value and returns from the function.
 
 Here is an example to add `1` to all elements of an array:
@@ -247,17 +266,13 @@ val myFunc = new Function(vector(n)) {
 Generated Quantities
 --------------------
 Generated quantities provide a means of deriving quantities from parameters, data, and random number generation.
-In ScalaStan, such quantities are created by extending the `GeneratedQuantity` class for a model. This class
+In ScalaStan, such quantities are created by extending the `GeneratedQuantity` class within a `StanModel`. This class
 works like the data and parameter transform blocks, but is contained in the model.  In addition to parameters and
 data, a generated quantity can use random numbers drawn from a distribution.
 
 Here is an example to draw a random number:
 ```scala
-val myModel = new Model {
-  // ...
-}
-
-val rand = new myModel.GeneratedQuantity(real()) {
+val rand = new GeneratedQuantity(real()) {
   result := stan.normal(0.0, 1.0).rng
 }
 ```
@@ -347,7 +362,7 @@ parameter) as an argument.
 
 For example, to get the mean of the samples for parameter `y`:
 ```scala
-val m = results.mean(y)
+val m = results.mean(model.y)
 ```
 
 This will return the mean with the same shape as the input parameter.  Note that the Scala data structure
@@ -365,11 +380,11 @@ External Stan Code
 It is possible to use ScalaStan to generate regular Stan code using the `emit` function on the model.
 For example:
 ```scala
-    val myModel = new Model {
+    object MyModel extends StanModel {
       // ...
     }
     val writer = new java.io.PrintWriter("myModel.stan")
-    myModel.emit(writer)
+    MyModel.emit(writer)
     writer.close()
 ```
 
@@ -378,12 +393,14 @@ and parameters must be set up in ScalaStan, then the `loadFromFile` (or `loadFro
 `Model` can be used to load the model.  Once loaded, the model can be used just as a model implemented
 directly in ScalaStan. For example:
 ```scala
+  object MyModel extends StanModel {
     val n = data(int(lower = 0))
     val x = data(vector(n))
     val mu = parameter(real())
     val sigma = parameter(real(lower = 0))
 
-    val model = Model.loadFromFile("normal.stan")
+    loadFromFile("normal.stan")
+  }
 
-    // ...
+  // ...
 ```

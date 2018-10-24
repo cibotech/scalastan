@@ -22,7 +22,7 @@ case class InitialValueDouble(v: Double) extends InitialValue
 case class InitialValueMapping(mapping: Map[String, DataMapping[_]]) extends InitialValue
 
 case class CompiledModel(
-  model: ScalaStan#Model,
+  model: StanModel,
   runner: StanRunner,
   dataMapping: Map[String, DataMapping[_]] = Map.empty,
   initialValue: InitialValue = DefaultInitialValue

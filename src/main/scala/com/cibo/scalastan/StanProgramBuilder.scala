@@ -23,10 +23,10 @@ class StanProgramBuilder {
 
   private val dataValues = ArrayBuffer[StanDataDeclaration[_ <: StanType]]()
   private val parameterValues = ArrayBuffer[StanParameterDeclaration[_ <: StanType]]()
-  private val functions = ArrayBuffer[ScalaStan#Function[_]]()
-  private val transformedData = ArrayBuffer[ScalaStan#TransformedData[_]]()
-  private val transformedParameters = ArrayBuffer[ScalaStan#TransformedParameter[_]]()
-  private val generatedQuantities = ArrayBuffer[ScalaStan#Model#GeneratedQuantity[_]]()
+  private val functions = ArrayBuffer[StanModel#Function[_]]()
+  private val transformedData = ArrayBuffer[StanModel#TransformedData[_]]()
+  private val transformedParameters = ArrayBuffer[StanModel#TransformedParameter[_]]()
+  private val generatedQuantities = ArrayBuffer[StanModel#GeneratedQuantity[_]]()
 
   // Create the top-level scope.
   stack += ArrayBuffer()
@@ -86,7 +86,7 @@ class StanProgramBuilder {
     }
   }
 
-  private def append[T <: ScalaStan#TransformBase[_, _]](t: T, array: ArrayBuffer[T]): Unit = {
+  private def append[T <: StanTransformBase[_, _]](t: T, array: ArrayBuffer[T]): Unit = {
     if (!array.exists(_.name == t.name)) {
       array.prepend(t)                  // Prepend to the list (to avoid infinite recursion).
       append(t._code)                   // Add dependencies.
@@ -94,10 +94,10 @@ class StanProgramBuilder {
     }
   }
 
-  def append(f: ScalaStan#Function[_]): Unit = append(f, functions)
-  def append(t: ScalaStan#TransformedData[_]): Unit = append(t, transformedData)
-  def append(t: ScalaStan#TransformedParameter[_]): Unit = append(t, transformedParameters)
-  def append(g: ScalaStan#Model#GeneratedQuantity[_]): Unit = append(g, generatedQuantities)
+  def append(f: StanModel#Function[_]): Unit = append(f, functions)
+  def append(t: StanModel#TransformedData[_]): Unit = append(t, transformedData)
+  def append(t: StanModel#TransformedParameter[_]): Unit = append(t, transformedParameters)
+  def append(g: StanModel#GeneratedQuantity[_]): Unit = append(g, generatedQuantities)
 
   def append(s: StanStatement): Unit = {
     require(stack.nonEmpty)

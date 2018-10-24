@@ -10,10 +10,10 @@
 
 package com.cibo.scalastan.transform
 
-import com.cibo.scalastan.ScalaStan
+import com.cibo.scalastan.StanContext
 import com.cibo.scalastan.ast.StanProgram
 
-case class Optimize()(implicit val ss: ScalaStan) extends StanTransform[Unit] {
+case class Optimize() extends StanTransform[Unit] {
   def initialState: Unit = ()
 
   private val steps: Seq[StanTransform[_]] = Seq(
@@ -22,7 +22,7 @@ case class Optimize()(implicit val ss: ScalaStan) extends StanTransform[Unit] {
     CopyPropagation()
   )
 
-  override def run(program: StanProgram): StanProgram = {
+  override def run(program: StanProgram)(implicit context: StanContext): StanProgram = {
     steps.foldLeft(program) { (input, step) => step.run(input) }
   }
 }

@@ -9,11 +9,11 @@
  */
 
 package com.cibo.scalastan.transform
-import com.cibo.scalastan.ScalaStan
+import com.cibo.scalastan.StanContext
 import com.cibo.scalastan.ast.{StanBlock, StanForLoop, StanIfStatement, StanStatement}
 
 // Simplify the AST (remove empty blocks, etc.).
-case class AstSimplifier()(implicit val ss: ScalaStan) extends StanTransform[Unit] {
+case class AstSimplifier() extends StanTransform[Unit] {
 
   def initialState: Unit = ()
 
@@ -22,11 +22,11 @@ case class AstSimplifier()(implicit val ss: ScalaStan) extends StanTransform[Uni
     case _            => false
   }
 
-  override def handleBlock(b: StanBlock): State[StanStatement] = for {
+  override def handleBlock(b: StanBlock)(implicit context: StanContext): State[StanStatement] = for {
     newChildren <- State.traverse(b.children)(dispatch)
   } yield if (newChildren.size == 1) newChildren.head else StanBlock(newChildren)
 
-  override def handleIf(i: StanIfStatement): State[StanStatement] = for {
+  override def handleIf(i: StanIfStatement)(implicit context: StanContext): State[StanStatement] = for {
     conds <- State.traverse(i.conds)(c => dispatch(c._2).map(x => c._1 -> x))
     newConds = conds.filterNot(s => isEmpty(s._2))
     otherwise <- dispatchOption(i.otherwise)
@@ -39,7 +39,7 @@ case class AstSimplifier()(implicit val ss: ScalaStan) extends StanTransform[Uni
     }
   }
 
-  override def handleFor(f: StanForLoop): State[StanStatement] = for {
+  override def handleFor(f: StanForLoop)(implicit context: StanContext): State[StanStatement] = for {
     newBody <- dispatch(f.body)
   } yield {
     if (isEmpty(newBody)) {

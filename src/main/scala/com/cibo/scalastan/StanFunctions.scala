@@ -501,7 +501,7 @@ protected trait StanFunctions {
 
   // ODE Solvers (45).
   def integrate_ode_rk45[T <: StanScalarType](
-    ode: ScalaStan#Function[StanArray[StanReal]],
+    ode: StanModel#Function[StanArray[StanReal]],
     initialState: StanValue[StanArray[StanReal]],
     initialTime: StanValue[T],
     times: StanValue[StanArray[StanReal]],
@@ -517,7 +517,7 @@ protected trait StanFunctions {
   }
 
   def integrate_ode_rk45[T <: StanScalarType, RT <: StanScalarType, AT <: StanScalarType](
-    ode: ScalaStan#Function[StanArray[StanReal]],
+    ode: StanModel#Function[StanArray[StanReal]],
     initialState: StanValue[StanArray[StanReal]],
     initialTime: StanValue[T],
     times: StanValue[StanArray[StanReal]],
@@ -548,7 +548,7 @@ protected trait StanFunctions {
   }
 
   def integrate_ode_bdf[T <: StanScalarType](
-    ode: ScalaStan#Function[StanArray[StanReal]],
+    ode: StanModel#Function[StanArray[StanReal]],
     initialState: StanValue[StanArray[StanReal]],
     initialTime: StanValue[T],
     times: StanValue[StanArray[StanReal]],
@@ -564,7 +564,7 @@ protected trait StanFunctions {
   }
 
   def integrate_ode_bdf[T <: StanScalarType, RT <: StanScalarType, AT <: StanScalarType](
-    ode: ScalaStan#Function[StanArray[StanReal]],
+    ode: StanModel#Function[StanArray[StanReal]],
     initialState: StanValue[StanArray[StanReal]],
     initialTime: StanValue[T],
     times: StanValue[StanArray[StanReal]],
@@ -596,7 +596,7 @@ protected trait StanFunctions {
 
   /** Rectangular map (section 9.3). This is available as of CmdStan 2.18.0. */
   def map_rect(
-    f: ScalaStan#Function[StanVector],
+    f: StanModel#Function[StanVector],
     phi: StanValue[StanVector],
     theta: StanValue[StanArray[StanVector]],
     x_r: StanValue[StanArray[StanArray[StanReal]]],

@@ -10,10 +10,10 @@
 
 package com.cibo.scalastan.run
 
-import com.cibo.scalastan.{CompiledModel, ScalaStan}
+import com.cibo.scalastan.{CompiledModel, StanModel}
 
 trait StanCompiler {
-  def compile(ss: ScalaStan, model: ScalaStan#Model): CompiledModel
+  def compile(model: StanModel): CompiledModel
 }
 
 object StanCompiler {

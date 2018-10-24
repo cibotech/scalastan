@@ -4,8 +4,6 @@ import com.cibo.scalastan.ast.StanParameterDeclaration
 
 class StanTypeSpec extends ScalaStanBaseSpec {
 
-  private implicit val ss = new ScalaStan {}
-
   describe("ints") {
     it("emits the right data") {
       val i = StanInt()

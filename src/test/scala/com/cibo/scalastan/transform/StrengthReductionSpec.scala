@@ -1,11 +1,11 @@
 package com.cibo.scalastan.transform
 
-import com.cibo.scalastan.{ScalaStan, ScalaStanBaseSpec}
+import com.cibo.scalastan.{ScalaStan, ScalaStanBaseSpec, StanModel}
 
-class StrengthReductionSpec extends ScalaStanBaseSpec with ScalaStan {
+class StrengthReductionSpec extends ScalaStanBaseSpec {
   describe("fma") {
     it("converts a * b + c") {
-      val model = new Model {
+      val model = new StanModel {
         val x = local(real())
         val a = local(real())
         val b = local(real())
@@ -16,7 +16,7 @@ class StrengthReductionSpec extends ScalaStanBaseSpec with ScalaStan {
     }
 
     it("converts a + b * c") {
-      val model = new Model {
+      val model = new StanModel {
         val x = local(real())
         val a = local(real())
         val b = local(real())
@@ -27,7 +27,7 @@ class StrengthReductionSpec extends ScalaStanBaseSpec with ScalaStan {
     }
 
     it("does not converts a * b * c") {
-      val model = new Model {
+      val model = new StanModel {
         val x = local(real())
         val a = local(real())
         val b = local(real())
@@ -40,7 +40,7 @@ class StrengthReductionSpec extends ScalaStanBaseSpec with ScalaStan {
 
   describe("log_sum_exp") {
     it("converts log(exp(a) + exp(b))") {
-      val model = new Model {
+      val model = new StanModel {
         val x = local(real())
         val a = local(real())
         val b = local(real())
@@ -50,7 +50,7 @@ class StrengthReductionSpec extends ScalaStanBaseSpec with ScalaStan {
     }
 
     it("converts log(sum(exp(vs)))") {
-      val model = new Model {
+      val model = new StanModel {
         val x = local(real())
         val vs = local(vector(5))
         x := stan.log(stan.sum(stan.exp(vs)))
@@ -59,7 +59,7 @@ class StrengthReductionSpec extends ScalaStanBaseSpec with ScalaStan {
     }
 
     it("does not converts log(sum(vs))") {
-      val model = new Model {
+      val model = new StanModel {
         val x = local(real())
         val vs = local(vector(5))
         x := stan.log(stan.sum(vs))

@@ -21,7 +21,7 @@ case class ARkRegression(
   groupingFactorOpt: Option[Seq[Int]] = None, // Value to group by (no grouping if not set)
   order: Int = 1,                             // Order of the model (AR(1) by default)
   priorSigma: Double = 1000.0                 // Sigma for coefficient priors
-) extends ScalaStan {
+) extends StanModel {
 
   require(xs.length == ys.length, "Length of inputs (xs) must match the length of the outputs (ys)")
   require(covariates.length == ys.length, "Length of covariates must match the length of the outputs")
@@ -29,10 +29,10 @@ case class ARkRegression(
   require(groupingFactorOpt.forall(_.forall(_ > 0)), "Grouping factors must be > 0")
   require(order >= 0, "Order must be >= 0.")
 
-  private val n = data(int(lower = 0))      // Number of observations
-  private val m = data(int(lower = 0))      // Number of groups
-  private val p = data(int(lower = 0))      // Number of parameters in the model (excluding the covariate and group)
-  private val k = data(int(lower = 0))      // Order
+  private val n = data(int(lower = 0)) // Number of observations
+  private val m = data(int(lower = 0)) // Number of groups
+  private val p = data(int(lower = 0)) // Number of parameters in the model (excluding the covariate and group)
+  private val k = data(int(lower = 0)) // Order
 
   private val x = data(matrix(n, p))
   private val group = data(int()(n))
@@ -43,38 +43,35 @@ case class ARkRegression(
   val xbeta: StanParameterDeclaration[StanVector] = parameter(vector(p))
   val sigma: StanParameterDeclaration[StanReal] = parameter(real(lower = 0.0))
 
-  private val model = new Model {
+  sigma ~ stan.cauchy(0, 1)
+  xbeta ~ stan.normal(0, priorSigma)
+  for (i <- range(1, m)) {
+    beta(i) ~ stan.normal(0, priorSigma)
+  }
 
-    sigma ~ stan.cauchy(0, 1)
-    xbeta ~ stan.normal(0, priorSigma)
-    for (i <- range(1, m)) {
-      beta(i) ~ stan.normal(0, priorSigma)
+  // Number of observations in the current group.
+  val count = local(int())
+
+  // ID of the current group.
+  val currentGroup = local(int())
+
+  count := 0
+  currentGroup := group(1)
+
+  for (i <- range(1, n)) {
+    when(group(i) =/= currentGroup) {
+      count := 0
+      currentGroup := group(i)
     }
+    count += 1
 
-    // Number of observations in the current group.
-    val count = local(int())
-
-    // ID of the current group.
-    val currentGroup = local(int())
-
-    count := 0
-    currentGroup := group(1)
-
-    for (i <- range(1, n)) {
-      when(group(i) =/= currentGroup) {
-        count := 0
-        currentGroup := group(i)
+    when(count > k) {
+      val mu = local(real())
+      mu := alpha + stan.dot_product(x(i), xbeta)
+      for (j <- range(1, k)) {
+        mu += beta(currentGroup, j) * y(i - j)
       }
-      count += 1
-
-      when(count > k) {
-        val mu = local(real())
-        mu := alpha + stan.dot_product(x(i), xbeta)
-        for (j <- range(1, k)) {
-          mu += beta(currentGroup, j) * y(i - j)
-        }
-        y(i) ~ stan.normal(mu, sigma)
-      }
+      y(i) ~ stan.normal(mu, sigma)
     }
   }
 
@@ -87,7 +84,7 @@ case class ARkRegression(
   private lazy val sortedYs = sortedIndices.map(ys.apply)
   private lazy val groupCount = groupingFactor.max
 
-  def compile(implicit compiler: StanCompiler): CompiledModel = model.compile
+  override def compile(implicit compiler: StanCompiler): CompiledModel = super.compile
     .withData(x, sortedXs)
     .withData(y, sortedYs)
     .withData(group, sortedGroups)

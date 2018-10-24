@@ -11,13 +11,14 @@
 package com.cibo.scalastan.models
 
 import com.cibo.scalastan._
-import com.cibo.scalastan.run.{StanCompiler, StanRunner}
+import com.cibo.scalastan.ast.StanParameterDeclaration
+import com.cibo.scalastan.run.StanCompiler
 
 case class NaiveBayes(
   data: Seq[Map[Int, Set[Int]]],            // Mapping from group -> document ID (1 based) -> word IDs (1 based)
   topicPrior: Option[Seq[Double]] = None,   // Topic prior
   wordPrior: Option[Seq[Double]] = None     // Word prior
-) extends ScalaStan {
+) extends StanModel {
 
   // Naive Bayes Classification
   // from "Stan Modeling Language: User's Guide and Reference Manual" version 2.16.0.
@@ -51,25 +52,23 @@ case class NaiveBayes(
   private val alpha = data(vector(k, lower = 0.0))      // Topic prior
   private val beta = data(vector(v, lower = 0.0))       // Word prior
 
-  val theta: ParameterDeclaration[StanVector] = parameter(simplex(k))             // Topic prevalence
-  val phi: ParameterDeclaration[StanArray[StanVector]] = parameter(simplex(v)(k))  // Word distribution for topic k
+  val theta: StanParameterDeclaration[StanVector] = parameter(simplex(k))             // Topic prevalence
+  val phi: StanParameterDeclaration[StanArray[StanVector]] = parameter(simplex(v)(k))  // Word distribution for topic k
 
-  private val model = new Model {
-    theta ~ stan.dirichlet(alpha)
-    for (i <- range(1, k)) {
-      phi(i) ~ stan.dirichlet(beta)
-    }
-    z ~ stan.categorical(theta)
-    for (i <- w.range) {
-      w(i) ~ stan.categorical(phi(z(doc(i))))
-    }
+  theta ~ stan.dirichlet(alpha)
+  for (i <- range(1, k)) {
+    phi(i) ~ stan.dirichlet(beta)
+  }
+  z ~ stan.categorical(theta)
+  for (i <- w.range) {
+    w(i) ~ stan.categorical(phi(z(doc(i))))
   }
 
   private def defaultTopicPrior: Seq[Double] = Seq.fill[Double](topicCount)(1.0 / topicCount)
 
   private def defaultWordPrior: Seq[Double] = Seq.fill[Double](wordCount)(1.0 / wordCount)
 
-  def compile(implicit compiler: StanCompiler): CompiledModel = model.compile
+  override def compile(implicit compiler: StanCompiler): CompiledModel = super.compile
     .withData(k, topicCount)
     .withData(v, wordCount)
     .withData(m, documentCount)

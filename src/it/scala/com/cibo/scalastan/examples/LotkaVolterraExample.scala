@@ -1,47 +1,48 @@
 package com.cibo.scalastan.examples
 
-import com.cibo.scalastan.{RunMethod, ScalaStan}
+import com.cibo.scalastan.{RunMethod, StanModel}
 
-object LotkaVolterraExample extends App with ScalaStan {
+object LotkaVolterraExample extends App {
 
   // Lotka-Volterra for Predator-Prey Populations example from
   // https://github.com/stan-dev/example-models
 
-  val dz_dt = new Function(real()()) {
-    val t = input(real())
-    val z = input(real()())
-    val theta = input(real()())
-    val x_r = input(real()())
-    val x_i = input(int()())
+  object model extends StanModel {
 
-    val u = z(1)
-    val v = z(2)
+    val dz_dt = new Function(real()()) {
+      val t = input(real())
+      val z = input(real()())
+      val theta = input(real()())
+      val x_r = input(real()())
+      val x_i = input(int()())
 
-    val alpha = theta(1)
-    val beta = theta(2)
-    val gamma = theta(3)
-    val delta = theta(4)
+      val u = z(1)
+      val v = z(2)
 
-    val du_dt = (alpha - beta * v) * u
-    val dv_dt = (-gamma + delta * u) * v
-    output(Seq(du_dt, dv_dt))
-  }
+      val alpha = theta(1)
+      val beta = theta(2)
+      val gamma = theta(3)
+      val delta = theta(4)
 
-  val N = data(int(lower = 0))
-  val ts = data(real()(N))
-  val y0 = data(real()(2))
-  val y = data(real(lower = 0)(N, 2))
+      val du_dt = (alpha - beta * v) * u
+      val dv_dt = (-gamma + delta * u) * v
+      output(Seq(du_dt, dv_dt))
+    }
 
-  val theta = parameter(real(lower = 0)(4))
-  val z0 = parameter(real(lower = 0)(2))
-  val sigma = parameter(real(lower = 0)(2))
+    val N = data(int(lower = 0))
+    val ts = data(real()(N))
+    val y0 = data(real()(2))
+    val y = data(real(lower = 0.0)(N, 2))
 
-  val z = new TransformedParameter(real()(N, 2)) {
-    result := stan.integrate_ode_rk45(dz_dt, z0, 0.0, ts, theta, stan.rep_array(0.0, 0),
-      stan.rep_array(0, 0), 1e-5, 1e-3, 500)
-  }
+    val theta = parameter(real(lower = 0.0)(4))
+    val z0 = parameter(real(lower = 0.0)(2))
+    val sigma = parameter(real(lower = 0.0)(2))
 
-  val model = new Model {
+    val z = new TransformedParameter(real()(N, 2)) {
+      result := stan.integrate_ode_rk45(dz_dt, z0, 0.0, ts, theta, stan.rep_array(0.0, 0),
+        stan.rep_array(0, 0), 1e-5, 1e-3, 500)
+    }
+
     sigma ~ stan.lognormal(0, 0.5)
     theta(1) ~ stan.normal(1, 0.5)
     theta(3) ~ stan.normal(1, 0.5)
@@ -58,18 +59,17 @@ object LotkaVolterraExample extends App with ScalaStan {
       }
     }
 
-  }
-
-  val y0_rep = new model.GeneratedQuantity(real()(2)) {
-    for (k <- range(1, 2)) {
-      result(k) := stan.lognormal(stan.log(z0(k)), sigma(k)).rng
+    val y0_rep = new GeneratedQuantity(real()(2)) {
+      for (k <- range(1, 2)) {
+        result(k) := stan.lognormal(stan.log(z0(k)), sigma(k)).rng
+      }
     }
-  }
 
-  val y_rep = new model.GeneratedQuantity(real()(N, 2)) {
-    for (k <- range(1, 2)) {
-      for (n <- range(1, N)) {
-        result(n, k) := stan.lognormal(stan.log(z(n, k)), sigma(k)).rng
+    val y_rep = new GeneratedQuantity(real()(N, 2)) {
+      for (k <- range(1, 2)) {
+        for (n <- range(1, N)) {
+          result(n, k) := stan.lognormal(stan.log(z(n, k)), sigma(k)).rng
+        }
       }
     }
   }
@@ -103,9 +103,9 @@ object LotkaVolterraExample extends App with ScalaStan {
     1920
   )
   val results = model
-    .withData(y, data)
-    .withData(y0, data.head)
-    .withData(ts, years.map(_ - 1899))
+    .withData(model.y, data)
+    .withData(model.y0, data.head)
+    .withData(model.ts, years.map(_ - 1899))
     .run(method = RunMethod.Sample(samples = 100, warmup = 100))
 
   results.summary(System.out)

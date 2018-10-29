@@ -1,7 +1,7 @@
 ScalaStan
 =========
 [![Build Status](https://travis-ci.org/cibotech/ScalaStan.svg?branch=master)](https://travis-ci.org/cibotech/ScalaStan)
-[ ![Download](https://api.bintray.com/packages/cibotech/public/scalastan/images/download.svg) ](https://bintray.com/cibotech/public/scalastan/_latestVersion)
+[![Download](https://api.bintray.com/packages/cibotech/public/scalastan/images/download.svg)](https://bintray.com/cibotech/public/scalastan/_latestVersion)
 
 A Scala DSL for [Stan](http://mc-stan.org).
 
@@ -118,7 +118,7 @@ int()(j, k)
 
 Parameter Declarations
 ----------------------
-Parameter declarations define the outputs of the model.  In Stan, these go in the `parameters` section:
+Parameter declarations define the parameters to be inferred.  In Stan, these go in the `parameters` section:
 ```stan
 parameters {
   real y;
@@ -176,6 +176,21 @@ The `range` function can also be used for array slicing, for example:
 ```scala
 x(range(1, 5)) := y(range(2, 6))
 ```
+
+
+#### While Loops
+While loops are declared using the `loop` function to avoid conflicting with the Scala `while` statement.
+For example:
+```scala
+loop(x < 10) {
+  // ...
+}
+```
+
+#### Breaking and Continuing Loops
+Stan supports breaking out of loops using the `break` keyword and starting the next iteration using
+the `continue` keyword.  Both of these are available in ScalaStan (since Scala does not support
+break or continue, these functions are named the same as in Stan).
 
 #### Conditionals
 Conditions take the form `when` and `otherwise` to avoid conflicting with the Scala `if` and `else` statements.

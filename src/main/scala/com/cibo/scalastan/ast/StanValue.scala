@@ -106,11 +106,11 @@ abstract class StanValue[T <: StanType] extends StanNode with Implicits {
   )(implicit ev: ElementWiseDivisionAllowed[R, T, B]): StanValue[R] =
     StanBinaryOperator(StanBinaryOperator.ElementWiseDivide, ev.newType(returnType, right.returnType), this, right)
 
-  def ~[R <: StanType](dist: StanDistribution[T, R])(
+  def ~[SUPPORT <: StanType](dist: StanDistribution[T, SUPPORT])(
     implicit code: StanProgramBuilder,
-    ev: SampleAllowed[T, R]
+    ev: SampleAllowed[T, SUPPORT]
   ): Unit = {
-    code.append(StanSampleStatement[T, R](this, dist))
+    code.append(StanSampleStatement[T, SUPPORT](this, dist))
   }
 
   def t[R <: StanType](implicit e: TransposeAllowed[T, R]): StanValue[R] = StanTranspose(e.newType(returnType), this)
@@ -200,11 +200,11 @@ trait Updatable[T <: StanType] extends Incrementable[T] { self: StanValue[T] =>
 
 trait StanFunction {
   def name: String
-  private[scalastan] def export(builder: StanProgramBuilder): Unit
+  def export(builder: StanProgramBuilder): Unit
 }
 
 case class BuiltinFunction(name: String) extends StanFunction {
-  private[scalastan] def export(bulder: StanProgramBuilder): Unit = ()
+  def export(bulder: StanProgramBuilder): Unit = ()
 }
 
 case class StanCall[T <: StanType](

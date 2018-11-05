@@ -64,18 +64,27 @@ object RunMethod {
     gradSamples: Int = 1,
     elboSamples: Int = 100,
     eta: Double = 1.0,
-    adapt: VariationalAdapt = VariationalAdapt()
+    adapt: VariationalAdapt = VariationalAdapt(),
+    tolRelObj: Double = 0.01,
+    evalElbo: Int = 100,
+    outputSamples: Int = 1000
   ) extends Method("variational") {
     require(iter > 0, s"iter out of range: $iter")
     require(gradSamples > 0, s"gradSamples out of range: $gradSamples")
     require(elboSamples > 0, s"elboSamples out of range: $elboSamples")
     require(eta > 0.0, s"eta out of range: $eta")
+    require(tolRelObj > 0.0, s"tolRelObj out of range $tolRelObj")
+    require(evalElbo > 0, s"evalElbo out of range $evalElbo")
+    require(outputSamples > 0, s"outputSamples out of range $outputSamples")
     def arguments: Seq[String] = build(
       ("algorithm", algorithm, Variational().algorithm),
       ("iter", iter, Variational().iter),
       ("grad_samples", gradSamples, Variational().gradSamples),
       ("elbo_samples", elboSamples, Variational().elboSamples),
-      ("eta", eta, Variational().eta)
+      ("eta", eta, Variational().eta),
+      ("tol_rel_obj", tolRelObj, Variational().tolRelObj),
+      ("eval_elbo", evalElbo, Variational().evalElbo),
+      ("output_samples", outputSamples, Variational().outputSamples)
     )
   }
   case class Diagnose(
@@ -115,21 +124,12 @@ object RunMethod {
 
   case class VariationalAdapt(
     engaged: Boolean = true,
-    iter: Int = 50,
-    tolRelObj: Double = 0.01,
-    evalElbo: Int = 100,
-    outputSamples: Int = 1000
+    iter: Int = 50
   ) extends Subcommand("adapt") {
     require(iter > 0, s"iter out of range $iter")
-    require(tolRelObj > .00, s"tolRelObj out of range $tolRelObj")
-    require(evalElbo > 0, s"evalElbo out of range $evalElbo")
-    require(outputSamples > 0, s"outputSamples out of range $outputSamples")
     def  arguments: Seq[String] = build(
       ("engaged", engaged, VariationalAdapt().engaged),
-      ("iter", iter, VariationalAdapt().iter),
-      ("tol_rel_obj", tolRelObj, VariationalAdapt().tolRelObj),
-      ("eval_elbo", evalElbo, VariationalAdapt().evalElbo),
-      ("output_samples", outputSamples, VariationalAdapt().outputSamples)
+      ("iter", iter, VariationalAdapt().iter)
     )
   }
 

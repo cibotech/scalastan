@@ -12,11 +12,11 @@ package com.cibo.scalastan
 
 import com.cibo.scalastan.ast.StanDeclaration
 
-protected case class DataMapping[T <: StanType] private[scalastan] (
+case class DataMapping[T <: StanType](
   decl: StanDeclaration[T],
   values: T#SCALA_TYPE
 ) {
-  private[scalastan] def emit: String = {
+  def emit: String = {
     val nameStr = decl.emit
     val dataStr = decl.returnType.emitData(values.asInstanceOf[decl.returnType.SCALA_TYPE])
     s"$nameStr <- $dataStr"

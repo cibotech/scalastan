@@ -35,8 +35,8 @@ case class CompiledModel(
     }
   }
 
-  private[scalastan] final def emitData(writer: Writer): Unit = emitMapping(dataMapping, writer)
-  private[scalastan] final def emitInitialValues(writer: Writer): Unit = initialValue match {
+  final def emitData(writer: Writer): Unit = emitMapping(dataMapping, writer)
+  final def emitInitialValues(writer: Writer): Unit = initialValue match {
     case InitialValueMapping(mapping) => emitMapping(mapping, writer)
     case _                            => ()
   }

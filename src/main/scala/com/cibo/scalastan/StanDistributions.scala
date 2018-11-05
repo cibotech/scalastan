@@ -10,9 +10,9 @@
 
 package com.cibo.scalastan
 
-import com.cibo.scalastan.ast.{StanContinuousDistribution, StanDiscreteDistributionWithCdf, StanDiscreteDistributionWithoutCdf, StanValue}
+import com.cibo.scalastan.ast._
 
-protected trait StanDistributions {
+trait StanDistributions {
 
   private def args(args: StanValue[_ <: StanType]*): Seq[StanValue[_ <: StanType]] = args
 
@@ -146,8 +146,8 @@ protected trait StanDistributions {
     w: StanValue[StanMatrix],
     m0: StanValue[StanVector],
     c0: StanValue[StanMatrix]
-  ): StanContinuousDistribution[StanMatrix, StanVoid] =
-    StanContinuousDistribution("gaussian_dlm_obs", StanVoid(), Seq(f, g, v, w, m0, c0))
+  ): StanContinuousDistribution[StanMatrix, StanMatrix] =
+    StanContinuousDistribution("gaussian_dlm_obs", StanMatrix(StanUnknownInt, StanUnknownInt), Seq(f, g, v, w, m0, c0))
 
   def gumbel[M <: StanType: ContinuousType, B <: StanType: ContinuousType, R <: StanType](
     mu: StanValue[M],
@@ -186,9 +186,10 @@ protected trait StanDistributions {
 
   def lkj_corr[E <: StanScalarType](
     eta: StanValue[E]
-  ): StanContinuousDistribution[StanMatrix, StanVoid] =
-    StanContinuousDistribution("lkj_corr", StanVoid(), Seq(eta))
+  ): StanContinuousDistribution[StanMatrix, StanMatrix] =
+    StanContinuousDistribution("lkj_corr", StanMatrix(StanUnknownInt, StanUnknownInt), Seq(eta))
 
+  @deprecated("use the single parameter lkj_corr", "2018-10-22")
   def lkj_corr[E <: StanScalarType](
     k: StanValue[StanInt],
     eta: StanValue[E]
@@ -197,9 +198,15 @@ protected trait StanDistributions {
 
   def lkj_cholesky[E <: StanScalarType](
     eta: StanValue[E]
-  ): StanContinuousDistribution[StanMatrix, StanVoid] =
-    StanContinuousDistribution("lkj_cholesky", StanVoid(), Seq(eta))
+  ): StanContinuousDistribution[StanMatrix, StanMatrix] =
+    StanContinuousDistribution("lkj_cholesky", StanMatrix(StanUnknownInt, StanUnknownInt), Seq(eta))
 
+  def lkj_corr_cholesky[E <: StanScalarType](
+    eta: StanValue[E]
+  ): StanContinuousDistribution[StanMatrix, StanMatrix] =
+    StanContinuousDistribution("lkj_corr_cholesky", StanMatrix(StanUnknownInt, StanUnknownInt), Seq(eta))
+
+  @deprecated("use the single parameter lkj_corr_cholesky", "2018-10-22")
   def lkj_corr_cholesky[E <: StanScalarType](
     k: StanValue[StanInt],
     eta: StanValue[E]

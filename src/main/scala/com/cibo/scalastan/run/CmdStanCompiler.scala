@@ -102,8 +102,10 @@ object CmdStanCompiler extends StanCompiler with LazyLogging {
       dirs.foreach { dir =>
         logger.info(s"removing old cache directory ${dir.getAbsolutePath}")
         try {
-          dir.listFiles.foreach(_.delete())
-          dir.delete()
+          Option(dir.listFiles).map { files =>
+            files.foreach(_.delete())
+            dir.delete()
+          }
         } catch {
           case ex: Exception =>
             logger.warn("unable to remove cache directory", ex)

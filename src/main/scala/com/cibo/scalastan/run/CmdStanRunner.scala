@@ -67,7 +67,7 @@ class CmdStanRunner(
   private val dataPrefix: String = "input"
 
   case class ChainResult(
-    iterations: Map[String, Vector[String]],
+    iterations: Map[String, Vector[Double]],
     massMatrix: Vector[Vector[Double]]
   )
 
@@ -149,8 +149,8 @@ class CmdStanRunner(
       val rawLines = reader.lines.iterator.asScala.toVector
       val lines = rawLines.filterNot(_.startsWith("#"))
       if (lines.nonEmpty) {
-        val header = lines.head.split(',').toVector
-        val columns = lines.tail.map(_.split(',').toVector).transpose
+        val header = lines.head.split(',')
+        val columns = lines.tail.map(_.split(',').map(_.toDouble)).transpose
         ChainResult(header.zip(columns).toMap, loadMassMatrix(rawLines))
       } else {
         ChainResult(Map.empty, Vector.empty)

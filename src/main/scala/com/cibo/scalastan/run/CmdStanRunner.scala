@@ -123,6 +123,17 @@ class CmdStanRunner(
     case _                      => None
   }
 
+  private def parseDouble(s: String): Double = try {
+    java.lang.Double.parseDouble(s)
+  } catch {
+    case _: Exception =>
+      s match {
+        case "-inf" => Double.NegativeInfinity
+        case "inf"  => Double.PositiveInfinity
+        case _      => Double.NaN
+      }
+  }
+
   private def loadMassMatrix(rawLines: Vector[String]): Vector[Vector[Double]] = {
     val massMatrixHeader = "inverse mass matrix:"
     val i = rawLines.indexWhere(_.endsWith(massMatrixHeader))
@@ -130,13 +141,13 @@ class CmdStanRunner(
       val denseHeader = "# Elements"
       if (rawLines(i).startsWith(denseHeader)) {
         // Dense matrix.
-        val first = rawLines(i + 1).drop(1).split(',').map(_.toDouble).toVector
+        val first = rawLines(i + 1).drop(1).split(',').map(parseDouble).toVector
         first +: rawLines.slice(i + 2, i + 1 + first.length).map { line =>
-          line.drop(1).split(',').map(_.toDouble).toVector
+          line.drop(1).split(',').map(parseDouble).toVector
         }
       } else {
         // Diagonals
-        Vector(rawLines(i + 1).drop(1).split(',').map(_.toDouble).toVector)
+        Vector(rawLines(i + 1).drop(1).split(',').map(parseDouble).toVector)
       }
     } else {
       Vector.empty
@@ -150,7 +161,7 @@ class CmdStanRunner(
       val lines = rawLines.filterNot(_.startsWith("#"))
       if (lines.nonEmpty) {
         val header = lines.head.split(',')
-        val columns = lines.tail.map(_.split(',').map(_.toDouble)).transpose
+        val columns = lines.tail.map(_.split(',').map(parseDouble)).transpose
         ChainResult(header.zip(columns).toMap, loadMassMatrix(rawLines))
       } else {
         ChainResult(Map.empty, Vector.empty)

@@ -170,7 +170,7 @@ class CmdStanRunner(
     val rc = context.run()
     if (rc != 0) {
       logger.error(s"model returned $rc")
-      None
+      throw new StanException(rc)
     } else {
       Some(readIterations(context.outputFile))
     }

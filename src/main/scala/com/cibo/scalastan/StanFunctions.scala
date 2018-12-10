@@ -594,6 +594,55 @@ trait StanFunctions {
     )
   }
 
+  /** Algebraic Solver (section 47.2). */
+  def algebra_solver(
+    algebra_system: StanModel#Function[StanVector],
+    y_guess: StanValue[StanVector],
+    theta: StanValue[StanVector],
+    x_r: StanValue[StanArray[StanReal]],
+    x_i: StanValue[StanArray[StanInt]]
+  )(implicit builder: StanProgramBuilder): StanValue[StanVector] = {
+    algebra_system.export(builder)
+    StanCall(
+      y_guess.returnType,
+      "algebra_solver",
+      Seq(
+        StanLiteral(algebra_system.result.emit),
+        y_guess,
+        theta,
+        x_r,
+        x_i
+      )
+    )
+  }
+
+  def algebra_solver(
+    algebra_system: StanModel#Function[StanVector],
+    y_guess: StanValue[StanVector],
+    theta: StanValue[StanVector],
+    x_r: StanValue[StanArray[StanReal]],
+    x_i: StanValue[StanArray[StanInt]],
+    rel_tol: StanValue[StanReal],
+    f_tol: StanValue[StanReal],
+    max_steps: StanValue[StanInt]
+  )(implicit builder: StanProgramBuilder): StanValue[StanVector] = {
+    algebra_system.export(builder)
+    StanCall(
+      y_guess.returnType,
+      "algebra_solver",
+      Seq(
+        StanLiteral(algebra_system.result.emit),
+        y_guess,
+        theta,
+        x_r,
+        x_i,
+        rel_tol,
+        f_tol,
+        max_steps
+      )
+    )
+  }
+
   /** Rectangular map (section 9.3). This is available as of CmdStan 2.18.0. */
   def map_rect(
     f: StanModel#Function[StanVector],

@@ -17,7 +17,7 @@ import java.util.regex.Pattern
 import com.cibo.scalastan._
 import com.typesafe.scalalogging.LazyLogging
 
-object CmdStanCompiler extends StanCompiler with LazyLogging {
+object CmdStanCompiler extends StanCompiler with CommandRunner with LazyLogging {
 
   lazy val CMDSTAN_HOME: Option[String] = sys.env.get("CMDSTAN_HOME")
   val modelExecutable: String = "model"
@@ -62,7 +62,7 @@ object CmdStanCompiler extends StanCompiler with LazyLogging {
     val stancCommand = stanc.getOrElse {
       throw new IllegalStateException(s"Could not locate stanc.")
     }
-    val rc = CommandRunner.runCommand(dir, Seq(stancCommand, stanFileName))
+    val rc = runCommand(dir, Seq(stancCommand, stanFileName))
     if (rc != 0) {
       throw new IllegalStateException(s"$stanc returned $rc")
     }
@@ -76,7 +76,7 @@ object CmdStanCompiler extends StanCompiler with LazyLogging {
     val stanPath = stanHome.getOrElse {
       throw new IllegalStateException("Could not locate Stan.")
     }
-    val rc = CommandRunner.runCommand(new File(stanPath), Seq(makeCommand, target))
+    val rc = runCommand(new File(stanPath), Seq(makeCommand, target))
     if (rc != 0) {
       throw new IllegalStateException(s"$make returned $rc")
     }

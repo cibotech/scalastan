@@ -28,7 +28,7 @@ case class CmdStanChainContext(
   initialValueFile: Option[File],
   chainSeed: Int,
   runHash: String
-) extends LazyLogging {
+) extends CommandRunner with LazyLogging {
 
   def initialValueArguments: Vector[String] = compiledModel.initialValue match {
     case DefaultInitialValue => Vector.empty
@@ -45,7 +45,7 @@ case class CmdStanChainContext(
       "random", s"seed=$chainSeed"
     ) ++ initialValueArguments ++ method.arguments
     logger.info("Running " + command.mkString(" "))
-    val rc = CommandRunner.runCommand(modelDir, command)
+    val rc = runCommand(modelDir, command)
     if (rc == 0) {
       Files.move(temp.toPath, outputFile.toPath, StandardCopyOption.ATOMIC_MOVE)
     } else {

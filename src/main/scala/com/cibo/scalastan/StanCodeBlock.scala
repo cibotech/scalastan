@@ -31,6 +31,19 @@ trait StanCodeBlock extends Implicits {
     decl
   }
 
+  def local[T <: StanType](
+    typeConstructor: T,
+    value: StanValue[T]
+  )(implicit name: sourcecode.Name): StanLocalDeclaration[T] = {
+    if (typeConstructor.lower.isDefined || typeConstructor.upper.isDefined) {
+      throw new IllegalStateException("local variables may not have constraints")
+    }
+
+    val decl = StanLocalDeclaration[T](typeConstructor, _context.fixName(name.value))
+    _code.insert(StanInlineDeclaration(decl, Some(value)))
+    decl
+  }
+
   case class when(cond: StanValue[StanInt])(block: => Unit) {
     _code.enter()
     block

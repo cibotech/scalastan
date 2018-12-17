@@ -62,6 +62,14 @@ class StanModelSpec extends ScalaStanBaseSpec {
       }
       checkCode(model, "model { for(ss_v# in 1:2) { int x; x += 1; } }")
     }
+
+    it("supports initial values") {
+      object model extends StanModel {
+        val x = local(real(), 2.5)
+        x += 1.0
+      }
+      checkCode(model, "model { real x = 2.5; x += 1.0; }")
+    }
   }
 
   describe("model") {

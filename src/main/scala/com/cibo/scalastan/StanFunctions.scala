@@ -256,7 +256,9 @@ trait StanFunctions {
     StanCall(StanInt(), "rank", Seq(v, s))
 
   // Integer-valued matrix size functions (42.1).
+  @deprecated("use num_elements", "2018-12-17")
   def numElements[T <: StanVectorOrMatrix](x: StanValue[T]): StanValue[StanInt] = StanCall(StanInt(), "num_elements", Seq(x))
+  def num_elements[T <: StanVectorOrMatrix](x: StanValue[T]): StanValue[StanInt] = StanCall(StanInt(), "num_elements", Seq(x))
   def rows[T <: StanVectorOrMatrix](x: StanValue[T]): StanValue[StanInt] = StanCall(StanInt(), "rows", Seq(x))
   def cols[T <: StanVectorOrMatrix](x: StanValue[T]): StanValue[StanInt] = StanCall(StanInt(), "cols", Seq(x))
 

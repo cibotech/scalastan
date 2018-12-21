@@ -88,14 +88,15 @@ sealed trait StanType {
   }
 
   protected def mapResults(
-    parameterChains: Map[String, Vector[Vector[Double]]],
+    parameterChains: Map[String, Vector[Vector[Double]]]
+  )(
     f: (Int, Int) => SCALA_TYPE
   ): Vector[Vector[SCALA_TYPE]] = {
-    parameterChains.head._2.zipWithIndex.map { case (chain, chainIndex) =>
-      Vector.range(0, chain.size).map { iterationIndex =>
+    parameterChains.head._2.zipWithIndex.par.map { case (chain, chainIndex) =>
+      Vector.tabulate[SCALA_TYPE](chain.size) { iterationIndex =>
         f(chainIndex, iterationIndex)
       }
-    }
+    }.seq
   }
 
   // Parse data from the iterations CSV.
@@ -354,9 +355,9 @@ case class StanArray[CONTAINED <: StanType](
       val nextName = s"$prefix${i + 1}"
       inner.parse(nextName, parameterChains)
     }
-    mapResults(parameterChains, (chainIndex: Int, iterationIndex: Int) => {
+    mapResults(parameterChains) { (chainIndex: Int, iterationIndex: Int) =>
       allValues.map(_(chainIndex)(iterationIndex))
-    })
+    }
   }
 
   def parse(dims: Seq[Int], values: Seq[String]): SCALA_TYPE = {
@@ -427,10 +428,14 @@ trait StanVectorLike extends StanVectorOrMatrix {
     parameterChains: Map[String, Vector[Vector[Double]]]
   ): Vector[Vector[Seq[Double]]] = {
     val prefix = s"$name."
-    val sorted = parameterChains.keys.filter(_.startsWith(prefix)).toVector.sortBy(_.drop(prefix.length).toInt)
-    mapResults(parameterChains, (chainIndex: Int, iterationIndex: Int) => {
-      sorted.map(key => parameterChains(key)(chainIndex)(iterationIndex).toDouble)
-    })
+    val prefixLength = prefix.length
+    val maxIndex = parameterChains.keys.filter(_.startsWith(prefix)).map(_.drop(prefixLength).toInt).max
+    val keys = Array.tabulate[String](maxIndex) { i => s"$prefix${i + 1}" }
+    mapResults(parameterChains) { (chainIndex: Int, iterationIndex: Int) =>
+      Vector.tabulate[Double](maxIndex) { i =>
+        parameterChains(keys(i))(chainIndex)(iterationIndex)
+      }
+    }
   }
 
   def parse(dims: Seq[Int], values: Seq[String]): Seq[Double] = {
@@ -538,18 +543,21 @@ case class StanMatrix(
     if (dim1Keys.isEmpty) {
       Vector.empty // Empty matrix
     } else {
-      val dim1 = dim1Keys.map(_.drop(prefix1.length).takeWhile(Character.isDigit).toInt).max
+      val prefix1Length = prefix1.length
+      val dim1 = dim1Keys.map(_.drop(prefix1Length).takeWhile(_ != '.').toInt).max
       val prefix2 = s"$name.1."
-      val dim2 = dim1Keys.filter(_.startsWith(prefix2)).map(_.drop(prefix2.length).takeWhile(Character.isDigit).toInt).max
+      val prefix2Length = prefix2.length
+      val dim2 = dim1Keys.filter(_.startsWith(prefix2)).map(_.drop(prefix2Length).toInt).max
 
-      mapResults(parameterChains, (chainIndex: Int, iterationIndex: Int) => {
-        Vector.tabulate[Vector[Double]](dim1) { i =>
-          Vector.tabulate[Double](dim2) { j =>
-            val innerName = s"$name.${i + 1}.${j + 1}"
-            parameterChains(innerName)(chainIndex)(iterationIndex).toDouble
-          }
+      // Pre-compute element names, since they are needed for each chain/iteration.
+      val elementNames = Array.tabulate[String](dim1, dim2) { (i, j) => s"$prefix1${i + 1}.${j + 1}" }
+
+      mapResults(parameterChains) { (chainIndex: Int, iterationIndex: Int) =>
+        Vector.tabulate[Double](dim1, dim2) { (i, j) =>
+          val innerName = elementNames(i)(j)
+          parameterChains(innerName)(chainIndex)(iterationIndex)
         }
-      })
+      }
     }
   }
 

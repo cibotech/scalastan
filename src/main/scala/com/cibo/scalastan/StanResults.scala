@@ -32,12 +32,11 @@ case class StanResults(
   private val acceptName = "accept_stat__"
   private val stepSizeName = "stepsize__"
 
-  lazy val bestChain: Int = parameterChains(lpName).zipWithIndex.maxBy(_._1.map(_.toDouble).max)._2
-  lazy val bestIndex: Int = parameterChains(lpName)(bestChain).zipWithIndex.maxBy(_._1.toDouble)._2
+  lazy val bestChain: Int = parameterChains(lpName).zipWithIndex.maxBy(_._1.max)._2
+  lazy val bestIndex: Int = parameterChains(lpName)(bestChain).zipWithIndex.maxBy(_._1)._2
 
-  private def extract(name: String): Seq[Seq[Double]] = parameterChains(name).map(_.map(_.toDouble))
-  private def extractOption(name: String): Seq[Seq[Double]] =
-    parameterChains.getOrElse(name, Seq.empty).map(_.map(_.toDouble))
+  private def extract(name: String): Seq[Seq[Double]] = parameterChains(name)
+  private def extractOption(name: String): Seq[Seq[Double]] = parameterChains.getOrElse(name, Seq.empty)
 
   lazy val logPosterior: Seq[Seq[Double]] = extract(lpName)
   lazy val divergent: Seq[Seq[Double]] = extractOption(divergentName)
@@ -348,7 +347,7 @@ case class StanResults(
     val names = parameterChains.keys
     val results: Seq[(String, Seq[Seq[Double]])] = names.par.flatMap { name =>
       cleanName(name, mapping).map { cleanedName =>
-        cleanedName -> parameterChains(name).map(_.map(i => Try(i.toDouble).getOrElse(Double.NaN)))
+        cleanedName -> parameterChains(name)
       }
     }.toVector.sortBy(_._1)
 

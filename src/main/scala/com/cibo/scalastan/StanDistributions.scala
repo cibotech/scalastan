@@ -373,6 +373,9 @@ trait StanDistributions {
   ): StanContinuousDistribution[R, StanReal] =
     StanContinuousDistribution("skew_normal", StanReal(), args(xi, omega, alpha))
 
+  def std_normal[R <: StanType](): StanContinuousDistribution[R, StanReal] =
+    StanContinuousDistribution("std_normal", StanReal(), args())
+
   def student_t[
     N <: StanType: ContinuousType,
     M <: StanType: ContinuousType,

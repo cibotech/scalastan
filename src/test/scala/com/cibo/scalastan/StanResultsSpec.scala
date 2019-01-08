@@ -17,7 +17,7 @@ class StanResultsSpec extends ScalaStanBaseSpec {
 
   private val model = CompiledModel(TestModel, MockRunner())
 
-  private val testData1 = Map[String, Int](
+  private val testData1 = Map[String, Double](
     "lp__" -> 1,
     TestModel.v1.emit -> 1,
     s"${TestModel.v2.emit}.1" -> 2,
@@ -29,9 +29,9 @@ class StanResultsSpec extends ScalaStanBaseSpec {
     s"${TestModel.v3.emit}.2.2" -> 322,
     s"${TestModel.v3.emit}.3.1" -> 331,
     s"${TestModel.v3.emit}.3.2" -> 332
-  ).mapValues(_.toString)
+  )
 
-  private val testData2 = Map[String, Int](
+  private val testData2 = Map[String, Double](
     "lp__" -> 2,
     TestModel.v1.emit -> 0,
     s"${TestModel.v2.emit}.1" -> 1,
@@ -43,9 +43,9 @@ class StanResultsSpec extends ScalaStanBaseSpec {
     s"${TestModel.v3.emit}.2.2" -> 322,
     s"${TestModel.v3.emit}.3.1" -> 331,
     s"${TestModel.v3.emit}.3.2" -> 332
-  ).mapValues(_.toString)
+  )
 
-  val mappedData: Map[String, Vector[Vector[String]]] = Seq(testData1, testData2).flatten.groupBy(_._1).mapValues(
+  val mappedData: Map[String, Vector[Vector[Double]]] = Seq(testData1, testData2).flatten.groupBy(_._1).mapValues(
     grouped => Vector(grouped.map{ case(k, v) => v }.toVector)
   )
   val results = StanResults(mappedData, Vector.empty, model, RunMethod.Sample())

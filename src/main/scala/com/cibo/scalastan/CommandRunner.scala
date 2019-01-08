@@ -14,7 +14,7 @@ import java.io.File
 
 import com.typesafe.scalalogging.LazyLogging
 
-object CommandRunner extends LazyLogging {
+trait CommandRunner extends LazyLogging {
   def runCommand(dir: File, command: Seq[String]): Int = {
     val pb = new ProcessBuilder(command: _*).directory(dir).redirectErrorStream(true)
     val process = pb.start()

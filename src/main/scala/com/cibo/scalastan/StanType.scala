@@ -88,20 +88,21 @@ sealed trait StanType {
   }
 
   protected def mapResults(
-    parameterChains: Map[String, Vector[Vector[String]]],
+    parameterChains: Map[String, Vector[Vector[Double]]]
+  )(
     f: (Int, Int) => SCALA_TYPE
   ): Vector[Vector[SCALA_TYPE]] = {
-    parameterChains.head._2.zipWithIndex.map { case (chain, chainIndex) =>
-      Vector.range(0, chain.size).map { iterationIndex =>
+    parameterChains.head._2.zipWithIndex.par.map { case (chain, chainIndex) =>
+      Vector.tabulate[SCALA_TYPE](chain.size) { iterationIndex =>
         f(chainIndex, iterationIndex)
       }
-    }
+    }.seq
   }
 
   // Parse data from the iterations CSV.
   def parse(
     name: String,
-    parameterChains: Map[String, Vector[Vector[String]]]
+    parameterChains: Map[String, Vector[Vector[Double]]]
   ): Vector[Vector[SCALA_TYPE]]
 
   // Parse data from a vector of dimensions and values.
@@ -212,7 +213,7 @@ case class StanVoid(
   def getDims(data: Unit): Seq[Int] = Seq.empty
   def parse(
     name: String,
-    parameterChains: Map[String, Vector[Vector[String]]]
+    parameterChains: Map[String, Vector[Vector[Double]]]
   ): Vector[Vector[Unit]] = parameterChains(name).map(_.map( _ => () ))
   def parse(dims: Seq[Int], values: Seq[String]): Unit = ()
   def combine(values: Seq[Seq[SCALA_TYPE]])(func: Seq[Seq[Double]] => Double): Unit = ()
@@ -237,8 +238,8 @@ case class StanString() extends StanType {
   def getDims(data: String): Seq[Int] = Seq.empty
   def parse(
     name: String,
-    parameterChains: Map[String, Vector[Vector[String]]]
-  ): Vector[Vector[String]] = parameterChains(name)
+    parameterChains: Map[String, Vector[Vector[Double]]]
+  ): Vector[Vector[String]] = throw new IllegalStateException("parse should not be called on a string")
   def parse(dims: Seq[Int], values: Seq[String]): String = ""
   def combine(values: Seq[Seq[SCALA_TYPE]])(func: Seq[Seq[Double]] => Double): String = ""
 }
@@ -262,7 +263,7 @@ case class StanInt(
   def getData(data: Int): Seq[String] = Seq(data.toString)
   def parse(
     name: String,
-    parameterChains: Map[String, Vector[Vector[String]]]
+    parameterChains: Map[String, Vector[Vector[Double]]]
   ): Vector[Vector[Int]] = parameterChains(name).map(_.map(_.toInt))
   def parse(dims: Seq[Int], values: Seq[String]): Int = {
     require(dims.isEmpty, s"int must have a dimensionality of 0, got ${dims.length}")
@@ -291,8 +292,8 @@ case class StanCategorical() extends StanDiscreteType {
   def getData(data: String): Seq[String] = Seq(lookup(data).toString)
   def parse(
     name: String,
-    parameterChains: Map[String, Vector[Vector[String]]]
-  ): Vector[Vector[String]] = parameterChains(name)
+    parameterChains: Map[String, Vector[Vector[Double]]]
+  ): Vector[Vector[String]] = throw new IllegalStateException("parse should not be called on a categorical")
   def parse(dims: Seq[Int], values: Seq[String]): String = {
     require(dims.isEmpty, s"categorical must have a dimensionality of 0, got ${dims.length}")
     values.head
@@ -338,7 +339,7 @@ case class StanArray[CONTAINED <: StanType](
   }
   def parse(
     name: String,
-    parameterChains: Map[String, Vector[Vector[String]]]
+    parameterChains: Map[String, Vector[Vector[Double]]]
   ): Vector[Vector[SCALA_TYPE]] = {
     // The name will be the prefix up to the number we need to parse.
     val prefix = s"$name."
@@ -354,9 +355,9 @@ case class StanArray[CONTAINED <: StanType](
       val nextName = s"$prefix${i + 1}"
       inner.parse(nextName, parameterChains)
     }
-    mapResults(parameterChains, (chainIndex: Int, iterationIndex: Int) => {
+    mapResults(parameterChains) { (chainIndex: Int, iterationIndex: Int) =>
       allValues.map(_(chainIndex)(iterationIndex))
-    })
+    }
   }
 
   def parse(dims: Seq[Int], values: Seq[String]): SCALA_TYPE = {
@@ -396,8 +397,8 @@ case class StanReal(
   def getDims(data: Double): Seq[Int] = Seq.empty
   def parse(
     name: String,
-    parameterChains: Map[String, Vector[Vector[String]]]
-  ): Vector[Vector[Double]] = parameterChains(name).map(_.map(_.toDouble))
+    parameterChains: Map[String, Vector[Vector[Double]]]
+  ): Vector[Vector[Double]] = parameterChains(name)
   def parse(dims: Seq[Int], values: Seq[String]): Double = {
     require(dims.isEmpty, s"real must have a dimensionality of 0, got ${dims.length}")
     values.head.toDouble
@@ -424,13 +425,17 @@ trait StanVectorLike extends StanVectorOrMatrix {
 
   def parse(
     name: String,
-    parameterChains: Map[String, Vector[Vector[String]]]
+    parameterChains: Map[String, Vector[Vector[Double]]]
   ): Vector[Vector[Seq[Double]]] = {
     val prefix = s"$name."
-    val sorted = parameterChains.keys.filter(_.startsWith(prefix)).toVector.sortBy(_.drop(prefix.length).toInt)
-    mapResults(parameterChains, (chainIndex: Int, iterationIndex: Int) => {
-      sorted.map(key => parameterChains(key)(chainIndex)(iterationIndex).toDouble)
-    })
+    val prefixLength = prefix.length
+    val maxIndex = parameterChains.keys.filter(_.startsWith(prefix)).map(_.drop(prefixLength).toInt).max
+    val keys = Array.tabulate[String](maxIndex) { i => s"$prefix${i + 1}" }
+    mapResults(parameterChains) { (chainIndex: Int, iterationIndex: Int) =>
+      Vector.tabulate[Double](maxIndex) { i =>
+        parameterChains(keys(i))(chainIndex)(iterationIndex)
+      }
+    }
   }
 
   def parse(dims: Seq[Int], values: Seq[String]): Seq[Double] = {
@@ -530,7 +535,7 @@ case class StanMatrix(
 
   def parse(
     name: String,
-    parameterChains: Map[String, Vector[Vector[String]]]
+    parameterChains: Map[String, Vector[Vector[Double]]]
   ): Vector[Vector[Seq[Seq[Double]]]] = {
     // Determine the size of the matrix.
     val prefix1 = s"$name."
@@ -538,18 +543,21 @@ case class StanMatrix(
     if (dim1Keys.isEmpty) {
       Vector.empty // Empty matrix
     } else {
-      val dim1 = dim1Keys.map(_.drop(prefix1.length).takeWhile(Character.isDigit).toInt).max
+      val prefix1Length = prefix1.length
+      val dim1 = dim1Keys.map(_.drop(prefix1Length).takeWhile(_ != '.').toInt).max
       val prefix2 = s"$name.1."
-      val dim2 = dim1Keys.filter(_.startsWith(prefix2)).map(_.drop(prefix2.length).takeWhile(Character.isDigit).toInt).max
+      val prefix2Length = prefix2.length
+      val dim2 = dim1Keys.filter(_.startsWith(prefix2)).map(_.drop(prefix2Length).toInt).max
 
-      mapResults(parameterChains, (chainIndex: Int, iterationIndex: Int) => {
-        Vector.tabulate[Vector[Double]](dim1) { i =>
-          Vector.tabulate[Double](dim2) { j =>
-            val innerName = s"$name.${i + 1}.${j + 1}"
-            parameterChains(innerName)(chainIndex)(iterationIndex).toDouble
-          }
+      // Pre-compute element names, since they are needed for each chain/iteration.
+      val elementNames = Array.tabulate[String](dim1, dim2) { (i, j) => s"$prefix1${i + 1}.${j + 1}" }
+
+      mapResults(parameterChains) { (chainIndex: Int, iterationIndex: Int) =>
+        Vector.tabulate[Double](dim1, dim2) { (i, j) =>
+          val innerName = elementNames(i)(j)
+          parameterChains(innerName)(chainIndex)(iterationIndex)
         }
-      })
+      }
     }
   }
 

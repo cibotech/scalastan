@@ -28,7 +28,7 @@ case class CmdStanChainContext(
   initialValueFile: Option[File],
   chainSeed: Int,
   runHash: String
-) extends LazyLogging {
+) extends CommandRunner with LazyLogging {
 
   def initialValueArguments: Vector[String] = compiledModel.initialValue match {
     case DefaultInitialValue => Vector.empty
@@ -45,7 +45,7 @@ case class CmdStanChainContext(
       "random", s"seed=$chainSeed"
     ) ++ initialValueArguments ++ method.arguments
     logger.info("Running " + command.mkString(" "))
-    val rc = CommandRunner.runCommand(modelDir, command)
+    val rc = runCommand(modelDir, command)
     if (rc == 0) {
       Files.move(temp.toPath, outputFile.toPath, StandardCopyOption.ATOMIC_MOVE)
     } else {
@@ -67,7 +67,7 @@ class CmdStanRunner(
   private val dataPrefix: String = "input"
 
   case class ChainResult(
-    iterations: Map[String, Vector[String]],
+    iterations: Map[String, Vector[Double]],
     massMatrix: Vector[Vector[Double]]
   )
 
@@ -123,6 +123,17 @@ class CmdStanRunner(
     case _                      => None
   }
 
+  private def parseDouble(s: String): Double = try {
+    java.lang.Double.parseDouble(s)
+  } catch {
+    case _: Exception =>
+      s match {
+        case "-inf" => Double.NegativeInfinity
+        case "inf"  => Double.PositiveInfinity
+        case _      => Double.NaN
+      }
+  }
+
   private def loadMassMatrix(rawLines: Vector[String]): Vector[Vector[Double]] = {
     val massMatrixHeader = "inverse mass matrix:"
     val i = rawLines.indexWhere(_.endsWith(massMatrixHeader))
@@ -130,13 +141,13 @@ class CmdStanRunner(
       val denseHeader = "# Elements"
       if (rawLines(i).startsWith(denseHeader)) {
         // Dense matrix.
-        val first = rawLines(i + 1).drop(1).split(',').map(_.toDouble).toVector
+        val first = rawLines(i + 1).drop(1).split(',').map(parseDouble).toVector
         first +: rawLines.slice(i + 2, i + 1 + first.length).map { line =>
-          line.drop(1).split(',').map(_.toDouble).toVector
+          line.drop(1).split(',').map(parseDouble).toVector
         }
       } else {
         // Diagonals
-        Vector(rawLines(i + 1).drop(1).split(',').map(_.toDouble).toVector)
+        Vector(rawLines(i + 1).drop(1).split(',').map(parseDouble).toVector)
       }
     } else {
       Vector.empty
@@ -149,8 +160,8 @@ class CmdStanRunner(
       val rawLines = reader.lines.iterator.asScala.toVector
       val lines = rawLines.filterNot(_.startsWith("#"))
       if (lines.nonEmpty) {
-        val header = lines.head.split(',').toVector
-        val columns = lines.tail.map(_.split(',').toVector).transpose
+        val header = lines.head.split(',')
+        val columns = lines.tail.map(_.split(',').map(parseDouble)).transpose
         ChainResult(header.zip(columns).toMap, loadMassMatrix(rawLines))
       } else {
         ChainResult(Map.empty, Vector.empty)
@@ -170,7 +181,7 @@ class CmdStanRunner(
     val rc = context.run()
     if (rc != 0) {
       logger.error(s"model returned $rc")
-      None
+      throw new StanException(rc)
     } else {
       Some(readIterations(context.outputFile))
     }

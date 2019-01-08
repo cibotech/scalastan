@@ -260,15 +260,22 @@ case class StanReturnStatement(
 // Local variable declaration.
 case class StanInlineDeclaration(
   decl: StanLocalDeclaration[_ <: StanType],
+  initialValue: Option[StanValue[_ <: StanType]] = None,
   id: Int = StanNode.getNextId
 ) extends StanStatement {
-  def inputs: Seq[StanDeclaration[_ <: StanType]] = Seq.empty
-  def outputs: Seq[StanDeclaration[_ <: StanType]] = Seq.empty
-  def values: Seq[StanValue[_ <: StanType]] = Seq.empty
+  def inputs: Seq[StanDeclaration[_ <: StanType]] = initialValue.toSeq.flatMap(_.inputs)
+  def outputs: Seq[StanDeclaration[_ <: StanType]] = initialValue.toSeq.flatMap(_.outputs)
+  def values: Seq[StanValue[_ <: StanType]] = initialValue.toSeq
   def children: Seq[StanStatement] = Seq.empty
-  def export(builder: StanProgramBuilder): Unit = decl.export(builder)
+  def export(builder: StanProgramBuilder): Unit = {
+    initialValue.foreach(_.export(builder))
+    decl.export(builder)
+  }
   def emitDeclarations(pw: PrintWriter, indent: Int): Unit = {
-    write(pw, indent, s"${decl.emitDeclaration};")
+    initialValue match {
+      case Some(v) => write(pw, indent, s"${decl.emitDeclaration} = ${v.emit};")
+      case None    => write(pw, indent, s"${decl.emitDeclaration};")
+    }
   }
   def emit(pw: PrintWriter, indent: Int): Unit = ()
   def isDerivedFromData: Boolean = false

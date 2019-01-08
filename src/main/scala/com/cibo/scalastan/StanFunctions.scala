@@ -435,6 +435,16 @@ trait StanFunctions {
     b: StanValue[StanMatrix]
   ): StanValue[T] = StanCall(a.returnType, "mdivide_right_spd", Seq(a, b))
   def matrix_exp(a: StanValue[StanMatrix]): StanValue[StanMatrix] = StanCall(a.returnType, "matrix_exp", Seq(a))
+  def matrix_exp_multiply(a: StanValue[StanMatrix], b: StanValue[StanMatrix]): StanValue[StanMatrix] = {
+    StanCall(StanMatrix(a.returnType.rows, b.returnType.cols), "matrix_exp_multiply", Seq(a, b))
+  }
+  def scale_matrix_exp_multiply(
+    t: StanValue[StanReal],
+    a: StanValue[StanMatrix],
+    b: StanValue[StanMatrix]
+  ): StanValue[StanMatrix] = {
+    StanCall(StanMatrix(a.returnType.rows, b.returnType.cols), "scale_matrix_exp_multiply", Seq(t, a, b))
+  }
   def trace(a: StanValue[StanMatrix]): StanValue[StanReal] = StanCall(StanReal(), "trace", Seq(a))
   def determinant(a: StanValue[StanMatrix]): StanValue[StanReal] = StanCall(StanReal(), "determinant", Seq(a))
   def log_determinant(a: StanValue[StanMatrix]): StanValue[StanReal] = StanCall(StanReal(), "log_determinant", Seq(a))
@@ -443,8 +453,17 @@ trait StanFunctions {
   def eigenvalues_sym(a: StanValue[StanMatrix]): StanValue[StanVector] =
     StanCall(StanVector(a.returnType.rows), "eigenvalues_sym", Seq(a))
   def eigenvectors_sym(a: StanValue[StanMatrix]): StanValue[StanMatrix] = StanCall(a.returnType, "eigenvectors_sym", Seq(a))
-  def qr_Q(a: StanValue[StanMatrix]): StanValue[StanMatrix] = StanCall(a.returnType, "qr_Q", Seq(a))
-  def qr_R(a: StanValue[StanMatrix]): StanValue[StanMatrix] = StanCall(a.returnType, "qr_R", Seq(a))
+
+  def qr_thin_Q(a: StanValue[StanMatrix]): StanValue[StanMatrix] = StanCall(a.returnType, "qr_thin_Q", Seq(a))
+  def qr_thin_R(a: StanValue[StanMatrix]): StanValue[StanMatrix] = {
+    StanCall(StanMatrix(a.returnType.cols, a.returnType.cols), "qr_thin_R", Seq(a))
+  }
+  def qr_Q(a: StanValue[StanMatrix]): StanValue[StanMatrix] = {
+    StanCall(StanMatrix(a.returnType.rows, a.returnType.rows), "qr_Q", Seq(a))
+  }
+  def qr_R(a: StanValue[StanMatrix]): StanValue[StanMatrix] = {
+    StanCall(StanMatrix(a.returnType.rows, a.returnType.rows), "qr_R", Seq(a))
+  }
   def cholesky_decompose(a: StanValue[StanMatrix]): StanValue[StanMatrix] = StanCall(a.returnType, "cholesky_decompose", Seq(a))
   def singular_values(a: StanValue[StanMatrix]): StanValue[StanVector] =
     StanCall(StanVector(a.returnType.rows), "singular_values", Seq(a))

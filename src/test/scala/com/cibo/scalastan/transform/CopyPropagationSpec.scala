@@ -13,7 +13,7 @@ class CopyPropagationSpec extends ScalaStanBaseSpec {
         y := z
         x := y
       }
-      checkCode(model.transform(CopyPropagation()), "model { real z; real x; x = z; }")
+      checkCode(model.transform(CopyPropagation()), "model { real x; real z; x = z; }")
     }
 
     it("handles conditionals") {
@@ -27,7 +27,7 @@ class CopyPropagationSpec extends ScalaStanBaseSpec {
           x := y
         }
       }
-      checkCode(model.transform(CopyPropagation()), "model { real z; real x; if(1) { x = z; } }")
+      checkCode(model.transform(CopyPropagation()), "model { real x; real z; if(1) { x = z; } }")
     }
 
     it("is conservative") {
@@ -42,7 +42,7 @@ class CopyPropagationSpec extends ScalaStanBaseSpec {
         }
         x := y
       }
-      checkCode(model.transform(CopyPropagation()), "model { real z; real y; real x; y = z; if(1) { y = 3; } x = y; }")
+      checkCode(model.transform(CopyPropagation()), "model { real x; real y; real z; y = z; if(1) { y = 3; } x = y; }")
     }
   }
 }

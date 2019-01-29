@@ -70,6 +70,17 @@ class StanModelSpec extends ScalaStanBaseSpec {
       }
       checkCode(model, "model { real x = 2.5; x += 1.0; }")
     }
+
+    it("places multiple local declarations correctly inside loops") {
+      object model extends StanModel {
+        for (i <- range(1, 2)) {
+          val y = local(int())
+          val x = local(int(), y)
+          x += 1
+        }
+      }
+      checkCode(model, "model { for(ss_v# in 1:2) { int y; int x = y; x += 1; } }")
+    }
   }
 
   describe("model") {

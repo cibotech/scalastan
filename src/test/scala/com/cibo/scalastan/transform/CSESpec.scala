@@ -13,7 +13,7 @@ class CSESpec extends ScalaStanBaseSpec {
         z := y + 1
       }
 
-      checkCode(model.transform(CSE()), "model { real z; real y; real x; x = (y + 1); z = x; }")
+      checkCode(model.transform(CSE()), "model { real x; real y; real z; x = (y + 1); z = x; }")
     }
 
     it("re-orders multiplication") {
@@ -25,7 +25,7 @@ class CSESpec extends ScalaStanBaseSpec {
         z := 1 * y
       }
 
-      checkCode(model.transform(CSE()), "model { real z; real y; real x; x = (y * 1); z = x; }")
+      checkCode(model.transform(CSE()), "model { real x; real y; real z; x = (y * 1); z = x; }")
     }
 
     it("does not re-order division") {
@@ -37,7 +37,7 @@ class CSESpec extends ScalaStanBaseSpec {
         z := 1 / y
       }
 
-      checkCode(model.transform(CSE()), "model { real z; real y; real x; x = (y / 1); z = (1 / y); }")
+      checkCode(model.transform(CSE()), "model { real x; real y; real z; x = (y / 1); z = (1 / y); }")
     }
   }
 }

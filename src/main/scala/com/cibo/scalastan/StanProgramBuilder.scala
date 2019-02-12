@@ -59,10 +59,13 @@ class StanProgramBuilder {
     stack.last += ifStatement.copy(otherwise = Some(StanBlock(inside)))
   }
 
-  def insert(s: StanStatement): Unit = {
+  def insert(s: StanInlineDeclaration): Unit = {
     require(stack.nonEmpty)
     s.export(this)
-    stack.last.insert(0, s)
+
+    // Insert this statement after the last declaration.
+    val lastDeclIndex = stack.last.lastIndexWhere(_.isInstanceOf[StanInlineDeclaration])
+    stack.last.insert(lastDeclIndex + 1, s)
   }
 
   def append(other: StanProgramBuilder): Unit = {

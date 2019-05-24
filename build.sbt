@@ -10,7 +10,7 @@ organizationName     := "CiBO Technologies, Inc."
 organizationHomepage := Some(url("https://www.cibotechnologies.com"))
 
 
-crossScalaVersions  := Seq("2.12.4", "2.11.11")
+crossScalaVersions  := Seq("2.12.8", "2.11.11")
 scalaVersion        := crossScalaVersions.value.head
 
 scalacOptions ++= Seq("-unchecked", "-deprecation", "-feature")
@@ -23,11 +23,11 @@ Defaults.itSettings
 lazy val root = project.in(file(".")).configs(IntegrationTest)
 
 libraryDependencies ++= Seq(
-  "org.scala-lang.modules"     %% "scala-parser-combinators" % "1.0.6",
+  "org.scala-lang.modules"     %% "scala-parser-combinators" % "1.1.2",
   "org.scala-lang"             %  "scala-reflect"            % scalaVersion.value,
-  "com.nrinaudo"               %% "kantan.csv"               % "0.4.0",
-  "com.lihaoyi"                %% "sourcecode"               % "0.1.4",
-  "com.typesafe.scala-logging" %% "scala-logging"            % "3.9.0",
-  "org.scalatest"              %% "scalatest"                % "3.0.5" % "test,it",
+  "com.nrinaudo"               %% "kantan.csv"               % "0.5.0",
+  "com.lihaoyi"                %% "sourcecode"               % "0.1.6",
+  "com.typesafe.scala-logging" %% "scala-logging"            % "3.9.2",
+  "org.scalatest"              %% "scalatest"                % "3.0.7" % "test,it",
   "ch.qos.logback"             % "logback-classic"           % "1.2.3" % "test,it"
 )

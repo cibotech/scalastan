@@ -10,10 +10,10 @@ organizationName     := "CiBO Technologies, Inc."
 organizationHomepage := Some(url("https://www.cibotechnologies.com"))
 
 
-crossScalaVersions  := Seq("2.12.8", "2.11.11")
+crossScalaVersions  := Seq("2.12.8")
 scalaVersion        := crossScalaVersions.value.head
 
-scalacOptions ++= Seq("-unchecked", "-deprecation", "-feature")
+scalacOptions ++= Seq("-unchecked", "-deprecation", "-feature", "-target:jvm-1.8")
 
 fork := true
 

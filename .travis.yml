@@ -5,7 +5,7 @@ language: scala
 scala:
   - 2.12.8
 
-jdk: oraclejdk8
+jdk: openjdk11
 
 env:
   global:
@@ -15,6 +15,7 @@ install:
   - .travis/install_deps.sh
   - export PATH="$PATH:$HOME/cmdstan-$STAN_VERSION/bin:$HOME/sbt/bin"
   - export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$(dirname $(dirname $(which clang)))/lib"
+  - export CMDSTAN_HOME="$HOME/$STAN_VERSION"
 
 before_cache:
   - find $HOME/.sbt -name "*.lock" | xargs rm

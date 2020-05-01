@@ -28,6 +28,6 @@ libraryDependencies ++= Seq(
   "com.nrinaudo"               %% "kantan.csv"               % "0.5.0",
   "com.lihaoyi"                %% "sourcecode"               % "0.1.6",
   "com.typesafe.scala-logging" %% "scala-logging"            % "3.9.2",
-  "org.scalatest"              %% "scalatest"                % "3.0.7" % "test,it",
+  "org.scalatest"              %% "scalatest"                % "3.0.8" % "test,it",
   "ch.qos.logback"             % "logback-classic"           % "1.2.3" % "test,it"
 )

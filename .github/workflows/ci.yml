@@ -20,6 +20,8 @@ jobs:
           java-version: openjdk@1.11
 
       - name: Install Stan
+        env:
+          STAN_VERSION: 2.19.1
         run: |
           .github/scripts/install_deps.sh
           source .github/scripts/env.sh

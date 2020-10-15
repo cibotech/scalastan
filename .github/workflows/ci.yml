@@ -21,13 +21,13 @@ jobs:
 
       - name: Install Stan
         env:
-          STAN_VERSION=2.19.1
+          STAN_VERSION: 2.19.1
         run: |
           .github/scripts/install_deps.sh
       
       - name: Test
         env:
-          STAN_VERSION=2.19.1
+          STAN_VERSION: 2.19.1
         run: |
           source .github/scripts/env.sh
           sbt -batch test it:test

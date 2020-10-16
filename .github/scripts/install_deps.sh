@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-
+set -e
 cd $HOME
 echo "Home directory => $HOME"
 # Install CmdStan

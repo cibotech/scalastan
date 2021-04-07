@@ -1,4 +1,4 @@
-organization  := "com.cibo"
+organization  := "io.github.cibotech"
 name          := "scalastan"
 
 homepage      := Some(url("https://github.com/cibotech/ScalaStan"))
@@ -11,6 +11,30 @@ organizationHomepage := Some(url("https://www.cibotechnologies.com"))
 
 crossScalaVersions  := Seq("2.12.12")
 scalaVersion        := crossScalaVersions.value.head
+
+developers := List(
+  Developer(
+    id    = "CiBO",
+    name  = "CiBO Technologies",
+    email = "devops@cibotechnologies.com",
+    url   = url("https://www.cibotechnologies.com")
+  )
+)
+
+scmInfo := Some(
+  ScmInfo(
+    url("https://github.com/cibotech/scalastan"),
+    "scm:git@github.com:cibotech/scalastan.git"
+  )
+)
+
+pomIncludeRepository := { _ => false }
+publishTo := {
+  val nexus = "https://s01.oss.sonatype.org/"
+  if (isSnapshot.value) Some("snapshots" at nexus + "content/repositories/snapshots")
+  else Some("releases" at nexus + "service/local/staging/deploy/maven2")
+}
+publishMavenStyle := true
 
 scalacOptions ++= Seq("-unchecked", "-deprecation", "-feature", "-target:jvm-1.8")
 
@@ -30,3 +54,4 @@ libraryDependencies ++= Seq(
   "org.scalatest"              %% "scalatest"                % "3.0.8" % "test,it",
   "ch.qos.logback"             % "logback-classic"           % "1.2.3" % "test,it"
 )
+

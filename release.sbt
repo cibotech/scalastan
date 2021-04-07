@@ -11,11 +11,8 @@ releaseProcess := Seq[ReleaseStep](
   publishArtifacts,
   setNextVersion,
   commitNextVersion,
+  ReleaseStep(action = Command.process("sonatypeReleaseAll", _)),
   pushChanges
 )
 
 releaseCrossBuild := true
-
-bintrayOrganization  := Some("cibotech")
-bintrayRepository    := "public"
-bintrayPackageLabels := Seq("scala", "stan")

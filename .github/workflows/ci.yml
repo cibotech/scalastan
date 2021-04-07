@@ -11,12 +11,13 @@ jobs:
   build:
     runs-on: ubuntu-18.04
     steps:
+      - name: Set Stan Version
+        id: scala_stan_version
+        run: |
+          echo "STAN_VERSION=2.19.1" >> $GITHUB_ENV
+        
       - name: Checkout
         uses: actions/checkout@v2
-
-      - name: Set Stan Version
-        run: |
-          echo "::set-env name=STAN_VERSION::2.19.1"
 
       - name: Install Scala
         uses: olafurpg/setup-scala@v10

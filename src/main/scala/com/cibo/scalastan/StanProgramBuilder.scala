@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 - 2020 CiBO Technologies - All Rights Reserved
+ * Copyright (c) 2017 - 2021 CiBO Technologies - All Rights Reserved
  * You may use, distribute, and modify this code under the
  * terms of the BSD 3-Clause license.
  *

@@ -1,3 +1,5 @@
+import xerial.sbt.Sonatype._
+
 organization  := "io.github.cibotech"
 name          := "scalastan"
 
@@ -12,28 +14,11 @@ organizationHomepage := Some(url("https://www.cibotechnologies.com"))
 crossScalaVersions  := Seq("2.12.12")
 scalaVersion        := crossScalaVersions.value.head
 
-developers := List(
-  Developer(
-    id    = "CiBO",
-    name  = "CiBO Technologies",
-    email = "devops@cibotechnologies.com",
-    url   = url("https://www.cibotechnologies.com")
-  )
-)
-
-scmInfo := Some(
-  ScmInfo(
-    url("https://github.com/cibotech/scalastan"),
-    "scm:git@github.com:cibotech/scalastan.git"
-  )
-)
-
+sonatypeProjectHosting := Some(GitHubHosting("cibotech", "scalastan", "devops@cibotechnologies.com"))
+sonatypeCredentialHost := "s01.oss.sonatype.org"
+sonatypeProfileName := "io.github.cibotech"
 pomIncludeRepository := { _ => false }
-publishTo := {
-  val nexus = "https://s01.oss.sonatype.org/"
-  if (isSnapshot.value) Some("snapshots" at nexus + "content/repositories/snapshots")
-  else Some("releases" at nexus + "service/local/staging/deploy/maven2")
-}
+publishTo := sonatypePublishToBundle.value
 publishMavenStyle := true
 
 scalacOptions ++= Seq("-unchecked", "-deprecation", "-feature", "-target:jvm-1.8")

@@ -34,7 +34,7 @@ case class DataSource private[data] (
 ) {
 
   private lazy val raw: Map[String, DataValue] = rawSeq.map(v => v.name -> v).toMap
-  private lazy val reverseEnumerations: Map[String, Map[Int, String]] = enumerations.mapValues(_.map(_.swap).toMap)
+  private lazy val reverseEnumerations: Map[String, Map[Int, String]] = enumerations.mapValues(_.map(_.swap).toMap).toMap
 
   /** Get the names of the data values. */
   def names: Set[String] = raw.keySet

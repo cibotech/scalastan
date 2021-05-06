@@ -149,7 +149,7 @@ trait StanModel extends StanCodeBlock with StanContext { self =>
 
     private[scalastan] lazy val generate: StanFunctionDeclaration = StanFunctionDeclaration(
       result,
-      inputs,
+      inputs.toSeq,
       _code.results
     )
   }

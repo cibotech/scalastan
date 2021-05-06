@@ -11,7 +11,7 @@ licenses      += ("BSD Simplified", url("https://opensource.org/licenses/BSD-3-C
 organizationName     := "CiBO Technologies, Inc."
 organizationHomepage := Some(url("https://www.cibotechnologies.com"))
 
-crossScalaVersions  := Seq("2.12.12")
+crossScalaVersions  := Seq("2.13.4", "2.12.12")
 scalaVersion        := crossScalaVersions.value.head
 
 sonatypeProjectHosting := Some(GitHubHosting("cibotech", "scalastan", "devops@cibotechnologies.com"))
@@ -40,3 +40,9 @@ libraryDependencies ++= Seq(
   "ch.qos.logback"             % "logback-classic"           % "1.2.3" % "test,it"
 )
 
+libraryDependencies ++= {
+  if (scalaVersion.value.startsWith("2.13."))
+    Seq("org.scala-lang.modules" %% "scala-parallel-collections" % "1.0.2")
+  else
+    Seq()
+}

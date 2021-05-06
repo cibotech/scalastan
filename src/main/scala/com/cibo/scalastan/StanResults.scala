@@ -11,8 +11,8 @@
 package com.cibo.scalastan
 
 import java.io.{PrintStream, PrintWriter}
-
 import com.cibo.scalastan.ast.{StanDataDeclaration, StanParameterDeclaration}
+import com.cibo.scalastan.CompatParColls.Converters._
 
 import scala.util.Try
 

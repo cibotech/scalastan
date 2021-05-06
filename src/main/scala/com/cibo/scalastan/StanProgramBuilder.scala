@@ -39,7 +39,7 @@ class StanProgramBuilder {
   // Leave the current scope (collapsing the statements collected using the specified function).
   def leave(f: Seq[StanStatement] => StanStatement): Unit = {
     require(stack.size > 1)
-    val result = f(stack.remove(stack.size - 1))
+    val result = f(stack.remove(stack.size - 1).toSeq)
     result.export(this)
     stack.last += result
   }
@@ -47,14 +47,14 @@ class StanProgramBuilder {
   // Special handling for "else if" statements.
   def handleElseIf(cond: StanValue[StanInt]): Unit = {
     cond.export(this)
-    val inside = stack.remove(stack.size - 1)
+    val inside = stack.remove(stack.size - 1).toSeq
     val ifStatement = stack.last.remove(stack.last.size - 1).asInstanceOf[StanIfStatement]
     stack.last += ifStatement.copy(ifStatement.conds :+ (cond, StanBlock(inside)))
   }
 
   // Special handling for "else" statements.
   def handleElse(): Unit = {
-    val inside = stack.remove(stack.size - 1)
+    val inside = stack.remove(stack.size - 1).toSeq
     val ifStatement = stack.last.remove(stack.last.size - 1).asInstanceOf[StanIfStatement]
     stack.last += ifStatement.copy(otherwise = Some(StanBlock(inside)))
   }
@@ -110,16 +110,16 @@ class StanProgramBuilder {
 
   lazy val results: StanBlock = {
     require(stack.size == 1)
-    StanBlock(stack.last)
+    StanBlock(stack.last.toSeq)
   }
 
   lazy val program: StanProgram = StanProgram(
-    dataValues,
-    parameterValues,
-    functions.map(_.generate),
-    transformedData.map(_.generate),
-    transformedParameters.map(_.generate),
-    generatedQuantities.map(_.generate),
+    dataValues.toSeq,
+    parameterValues.toSeq,
+    functions.map(_.generate).toSeq,
+    transformedData.map(_.generate).toSeq,
+    transformedParameters.map(_.generate).toSeq,
+    generatedQuantities.map(_.generate).toSeq,
     results
   )
 

@@ -11,6 +11,7 @@
 package com.cibo.scalastan
 
 import com.cibo.scalastan.ast.{StanUnknownInt, StanValue}
+import com.cibo.scalastan.CompatParColls.Converters._
 
 sealed trait StanType {
 

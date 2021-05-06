@@ -12,8 +12,8 @@ package com.cibo.scalastan.run
 
 import java.io._
 import java.nio.file._
-
 import com.cibo.scalastan._
+import com.cibo.scalastan.CompatParColls.Converters._
 import com.typesafe.scalalogging.LazyLogging
 
 import scala.collection.JavaConverters._
@@ -223,9 +223,9 @@ class CmdStanRunner(
       }
     }.seq
 
-    val parameterChains = results.flatMap(_.iterations).groupBy(_._1).mapValues(_.map(_._2))
+    val parameterChains = results.flatMap(_.iterations).groupBy(_._1).mapValues(_.map(_._2)).toVector
     val massMatrices = results.map(_.massMatrix)
-    StanResults(parameterChains, massMatrices, compiledModel, method)
+    StanResults(parameterChains.toMap, massMatrices, compiledModel, method)
   }
 }
 

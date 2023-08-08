@@ -23,6 +23,7 @@ project/plugins/project/
 *.log
 
 ### Metals ###
+sbt.json
 .bloop
 .metals
 project/metals.sbt

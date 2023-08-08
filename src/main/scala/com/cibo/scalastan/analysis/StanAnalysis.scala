@@ -117,7 +117,7 @@ abstract class StanAnalysis[T](root: StanStatement) {
     val outLinks: Map[Int, Set[Int]] = getControlFlow(root)
     val inLinks: Map[Int, Set[Int]] = outLinks.toSeq.flatMap { case (parent, children) =>
       children.map(child => child -> parent)
-    }.groupBy(_._1).mapValues(vs => vs.map(_._2).toSet)
+    }.groupBy(_._1).mapValues(vs => vs.map(_._2).toSet).toMap
 
     val inputs: Map[Int, Set[Int]] = if (forward) inLinks else outLinks     // Inputs to a statement.
     val outputs: Map[Int, Set[Int]] = if (forward) outLinks else inLinks    // Outputs of a statement.

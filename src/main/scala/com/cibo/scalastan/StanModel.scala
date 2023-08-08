@@ -145,11 +145,11 @@ trait StanModel extends StanCodeBlock with StanContext { self =>
       node
     }
 
-    def export(builder: StanProgramBuilder): Unit = builder.append(this)
+    def `export`(builder: StanProgramBuilder): Unit = builder.append(this)
 
     private[scalastan] lazy val generate: StanFunctionDeclaration = StanFunctionDeclaration(
       result,
-      inputs,
+      inputs.toSeq,
       _code.results
     )
   }
@@ -168,7 +168,7 @@ trait StanModel extends StanCodeBlock with StanContext { self =>
       typeConstructor, name, derivedFromData = true, owner = Some(this)
     )
 
-    def export(builder: StanProgramBuilder): Unit = builder.append(this)
+    def `export`(builder: StanProgramBuilder): Unit = builder.append(this)
 
     private[scalastan] lazy val generate: StanTransformedData = StanTransformedData(result, _code.results)
   }
@@ -187,7 +187,7 @@ trait StanModel extends StanCodeBlock with StanContext { self =>
       StanParameterDeclaration[T](typeConstructor, name, owner = Some(this))
     protected implicit val _parameterTransform: InParameterTransform = InParameterTransform
 
-    def export(builder: StanProgramBuilder): Unit = builder.append(this)
+    def `export`(builder: StanProgramBuilder): Unit = builder.append(this)
 
     private[scalastan] lazy val generate: StanTransformedParameter = StanTransformedParameter(result, _code.results)
   }
@@ -212,7 +212,7 @@ trait StanModel extends StanCodeBlock with StanContext { self =>
 
     protected implicit val _rngAvailable: RngAvailable = RngAvailable
 
-    def export(builder: StanProgramBuilder): Unit = builder.append(this)
+    def `export`(builder: StanProgramBuilder): Unit = builder.append(this)
 
     private[scalastan] lazy val generate: StanGeneratedQuantity = StanGeneratedQuantity(result, _code.results)
   }
@@ -247,7 +247,7 @@ trait StanModel extends StanCodeBlock with StanContext { self =>
   }
 
   /** Create a model from a Stan file. */
-  def loadFromFile(path: String): Unit = loadFromString(scala.io.Source.fromFile(path).getLines.mkString("\n"))
+  def loadFromFile(path: String): Unit = loadFromString(scala.io.Source.fromFile(path).getLines().mkString("\n"))
 
   implicit def dataTransform2Value[T <: StanType](
     transform: StanModel#TransformedData[T]

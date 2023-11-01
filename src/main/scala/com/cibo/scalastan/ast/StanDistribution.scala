@@ -26,10 +26,10 @@ sealed abstract class StanDistribution[T <: StanType, SUPPORT <: StanType] exten
     args.flatMap(_.outputs) ++ lowerOpt.toSeq.flatMap(_.outputs) ++ upperOpt.toSeq.flatMap(_.outputs)
   def values: Seq[StanValue[_ <: StanType]] = args ++ lowerOpt.toSeq ++ upperOpt.toSeq
 
-  def export(builder: StanProgramBuilder): Unit = {
-    args.foreach(_.export(builder))
-    lowerOpt.foreach(_.export(builder))
-    upperOpt.foreach(_.export(builder))
+  def `export`(builder: StanProgramBuilder): Unit = {
+    args.foreach(_.`export`(builder))
+    lowerOpt.foreach(_.`export`(builder))
+    upperOpt.foreach(_.`export`(builder))
   }
 
   def emit: String = {

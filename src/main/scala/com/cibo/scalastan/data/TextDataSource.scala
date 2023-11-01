@@ -27,6 +27,6 @@ object TextDataSource {
   }
 
   def fromFile(fileName: String): DataSource = {
-    fromString(scala.io.Source.fromFile(fileName).getLines.mkString("\n"))
+    fromString(scala.io.Source.fromFile(fileName).getLines().mkString("\n"))
   }
 }

@@ -11,7 +11,7 @@ licenses      += ("BSD Simplified", url("https://opensource.org/licenses/BSD-3-C
 organizationName     := "CiBO Technologies, Inc."
 organizationHomepage := Some(url("https://www.cibotechnologies.com"))
 
-crossScalaVersions  := Seq("2.12.12")
+crossScalaVersions  := Seq("2.12.12", "2.13.12")
 scalaVersion        := crossScalaVersions.value.head
 
 sonatypeProjectHosting := Some(GitHubHosting("cibotech", "scalastan", "devops@cibotechnologies.com"))
@@ -37,6 +37,14 @@ libraryDependencies ++= Seq(
   "com.lihaoyi"                %% "sourcecode"               % "0.2.1",
   "com.typesafe.scala-logging" %% "scala-logging"            % "3.9.2",
   "org.scalatest"              %% "scalatest"                % "3.0.8" % "test,it",
-  "ch.qos.logback"             % "logback-classic"           % "1.2.3" % "test,it"
+  "ch.qos.logback"             % "logback-classic"           % "1.2.3" % "test,it" 
 )
 
+libraryDependencies ++= {
+  CrossVersion.partialVersion(scalaVersion.value) match {
+    case Some((2, major)) if major <= 12 =>
+      Seq()
+    case _ =>
+      Seq("org.scala-lang.modules" %% "scala-parallel-collections" % "1.0.4")
+  }
+}

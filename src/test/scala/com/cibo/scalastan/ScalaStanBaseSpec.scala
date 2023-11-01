@@ -35,7 +35,7 @@ trait ScalaStanBaseSpec extends FunSpec with Matchers {
       val mappedData: Map[String, Vector[Vector[Double]]] = data.flatten.groupBy(_._1).mapValues { grouped =>
         val iterations = grouped.map { case (k, v) => v }
         Vector.fill(chains)(iterations)
-      }
+      }.toMap
       StanResults(mappedData, Vector.empty, model, method)
     }
   }

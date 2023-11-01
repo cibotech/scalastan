@@ -42,9 +42,9 @@ case class StanValueRange(
   def inputs: Seq[StanDeclaration[_ <: StanType]] = start.inputs ++ end.inputs
   def outputs: Seq[StanDeclaration[_ <: StanType]] = Seq.empty
 
-  private[scalastan] def export(builder: StanProgramBuilder): Unit = {
-    start.export(builder)
-    end.export(builder)
+  private[scalastan] def `export`(builder: StanProgramBuilder): Unit = {
+    start.`export`(builder)
+    end.`export`(builder)
   }
 
   // This foreach will get called automatically when a for comprehension is used with ValueRange.

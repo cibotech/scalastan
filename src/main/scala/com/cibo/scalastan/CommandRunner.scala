@@ -18,7 +18,7 @@ trait CommandRunner extends LazyLogging {
   def runCommand(dir: File, command: Seq[String]): Int = {
     val pb = new ProcessBuilder(command: _*).directory(dir).redirectErrorStream(true)
     val process = pb.start()
-    io.Source.fromInputStream(process.getInputStream).getLines.foreach { line =>
+    io.Source.fromInputStream(process.getInputStream).getLines().foreach { line =>
       logger.info(line)
     }
     process.waitFor()

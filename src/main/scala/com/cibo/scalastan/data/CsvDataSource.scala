@@ -34,7 +34,7 @@ object CsvDataSource {
   }
 
   def fromFile(fileName: String, separator: Char = ','): DataSource = {
-    val content = scala.io.Source.fromFile(fileName).getLines.mkString("\n")
+    val content = scala.io.Source.fromFile(fileName).getLines().mkString("\n")
     fromString(content, separator)
   }
 }

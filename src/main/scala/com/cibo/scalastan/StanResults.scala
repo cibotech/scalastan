@@ -14,6 +14,7 @@ import java.io.{PrintStream, PrintWriter}
 
 import com.cibo.scalastan.ast.{StanDataDeclaration, StanParameterDeclaration}
 
+import com.cibo.scalastan.CompatibleParCollections.Converters._
 import scala.util.Try
 
 case class StanResults(

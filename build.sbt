@@ -11,7 +11,7 @@ licenses      += ("BSD Simplified", url("https://opensource.org/licenses/BSD-3-C
 organizationName     := "CiBO Technologies, Inc."
 organizationHomepage := Some(url("https://www.cibotechnologies.com"))
 
-crossScalaVersions  := Seq("2.12.12", "2.13.11")
+crossScalaVersions  := Seq("2.12.12", "2.13.12")
 scalaVersion        := crossScalaVersions.value.head
 
 sonatypeProjectHosting := Some(GitHubHosting("cibotech", "scalastan", "devops@cibotechnologies.com"))

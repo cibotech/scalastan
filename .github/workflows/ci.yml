@@ -30,4 +30,4 @@ jobs:
       - name: Test
         run: |
           source .github/scripts/env.sh
-          sbt -batch test it:test
+          sbt -batch "+ test" "+ IntegrationTest / test"
